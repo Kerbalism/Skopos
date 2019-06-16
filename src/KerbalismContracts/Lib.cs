@@ -39,5 +39,36 @@ namespace Kerbalism.Contracts
 			}
 			return homeSun;
 		}
+
+		public static string To_safe_key(string key) { return key.Replace(" ", "___"); }
+		public static string From_safe_key(string key) { return key.Replace("___", " "); }
+
+		// get a value from config
+		public static T ConfigValue<T>(ConfigNode cfg, string key, T def_value)
+		{
+			try
+			{
+				return cfg.HasValue(key) ? (T)Convert.ChangeType(cfg.GetValue(key), typeof(T)) : def_value;
+			}
+			catch (Exception e)
+			{
+				Lib.Log("error while trying to parse '" + key + "' from " + cfg.name + " (" + e.Message + ")");
+				return def_value;
+			}
+		}
+
+		// get an enum from config
+		public static T ConfigEnum<T>(ConfigNode cfg, string key, T def_value)
+		{
+			try
+			{
+				return cfg.HasValue(key) ? (T)Enum.Parse(typeof(T), cfg.GetValue(key)) : def_value;
+			}
+			catch (Exception e)
+			{
+				Lib.Log("invalid enum in '" + key + "' from " + cfg.name + " (" + e.Message + ")");
+				return def_value;
+			}
+		}
 	}
 }
