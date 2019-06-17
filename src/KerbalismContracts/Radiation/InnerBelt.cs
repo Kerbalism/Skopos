@@ -56,20 +56,45 @@ namespace Kerbalism.Contracts
 	{
 		public override ContractBehaviour Generate(ConfiguredContract contract)
 		{
-			return new RevealInnerBeltBehaviour(targetBody, visible);
+			return new RevealInnerBeltBehaviour(targetBody, visible, requireCompletion);
 		}
 	}
 
 	public class RevealInnerBeltBehaviour: RevealRadiationFieldBehaviour
 	{
-		public RevealInnerBeltBehaviour(): this(FlightGlobals.GetHomeBody(), true) {}
-		public RevealInnerBeltBehaviour(CelestialBody targetBody, bool visible): base(targetBody, visible) {}
+		public RevealInnerBeltBehaviour(): this(FlightGlobals.GetHomeBody(), true, false) {}
+		public RevealInnerBeltBehaviour(CelestialBody targetBody, bool visible, bool requireCompletion)
+			: base(targetBody, visible, requireCompletion) {}
+
+
+		protected override void OnParameterStateChange(ContractParameter param)
+		{
+			base.OnParameterStateChange(param);
+
+			if (requireCompletion || param.State != ParameterState.Complete)
+			{
+				return;
+			}
+
+			if (param.GetType() == typeof(InnerBeltParameter))
+			{
+				SetVisible();
+			}
+		}
 
 		protected override void OnCompleted()
 		{
 			base.OnCompleted();
+			SetVisible();
+		}
 
+		private void SetVisible()
+		{
+			bool alreadyVisible = KERBALISM.API.IsInnerBeltVisible(targetBody);
 			KerbalismContracts.SetInnerBeltVisible(targetBody, visible);
+			if (alreadyVisible || !visible)
+				return;
+
 			if (KERBALISM.API.HasInnerBelt(targetBody))
 				KERBALISM.API.Message(targetBody.CleanDisplayName() + " inner radiation belt researched");
 			else

@@ -62,12 +62,14 @@ namespace Kerbalism.Contracts
 	public abstract class RevealRadiationFieldFactory : BehaviourFactory
 	{
 		protected bool visible;
+		protected bool requireCompletion = false;
 
 		public override bool Load(ConfigNode configNode)
 		{
 			bool valid = base.Load(configNode);
 			valid &= targetBody != null;
 			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "visible", x => visible = x, this, true);
+			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "require_completion", x => requireCompletion = x, this, false);
 			return valid;
 		}
 	}
@@ -76,11 +78,13 @@ namespace Kerbalism.Contracts
 	{
 		protected CelestialBody targetBody;
 		protected bool visible = true;
+		protected bool requireCompletion = false;
 
-		protected RevealRadiationFieldBehaviour(CelestialBody targetBody, bool visible)
+		protected RevealRadiationFieldBehaviour(CelestialBody targetBody, bool visible, bool requireCompletion)
 		{
 			this.targetBody = targetBody;
 			this.visible = visible;
+			this.requireCompletion = requireCompletion;
 		}
 	}
 }

@@ -159,11 +159,13 @@
     <Compile Include="Radiation\RadiationField.cs" />
     <Compile Include="Radiation\OuterBelt.cs" />
     <Compile Include="Radiation\Magnetopause.cs" />
+    <Compile Include="Vessel\CanTransmitScience.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="Radiation\" />
+    <Folder Include="Vessel\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">

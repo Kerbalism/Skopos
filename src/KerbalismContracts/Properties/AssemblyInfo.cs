@@ -23,4 +23,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("0.0.1")]
 [assembly: AssemblyInformationalVersion("0.0.1")]
 [assembly: KSPAssembly("KerbalismContracts", 1, 0)]
-[assembly: KSPAssemblyDependency("ContractConfigurator", 1, 0)]
+[assembly: KSPAssemblyDependency("ContractConfigurator", 0, 0)]
+[assembly: KSPAssemblyDependency("KerbalismBootstrap", 0, 0)]

@@ -55,20 +55,43 @@ namespace Kerbalism.Contracts
 	{
 		public override ContractBehaviour Generate(ConfiguredContract contract)
 		{
-			return new RevealMagnetopauseBehaviour(targetBody, visible);
+			return new RevealMagnetopauseBehaviour(targetBody, visible, requireCompletion);
 		}
 	}
 
 	public class RevealMagnetopauseBehaviour: RevealRadiationFieldBehaviour
 	{
-		public RevealMagnetopauseBehaviour(): this(FlightGlobals.GetHomeBody(), true) {}
-		public RevealMagnetopauseBehaviour(CelestialBody targetBody, bool visible): base(targetBody, visible) {}
+		public RevealMagnetopauseBehaviour(): this(FlightGlobals.GetHomeBody(), true, false) {}
+		public RevealMagnetopauseBehaviour(CelestialBody targetBody, bool visible, bool requireCompletion)
+			: base(targetBody, visible, requireCompletion) {}
 
 		protected override void OnCompleted()
 		{
 			base.OnCompleted();
+			SetVisible();
+		}
 
+		protected override void OnParameterStateChange(ContractParameter param)
+		{
+			base.OnParameterStateChange(param);
+
+			if (requireCompletion || param.State != ParameterState.Complete)
+			{
+				return;
+			}
+
+			if (param.GetType() == typeof(MagnetopauseParameter))
+			{
+				SetVisible();
+			}
+		}
+
+		private void SetVisible() {
+			bool alreadyVisible = KERBALISM.API.IsMagnetopauseVisible(targetBody);
 			KerbalismContracts.SetMagnetopauseVisible(targetBody, visible);
+			if (alreadyVisible || !visible)
+				return;
+
 			if (KERBALISM.API.HasMagnetopause(targetBody))
 				KERBALISM.API.Message(targetBody.CleanDisplayName() + " magnetosphere researched");
 			else
