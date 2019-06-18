@@ -7,18 +7,18 @@ using ContractConfigurator.Parameters;
 
 namespace Kerbalism.Contracts
 {	
-	public class OuterBeltFactory : RadiationFieldFactory
+	public class OuterBeltFactory : AbstractRadiationFieldFactory
 	{
 		public override ContractParameter Generate(Contract contract)
 		{
-			return new OuterBeltParameter(targetBody, crossings);
+			return new OuterBeltParameter(targetBody, crossings_min, crossings_max);
 		}
 	}
 
-	public class OuterBeltParameter : RadiationFieldParameter
+	public class OuterBeltParameter : AbstractRadiationFieldParameter
 	{
-		public OuterBeltParameter() : this(FlightGlobals.GetHomeBody(), 1) { }
-		public OuterBeltParameter(CelestialBody targetBody, int crossings): base(targetBody, crossings) {}
+		public OuterBeltParameter() : this(FlightGlobals.GetHomeBody()) { }
+		public OuterBeltParameter(CelestialBody targetBody, int crossings_min = 1, int crossings_max = -1): base(targetBody, crossings_min, crossings_max) {}
 
 		protected override string GetParameterTitle()
 		{
@@ -40,18 +40,16 @@ namespace Kerbalism.Contracts
 			}
 			else
 			{
-				// no belt -> vessel needs to be where an inner belt would be expected
-				condition = vessel.altitude < targetBody.Radius * 10
-								  && vessel.altitude > targetBody.Radius * 7;
+				// no belt -> vessel needs to be where an outer belt would be expected
+				condition = vessel.altitude < targetBody.Radius * 8
+								  && vessel.altitude > targetBody.Radius * 5;
 			}
 
-			if (condition != in_field) crossings--;
-			in_field = condition;
-			return crossings <= 0;
+			return UpdateCrossingCount(condition);
 		}
 	}
 
-	public class RevealOuterBeltFactory : RevealRadiationFieldFactory
+	public class RevealOuterBeltFactory : AbstractRevealRadiationFieldFactory
 	{
 		public override ContractBehaviour Generate(ConfiguredContract contract)
 		{
@@ -59,7 +57,7 @@ namespace Kerbalism.Contracts
 		}
 	}
 
-	public class RevealOuterBeltBehaviour : RevealRadiationFieldBehaviour
+	public class RevealOuterBeltBehaviour : AbstractRevealRadiationFieldBehaviour
 	{
 		public RevealOuterBeltBehaviour() : this(FlightGlobals.GetHomeBody(), true, false) { }
 		public RevealOuterBeltBehaviour(CelestialBody targetBody, bool visible, bool requireCompletion)

@@ -7,18 +7,18 @@ using ContractConfigurator.Parameters;
 
 namespace Kerbalism.Contracts
 {	
-	public class MagnetopauseFactory : RadiationFieldFactory
+	public class MagnetopauseFactory : AbstractRadiationFieldFactory
 	{
 		public override ContractParameter Generate(Contract contract)
 		{
-			return new MagnetopauseParameter(targetBody, crossings);
+			return new MagnetopauseParameter(targetBody, crossings_min, crossings_max);
 		}
 	}
 
-	public class MagnetopauseParameter : RadiationFieldParameter
+	public class MagnetopauseParameter : AbstractRadiationFieldParameter
 	{
-		public MagnetopauseParameter() : this(FlightGlobals.GetHomeBody(), 1) { }
-		public MagnetopauseParameter(CelestialBody targetBody, int crossings): base(targetBody, crossings) {}
+		public MagnetopauseParameter() : this(FlightGlobals.GetHomeBody()) { }
+		public MagnetopauseParameter(CelestialBody targetBody, int crossings_min = 1, int crossings_max = -1): base(targetBody, crossings_min, crossings_max) {}
 
 		protected override string GetParameterTitle()
 		{
@@ -40,18 +40,16 @@ namespace Kerbalism.Contracts
 			}
 			else
 			{
-				// no belt -> vessel needs to be where an inner belt would be expected
-				condition = vessel.altitude < targetBody.Radius * 14
-								  && vessel.altitude > targetBody.Radius * 8;
+				// no sphere -> vessel needs to be where the pause could be
+				condition = vessel.altitude < targetBody.Radius * 15
+								  && vessel.altitude > targetBody.Radius * 10;
 			}
 
-			if (condition != in_field) crossings--;
-			in_field = condition;
-			return crossings <= 0;
+			return UpdateCrossingCount(condition);
 		}
 	}
 
-	public class RevealMagnetopauseFactory : RevealRadiationFieldFactory
+	public class RevealMagnetopauseFactory : AbstractRevealRadiationFieldFactory
 	{
 		public override ContractBehaviour Generate(ConfiguredContract contract)
 		{
@@ -59,7 +57,7 @@ namespace Kerbalism.Contracts
 		}
 	}
 
-	public class RevealMagnetopauseBehaviour: RevealRadiationFieldBehaviour
+	public class RevealMagnetopauseBehaviour: AbstractRevealRadiationFieldBehaviour
 	{
 		public RevealMagnetopauseBehaviour(): this(FlightGlobals.GetHomeBody(), true, false) {}
 		public RevealMagnetopauseBehaviour(CelestialBody targetBody, bool visible, bool requireCompletion)

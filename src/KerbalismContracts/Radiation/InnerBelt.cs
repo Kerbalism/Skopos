@@ -7,18 +7,18 @@ using ContractConfigurator.Parameters;
 
 namespace Kerbalism.Contracts
 {	
-	public class InnerBeltFactory : RadiationFieldFactory
+	public class InnerBeltFactory : AbstractRadiationFieldFactory
 	{
 		public override ContractParameter Generate(Contract contract)
 		{
-			return new InnerBeltParameter(targetBody, crossings);
+			return new InnerBeltParameter(targetBody, crossings_min, crossings_max);
 		}
 	}
 
-	public class InnerBeltParameter : RadiationFieldParameter
+	public class InnerBeltParameter : AbstractRadiationFieldParameter
 	{
-		public InnerBeltParameter() : this(FlightGlobals.GetHomeBody(), 1) { }
-		public InnerBeltParameter(CelestialBody targetBody, int crossings): base(targetBody, crossings) {}
+		public InnerBeltParameter() : this(FlightGlobals.GetHomeBody()) { }
+		public InnerBeltParameter(CelestialBody targetBody, int crossings_min = 1, int crossings_max = -1): base(targetBody, crossings_min, crossings_max) {}
 
 		protected override string GetParameterTitle()
 		{
@@ -46,13 +46,11 @@ namespace Kerbalism.Contracts
 							 && Math.Abs(vessel.latitude) < 30;
 			}
 
-			if (condition != in_field) crossings--;
-			in_field = condition;
-			return crossings <= 0;
+			return UpdateCrossingCount(condition);
 		}
 	}
 
-	public class RevealInnerBeltFactory : RevealRadiationFieldFactory
+	public class RevealInnerBeltFactory : AbstractRevealRadiationFieldFactory
 	{
 		public override ContractBehaviour Generate(ConfiguredContract contract)
 		{
@@ -60,7 +58,7 @@ namespace Kerbalism.Contracts
 		}
 	}
 
-	public class RevealInnerBeltBehaviour: RevealRadiationFieldBehaviour
+	public class RevealInnerBeltBehaviour: AbstractRevealRadiationFieldBehaviour
 	{
 		public RevealInnerBeltBehaviour(): this(FlightGlobals.GetHomeBody(), true, false) {}
 		public RevealInnerBeltBehaviour(CelestialBody targetBody, bool visible, bool requireCompletion)

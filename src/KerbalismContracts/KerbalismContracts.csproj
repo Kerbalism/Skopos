@@ -156,16 +156,18 @@
     <Compile Include="Radiation\OutsideHeliopause.cs" />
     <Compile Include="Radiation\InnerBelt.cs" />
     <Compile Include="Radiation\TargetBodyParameter.cs" />
-    <Compile Include="Radiation\RadiationField.cs" />
+    <Compile Include="Radiation\AbstractRadiationField.cs" />
     <Compile Include="Radiation\OuterBelt.cs" />
     <Compile Include="Radiation\Magnetopause.cs" />
     <Compile Include="Vessel\CanTransmitScience.cs" />
+    <Compile Include="Bugfixes\VisitWaypoint.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="Radiation\" />
     <Folder Include="Vessel\" />
+    <Folder Include="Bugfixes\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
