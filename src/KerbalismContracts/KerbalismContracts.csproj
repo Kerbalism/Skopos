@@ -154,13 +154,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="KerbalismContracts.cs" />
     <Compile Include="Radiation\OutsideHeliopause.cs" />
-    <Compile Include="Radiation\InnerBelt.cs" />
     <Compile Include="Radiation\TargetBodyParameter.cs" />
-    <Compile Include="Radiation\AbstractRadiationField.cs" />
-    <Compile Include="Radiation\OuterBelt.cs" />
-    <Compile Include="Radiation\Magnetopause.cs" />
     <Compile Include="Vessel\CanTransmitScience.cs" />
     <Compile Include="Bugfixes\VisitWaypoint.cs" />
+    <Compile Include="Radiation\RadiationField.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

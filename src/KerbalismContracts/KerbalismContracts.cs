@@ -71,8 +71,6 @@ namespace Kerbalism.Contracts
 			KERBALISM.API.SetMagnetopauseVisible(body, visible);
 		}
 
-
-
 		public void InitializeVisiblity()
 		{
 			bool isSandboxGame = HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX;
