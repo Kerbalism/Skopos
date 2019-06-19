@@ -67,7 +67,7 @@ namespace Kerbalism.Contracts
 
 	public class RadiationFieldParameter : VesselParameter
 	{
-		protected RadiationField field;
+		public RadiationField field;
 		protected int crossings_min;
 		protected int crossings_max;
 		protected bool stay_in;
@@ -146,12 +146,11 @@ namespace Kerbalism.Contracts
 			node.AddValue("field", field);
 			node.AddValue("crossed_count", crossed_count);
 			node.AddValue("currently_in_field", currently_in_field);
-
-			if (targetBody != null) node.AddValue("targetBody", targetBody.name);
-			if (stay_in) node.AddValue("stay_in", stay_in);
-			if (stay_out) node.AddValue("stay_out", stay_out);
-			if (crossings_min > 0) node.AddValue("crossings_min", crossings_min);
-			if (crossings_max > 0) node.AddValue("crossings_max", crossings_max);
+			node.AddValue("targetBody", targetBody.name);
+			node.AddValue("stay_in", stay_in);
+			node.AddValue("stay_out", stay_out);
+			node.AddValue("crossings_min", crossings_min);
+			node.AddValue("crossings_max", crossings_max);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -163,7 +162,6 @@ namespace Kerbalism.Contracts
 				field = ConfigNodeUtil.ParseValue<RadiationField>(node, "field", RadiationField.UNDEFINED);
 				crossed_count = ConfigNodeUtil.ParseValue<int>(node, "crossed_count", 0);
 				currently_in_field = ConfigNodeUtil.ParseValue<bool>(node, "currently_in_field", false);
-
 				targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
 				stay_in = ConfigNodeUtil.ParseValue<bool>(node, "stay_in", false);
 				stay_out = ConfigNodeUtil.ParseValue<bool>(node, "stay_out", false);
@@ -289,7 +287,25 @@ namespace Kerbalism.Contracts
 
 		protected override void OnCompleted()
 		{
+			base.OnCompleted();
 			DoShow();
+		}
+
+		protected override void OnParameterStateChange(ContractParameter param)
+		{
+			base.OnParameterStateChange(param);
+
+			if (require_completed || param.State != ParameterState.Complete)
+				return;
+
+			var radiationFieldParameter = param as RadiationFieldParameter;
+			if (radiationFieldParameter == null)
+				return;
+
+			if(radiationFieldParameter.field == field || field == RadiationField.ANY)
+			{
+				DoShow();
+			}
 		}
 
 		protected void DoShow()
