@@ -21,8 +21,8 @@ namespace Kerbalism.Contracts
 		public static KerbalismContracts Instance { get; private set; } = null;
 
 		public static float SunObservationL1 { get; private set; } = 0.05f;
-		public static float SunObservationL2 { get; private set; } = 0.25f;
-		public static float SunObservationL3 { get; private set; } = 0.45f;
+		public static float SunObservationL2 { get; private set; } = 0.20f;
+		public static float SunObservationL3 { get; private set; } = 0.35f;
 
 		//  constructor
 		public KerbalismContracts()
@@ -108,6 +108,8 @@ namespace Kerbalism.Contracts
 
 			// add to that the observation quality from sun observing satellites
 			// TODO
+
+			Lib.Log("Setting sun observation quality to " + q);
 
 			KERBALISM.API.SetStormObservationQuality(q);
 		}
