@@ -2,7 +2,7 @@
 
 A contract pack that builds on top of Kerbalism.
 
-See (wiki)[https://github.com/SirMortimer/KerbalismContracts/wiki]
+See (wiki)[https://github.com/Kerbalism/KerbalismContracts/wiki]
 
 
 ## Installation
