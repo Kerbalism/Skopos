@@ -222,16 +222,6 @@ namespace Kerbalism.Contracts
 			return valid;
 		}
 
-		private bool ValidateBody(CelestialBody b)
-		{
-			if (b == null)
-			{
-				LoggingUtil.LogError(this, "Missing targetBody");
-				return false;
-			}
-			return true;
-		}
-
 		private bool ValidateField(RadiationField f)
 		{
 			if (f == RadiationField.UNDEFINED)
@@ -269,7 +259,7 @@ namespace Kerbalism.Contracts
 		{
 			base.OnLoad(configNode);
 
-			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(configNode, "targetBody", null);
+			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(configNode, "targetBody");
 			field = ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", RadiationField.UNDEFINED);
 			set_visible = ConfigNodeUtil.ParseValue<bool>(configNode, "set_visible", true);
 			require_completed = ConfigNodeUtil.ParseValue<bool>(configNode, "require_completed", true);
@@ -279,7 +269,7 @@ namespace Kerbalism.Contracts
 		{
 			base.OnSave(configNode);
 
-			configNode.AddValue("targetBody", targetBody);
+			configNode.AddValue("targetBody", targetBody.name);
 			configNode.AddValue("field", field);
 			configNode.AddValue("set_visible", set_visible);
 			configNode.AddValue("require_completed", require_completed);
@@ -298,14 +288,27 @@ namespace Kerbalism.Contracts
 			if (require_completed || param.State != ParameterState.Complete)
 				return;
 
-			var radiationFieldParameter = param as RadiationFieldParameter;
-			if (radiationFieldParameter == null)
+			var matchingParameter = GetMatchingParameter(param);
+			if (matchingParameter == null)
 				return;
 
-			if(radiationFieldParameter.field == field || field == RadiationField.ANY)
-			{
+			if (matchingParameter.State == ParameterState.Complete)
 				DoShow();
+		}
+
+		protected RadiationFieldParameter GetMatchingParameter(ContractParameter param) {
+			var radiationFieldParameter = param as RadiationFieldParameter;
+			if (radiationFieldParameter == null)
+			{
+				foreach(ContractParameter child in param.GetChildren())
+				{
+					var result = GetMatchingParameter(child);
+					if (result != null) return result;
+				}	
 			}
+			if (radiationFieldParameter.field == field || field == RadiationField.ANY)
+				return radiationFieldParameter;
+			return null;
 		}
 
 		protected void DoShow()

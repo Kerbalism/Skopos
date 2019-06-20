@@ -18,18 +18,22 @@ namespace Kerbalism.Contracts
 	public sealed class KerbalismContracts : ScenarioModule
 	{
 		// permit global access
-		public static KerbalismContracts Fetch { get; private set; } = null;
+		public static KerbalismContracts Instance { get; private set; } = null;
+
+		public static float SunObservationL1 { get; private set; } = 0.05f;
+		public static float SunObservationL2 { get; private set; } = 0.25f;
+		public static float SunObservationL3 { get; private set; } = 0.45f;
 
 		//  constructor
 		public KerbalismContracts()
 		{
 			// enable global access
-			Fetch = this;
+			Instance = this;
 		}
 
 		private void OnDestroy()
 		{
-			Fetch = null;
+			Instance = null;
 		}
 
 		private void Update()
@@ -43,7 +47,7 @@ namespace Kerbalism.Contracts
 		private IEnumerator InitializeVisiblityDeferred()
 		{
 			yield return new WaitForSeconds(5);
-			InitializeVisiblity();
+			InitKerbalism();
 		}
 
 		public BodyData BodyData(CelestialBody body) {
@@ -55,23 +59,23 @@ namespace Kerbalism.Contracts
 
 		public static void SetInnerBeltVisible(CelestialBody body, bool visible = true)
 		{
-			Fetch.BodyData(body).inner_visible = visible;
+			Instance.BodyData(body).inner_visible = visible;
 			KERBALISM.API.SetInnerBeltVisible(body, visible);
 		}
 
 		public static void SetOuterBeltVisible(CelestialBody body, bool visible = true)
 		{
-			Fetch.BodyData(body).outer_visible = visible;
+			Instance.BodyData(body).outer_visible = visible;
 			KERBALISM.API.SetOuterBeltVisible(body, visible);
 		}
 
 		public static void SetMagnetopauseVisible(CelestialBody body, bool visible = true)
 		{
-			Fetch.BodyData(body).pause_visible = visible;
+			Instance.BodyData(body).pause_visible = visible;
 			KERBALISM.API.SetMagnetopauseVisible(body, visible);
 		}
 
-		public void InitializeVisiblity()
+		public void InitKerbalism()
 		{
 			bool isSandboxGame = HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX;
 			foreach (var body in FlightGlobals.Bodies)
@@ -83,6 +87,29 @@ namespace Kerbalism.Contracts
 				KERBALISM.API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
 				KERBALISM.API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
 			}
+
+			UpdateStormObservationQuality();
+		}
+
+		public void UpdateStormObservationQuality()
+		{
+			float q = SunObservationL3;
+
+			// basic observation quality from the tracking station
+			if(ScenarioUpgradeableFacilities.Instance != null && HighLogic.CurrentGame.Mode != Game.Modes.SANDBOX)
+			{
+				q = SunObservationL1;
+
+				var dsnLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
+				if (dsnLevel > 0.5f) q = SunObservationL3;
+				else if (dsnLevel > 0.1f) q = SunObservationL2;
+			}
+
+
+			// add to that the observation quality from sun observing satellites
+			// TODO
+
+			KERBALISM.API.SetStormObservationQuality(q);
 		}
 
 		public override void OnLoad(ConfigNode node)
@@ -97,7 +124,7 @@ namespace Kerbalism.Contracts
 			}
 
 			if (FlightGlobals.ready)
-				InitializeVisiblity();
+				InitKerbalism();
 		}
 
 		public override void OnSave(ConfigNode node)
