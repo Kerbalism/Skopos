@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
+using System;
 
 namespace Kerbalism.Contracts
 {
@@ -9,10 +10,19 @@ namespace Kerbalism.Contracts
 	{
 		public static bool initialized = false;
 
+		/*
 		public void Start()
-		{			
+		{
+			KERBALISM.API.onExperimentStateChanged.Add(ExperimentStateChanged);
 		}
+
+		private void ExperimentStateChanged(Guid vessel_id, string experiment_id, bool running)
+		{
+
+		}
+		*/
 	}
+
 
 	[KSPScenario(ScenarioCreationOptions.AddToAllGames, new[] { GameScenes.SPACECENTER, GameScenes.TRACKSTATION, GameScenes.FLIGHT, GameScenes.EDITOR })]
 	public sealed class KerbalismContracts : ScenarioModule

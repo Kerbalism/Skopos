@@ -199,6 +199,8 @@ namespace Kerbalism.Contracts
 			if (in_field != currently_in_field) crossed_count++;
 			currently_in_field = in_field;
 
+			Lib.Log("### field crossed, count " + crossed_count);
+
 			if (crossings_min >= 0 && crossed_count < crossings_min) return false;
 			if (crossings_max >= 0 && crossed_count > crossings_max) return false;
 			return true;

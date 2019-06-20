@@ -157,6 +157,7 @@
     <Compile Include="ContractConfigurator\RadiationField.cs" />
     <Compile Include="ContractConfigurator\VisitWaypoint.cs" />
     <Compile Include="ContractConfigurator\CanTransmitScience.cs" />
+    <Compile Include="ContractConfigurator\KerbalismExperiment.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
