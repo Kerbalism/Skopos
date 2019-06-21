@@ -41,6 +41,7 @@ namespace Kerbalism.Contracts
 				CheckVessel(FlightGlobals.ActiveVessel);
 			}
 		}
+
 	}
 
 }

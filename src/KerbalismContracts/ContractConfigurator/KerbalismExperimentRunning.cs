@@ -5,9 +5,16 @@ using KSP.Localization;
 using ContractConfigurator;
 using ContractConfigurator.Parameters;
 
+/*
+ * TODO:
+ * - restrict to body
+ * - restrict to situation
+ * - restrict to biome
+ * 
+ */
 namespace Kerbalism.Contracts
 {
-	public class KerbalismExperimentFactory : ParameterFactory
+	public class KerbalismExperimentRunningFactory : ParameterFactory
 	{
 		protected string experiment_id;
 
@@ -22,17 +29,18 @@ namespace Kerbalism.Contracts
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			return new KerbalismExperimentParameter(title, experiment_id);
+			return new KerbalismExperimentRunningParameter(title, experiment_id);
 		}
 	}
 
-	public class KerbalismExperimentParameter : ContractConfiguratorParameter
+	public class KerbalismExperimentRunningParameter : VesselParameter
 	{
 		protected string experiment_id;
+		private Dictionary<Guid, bool> runningExperiments = new Dictionary<Guid, bool>();
 
-		public KerbalismExperimentParameter(): base(null) {}
+		public KerbalismExperimentRunningParameter(): base(null) {}
 
-		public KerbalismExperimentParameter(string title, string experiment_id) : base(title) { }
+		public KerbalismExperimentRunningParameter(string title, string experiment_id) : base(title) { }
 
 		protected override void OnParameterLoad(ConfigNode node)
 		{
@@ -48,22 +56,30 @@ namespace Kerbalism.Contracts
 		{
 			base.OnRegister();
 
-			KERBALISM.API.onExperimentStateChanged.Add(ExperimentStateChanged);
+			KERBALISM.API.OnExperimentStateChanged.Add(ExperimentStateChanged);
 		}
 
 		protected override void OnUnregister()
 		{
 			base.OnUnregister();
 
-			KERBALISM.API.onExperimentStateChanged.Remove(ExperimentStateChanged);
+			KERBALISM.API.OnExperimentStateChanged.Remove(ExperimentStateChanged);
 		}
 
-		private void ExperimentStateChanged(Guid vessel_id, string exp_id, bool running)
+		protected override bool VesselMeetsCondition(Vessel vessel)
+		{
+			if (!runningExperiments.ContainsKey(vessel.id))
+				return false;
+			return runningExperiments[vessel.id];
+		}
+
+		private void ExperimentStateChanged(Vessel v, string exp_id, bool running)
 		{
 			if (exp_id != experiment_id)
 				return;
 
-			SetState(running ? ParameterState.Complete : ParameterState.Incomplete);
+			runningExperiments[v.id] = running;
+			CheckVessel(v);
 		}
 	}
 
