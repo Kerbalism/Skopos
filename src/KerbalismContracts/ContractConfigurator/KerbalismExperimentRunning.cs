@@ -14,7 +14,7 @@ using ContractConfigurator.Parameters;
  */
 namespace Kerbalism.Contracts
 {
-	public class KerbalismExperimentRunningFactory : ParameterFactory
+	public class ExperimentRunningFactory : ParameterFactory
 	{
 		protected string experiment_id;
 
@@ -29,18 +29,16 @@ namespace Kerbalism.Contracts
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			return new KerbalismExperimentRunningParameter(title, experiment_id);
+			return new ExperimentRunningParameter(title, experiment_id);
 		}
 	}
 
-	public class KerbalismExperimentRunningParameter : VesselParameter
+	public class ExperimentRunningParameter : VesselParameter
 	{
 		protected string experiment_id;
-		private Dictionary<Guid, bool> runningExperiments = new Dictionary<Guid, bool>();
 
-		public KerbalismExperimentRunningParameter(): base(null) {}
-
-		public KerbalismExperimentRunningParameter(string title, string experiment_id) : base(title) { }
+		public ExperimentRunningParameter(): base(null) {}
+		public ExperimentRunningParameter(string title, string experiment_id) : base(title) { }
 
 		protected override void OnParameterLoad(ConfigNode node)
 		{
@@ -55,32 +53,26 @@ namespace Kerbalism.Contracts
 		protected override void OnRegister()
 		{
 			base.OnRegister();
-
-			KERBALISM.API.OnExperimentStateChanged.Add(ExperimentStateChanged);
+			KERBALISM.API.OnExperimentStateChanged.Add(RunCheck);
 		}
 
 		protected override void OnUnregister()
 		{
 			base.OnUnregister();
+			KERBALISM.API.OnExperimentStateChanged.Remove(RunCheck);
+		}
 
-			KERBALISM.API.OnExperimentStateChanged.Remove(ExperimentStateChanged);
+		private void RunCheck(Vessel v, string exp_id, bool running)
+		{
+			if (exp_id != experiment_id)
+				return;
+			ExperimentStateTracker.Update(v, exp_id, running);
+			CheckVessel(v);
 		}
 
 		protected override bool VesselMeetsCondition(Vessel vessel)
 		{
-			if (!runningExperiments.ContainsKey(vessel.id))
-				return false;
-			return runningExperiments[vessel.id];
-		}
-
-		private void ExperimentStateChanged(Vessel v, string exp_id, bool running)
-		{
-			if (exp_id != experiment_id)
-				return;
-
-			runningExperiments[v.id] = running;
-			CheckVessel(v);
+			return ExperimentStateTracker.IsRunning(vessel, experiment_id);
 		}
 	}
-
 }

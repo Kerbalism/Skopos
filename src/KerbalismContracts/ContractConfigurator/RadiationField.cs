@@ -76,9 +76,6 @@ namespace Kerbalism.Contracts
 		protected int crossed_count = 0;
 		protected bool currently_in_field = false;
 
-		private float lastUpdate = 0.0f;
-		private const float UPDATE_FREQUENCY = 0.25f;
-
 		public RadiationFieldParameter(): base(null) {}
 
 		public RadiationFieldParameter(RadiationField field, int crossings_min, int crossings_max, bool stay_in, bool stay_out, CelestialBody targetBody, string title)
@@ -174,23 +171,31 @@ namespace Kerbalism.Contracts
 			}
 		}
 
-		protected override void OnUpdate()
+		protected override void OnRegister()
 		{
-			base.OnUpdate();
-			if (UnityEngine.Time.fixedTime - lastUpdate > UPDATE_FREQUENCY)
-			{
-				lastUpdate = UnityEngine.Time.fixedTime;
-				CheckVessel(FlightGlobals.ActiveVessel);
-			}
+			base.OnRegister();
+			KERBALISM.API.OnRadiationFieldChanged.Add(RunCheck);
 		}
 
-		protected override bool VesselMeetsCondition(Vessel v)
+		protected override void OnUnregister()
 		{
-			LoggingUtil.LogVerbose(this, "Checking VesselMeetsCondition: " + v.id);
+			base.OnUnregister();
+			KERBALISM.API.OnRadiationFieldChanged.Remove(RunCheck);
+		}
 
-			if (targetBody != null && v.mainBody != targetBody) return false;
+		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
+		{
+			RadiationFieldTracker.Update(v, inner_belt, outer_belt, magnetosphere);
+			CheckVessel(v);
+		}
 
-			bool in_field = InField(v, field);
+		protected override bool VesselMeetsCondition(Vessel vessel)
+		{
+			LoggingUtil.LogVerbose(this, "Checking VesselMeetsCondition: " + vessel.id);
+
+			if (targetBody != null && vessel.mainBody != targetBody) return false;
+
+			bool in_field = InField(vessel, field);
 
 			if (stay_in && in_field) return false;
 			if (stay_out && in_field) return false;

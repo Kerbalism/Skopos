@@ -10,17 +10,12 @@ namespace Kerbalism.Contracts
 	{
 		public static bool initialized = false;
 
-		/*
 		public void Start()
 		{
-			KERBALISM.API.onExperimentStateChanged.Add(ExperimentStateChanged);
+			KERBALISM.API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
+			KERBALISM.API.OnTransmitStateChanged.Add(TransmissionStateTracker.Update);
+			KERBALISM.API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
 		}
-
-		private void ExperimentStateChanged(Guid vessel_id, string experiment_id, bool running)
-		{
-
-		}
-		*/
 	}
 
 
@@ -116,7 +111,7 @@ namespace Kerbalism.Contracts
 			}
 
 
-			// add to that the observation quality from sun observing satellites
+			// add sun observing satellites values here
 			// TODO
 
 			Lib.Log("Setting sun observation quality to " + q);
@@ -147,12 +142,6 @@ namespace Kerbalism.Contracts
 				p.Value.Save(bodies_node.AddNode(Lib.To_safe_key(p.Key)));
 			}
 		}
-
-		void FixedUpdate()
-		{
-			
-		}
-
 
 		private readonly Dictionary<string, BodyData> bodyData = new Dictionary<string, BodyData>();
 	}
