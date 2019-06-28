@@ -161,6 +161,8 @@
     <Compile Include="TransmissionStateTracker.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="ContractConfigurator\TransmittingScience.cs" />
+    <Compile Include="ContractConfigurator\HasRadiationField.cs" />
+    <Compile Include="ContractConfigurator\HasNoRadiationField.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

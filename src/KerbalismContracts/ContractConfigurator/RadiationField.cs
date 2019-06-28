@@ -109,31 +109,23 @@ namespace Kerbalism.Contracts
 			return "INVALID FIELD TYPE";
 		}
 
-		protected bool InField(Vessel v, RadiationField f)
+		protected static bool InField(Vessel v, RadiationField f)
 		{
 			switch(f)
 			{
 				case RadiationField.INNER_BELT:
-					if (KERBALISM.API.HasInnerBelt(targetBody)) return KERBALISM.API.InnerBelt(v);
-					else return InFlightBand(v, targetBody.Radius * 2, targetBody.Radius * 4, 30);
+					return KERBALISM.API.InnerBelt(v);
 
 				case RadiationField.OUTER_BELT:
-					if (KERBALISM.API.HasOuterBelt(targetBody)) return KERBALISM.API.OuterBelt(v);
-					else return InFlightBand(v, targetBody.Radius * 6, targetBody.Radius * 9, 70);
+					return KERBALISM.API.OuterBelt(v);
 
 				case RadiationField.MAGNETOPAUSE:
-					if (KERBALISM.API.HasMagnetopause(targetBody)) return KERBALISM.API.Magnetosphere(v);
-					else return InFlightBand(v, targetBody.Radius * 11, targetBody.Radius * 15, 90);
-					
+					return KERBALISM.API.Magnetosphere(v);
+
 				case RadiationField.ANY:
 					return InField(v, RadiationField.INNER_BELT) || InField(v, RadiationField.OUTER_BELT) || InField(v, RadiationField.MAGNETOPAUSE);
 			}
 			return false;
-		}
-
-		protected bool InFlightBand(Vessel v, double altMin, double altMax, double latMax)
-		{
-			return v.altitude >= altMin && v.altitude <= altMax && Math.Abs(v.latitude) <= latMax;
 		}
 
 		protected override void OnParameterSave(ConfigNode node)
@@ -203,8 +195,6 @@ namespace Kerbalism.Contracts
 
 			if (in_field != currently_in_field) crossed_count++;
 			currently_in_field = in_field;
-
-			Lib.Log("### field crossed, count " + crossed_count);
 
 			if (crossings_min >= 0 && crossed_count < crossings_min) return false;
 			if (crossings_max >= 0 && crossed_count > crossings_max) return false;
@@ -313,8 +303,10 @@ namespace Kerbalism.Contracts
 					if (result != null) return result;
 				}	
 			}
-			if (radiationFieldParameter.field == field || field == RadiationField.ANY)
+			else if (radiationFieldParameter.field == field || field == RadiationField.ANY)
+			{
 				return radiationFieldParameter;
+			}
 			return null;
 		}
 
