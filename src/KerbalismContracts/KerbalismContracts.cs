@@ -56,26 +56,29 @@ namespace Kerbalism.Contracts
 		}
 
 		public BodyData BodyData(CelestialBody body) {
-			if(!bodyData.ContainsKey(body.bodyName)) {
-				bodyData.Add(body.bodyName, new BodyData());
+			if(!bodyData.ContainsKey(body.flightGlobalsIndex)) {
+				bodyData.Add(body.flightGlobalsIndex, new BodyData());
 			}
-			return bodyData[body.bodyName];
+			return bodyData[body.flightGlobalsIndex];
 		}
 
 		public static void SetInnerBeltVisible(CelestialBody body, bool visible = true)
 		{
+			Lib.Log("Setting visibility for inner belt of " + body + " to " + visible);
 			Instance.BodyData(body).inner_visible = visible;
 			KERBALISM.API.SetInnerBeltVisible(body, visible);
 		}
 
 		public static void SetOuterBeltVisible(CelestialBody body, bool visible = true)
 		{
+			Lib.Log("Setting visibility for outer belt of " + body + " to " + visible);
 			Instance.BodyData(body).outer_visible = visible;
 			KERBALISM.API.SetOuterBeltVisible(body, visible);
 		}
 
 		public static void SetMagnetopauseVisible(CelestialBody body, bool visible = true)
 		{
+			Lib.Log("Setting visibility for magnetosphere of " + body + " to " + visible);
 			Instance.BodyData(body).pause_visible = visible;
 			KERBALISM.API.SetMagnetopauseVisible(body, visible);
 		}
@@ -87,7 +90,7 @@ namespace Kerbalism.Contracts
 			{
 				var bd = BodyData(body);
 
-				Lib.Log("Setting magnetic field visibility for " + body.bodyName + " to " + isSandboxGame);
+				Lib.Log("Setting magnetic field visibility for " + body.bodyName + " to " + bd.inner_visible + "/" + bd.outer_visible + "/" + bd.pause_visible);
 				KERBALISM.API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
 				KERBALISM.API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
 				KERBALISM.API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
@@ -126,7 +129,10 @@ namespace Kerbalism.Contracts
 			{
 				foreach (var body_node in node.GetNode("BodyData").GetNodes())
 				{
-					bodyData.Add(Lib.From_safe_key(body_node.name), new BodyData(body_node));
+					if(body_node.name.StartsWith("index_", StringComparison.Ordinal)) {
+						int index = Int32.Parse(body_node.name.Substring(6));
+						bodyData.Add(index, new BodyData(body_node));
+					}
 				}
 			}
 
@@ -139,11 +145,11 @@ namespace Kerbalism.Contracts
 			var bodies_node = node.AddNode("BodyData");
 			foreach (var p in bodyData)
 			{
-				p.Value.Save(bodies_node.AddNode(Lib.To_safe_key(p.Key)));
+				p.Value.Save(bodies_node.AddNode("index_" + p.Key));
 			}
 		}
 
-		private readonly Dictionary<string, BodyData> bodyData = new Dictionary<string, BodyData>();
+		private readonly Dictionary<int, BodyData> bodyData = new Dictionary<int, BodyData>();
 	}
 
 	public class BodyData {
@@ -160,9 +166,9 @@ namespace Kerbalism.Contracts
 		}
 
 		public void Save(ConfigNode node) {
-			node.SetValue("inner_visible", inner_visible);
-			node.SetValue("outer_visible", outer_visible);
-			node.SetValue("pause_visible", pause_visible);
+			node.AddValue("inner_visible", inner_visible);
+			node.AddValue("outer_visible", outer_visible);
+			node.AddValue("pause_visible", pause_visible);
 		}
 	}
 
