@@ -19,6 +19,8 @@ namespace Kerbalism.Contracts
 
 		internal static void Update(Vessel v, string subject_id, bool can_transmit)
 		{
+			if (v == null) return;
+
 			if(!states.ContainsKey(v.id))
 			{
 				states.Add(v.id, new State(subject_id, can_transmit));
@@ -33,6 +35,8 @@ namespace Kerbalism.Contracts
 
 		internal static bool CanTransmit(Vessel v)
 		{
+			if (v == null) return false;
+
 			if (states.ContainsKey(v.id))
 			{
 				return states[v.id].can_transmit;
@@ -43,6 +47,8 @@ namespace Kerbalism.Contracts
 
 		internal static string Transmitting(Vessel v)
 		{
+			if (v == null) return string.Empty;
+
 			if (states.ContainsKey(v.id))
 			{
 				return states[v.id].subject_id;

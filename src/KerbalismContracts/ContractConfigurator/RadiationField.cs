@@ -177,12 +177,15 @@ namespace Kerbalism.Contracts
 
 		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
+			if (v == null) return;
 			RadiationFieldTracker.Update(v, inner_belt, outer_belt, magnetosphere);
 			CheckVessel(v);
 		}
 
 		protected override bool VesselMeetsCondition(Vessel vessel)
 		{
+			if (vessel == null) return false;
+
 			LoggingUtil.LogVerbose(this, "Checking VesselMeetsCondition: " + vessel.id);
 
 			if (targetBody != null && vessel.mainBody != targetBody) return false;

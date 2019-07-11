@@ -21,6 +21,8 @@ namespace Kerbalism.Contracts
 
 		internal static void Update(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
+			if (v == null) return;
+
 			if(!states.ContainsKey(v.id))
 			{
 				states.Add(v.id, new State(inner_belt, outer_belt, magnetosphere));
@@ -36,6 +38,8 @@ namespace Kerbalism.Contracts
 
 		internal static bool InnerBelt(Vessel v)
 		{
+			if (v == null) return false;
+
 			if (states.ContainsKey(v.id))
 			{
 				return states[v.id].inner_belt;
@@ -46,6 +50,8 @@ namespace Kerbalism.Contracts
 
 		internal static bool OuterBelt(Vessel v)
 		{
+			if (v == null) return false;
+
 			if (states.ContainsKey(v.id))
 			{
 				return states[v.id].outer_belt;
@@ -56,6 +62,8 @@ namespace Kerbalism.Contracts
 
 		internal static bool Magnetosphere(Vessel v)
 		{
+			if (v == null) return false;
+
 			if (states.ContainsKey(v.id))
 			{
 				return states[v.id].magnetosphere;
