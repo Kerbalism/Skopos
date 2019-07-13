@@ -113,15 +113,9 @@ namespace Kerbalism.Contracts
 		{
 			switch(f)
 			{
-				case RadiationField.INNER_BELT:
-					return KERBALISM.API.InnerBelt(v);
-
-				case RadiationField.OUTER_BELT:
-					return KERBALISM.API.OuterBelt(v);
-
-				case RadiationField.MAGNETOPAUSE:
-					return KERBALISM.API.Magnetosphere(v);
-
+				case RadiationField.INNER_BELT: return RadiationFieldTracker.InnerBelt(v);
+				case RadiationField.OUTER_BELT: return RadiationFieldTracker.OuterBelt(v);
+				case RadiationField.MAGNETOPAUSE: return RadiationFieldTracker.Magnetosphere(v);
 				case RadiationField.ANY:
 					return InField(v, RadiationField.INNER_BELT) || InField(v, RadiationField.OUTER_BELT) || InField(v, RadiationField.MAGNETOPAUSE);
 			}
@@ -166,19 +160,17 @@ namespace Kerbalism.Contracts
 		protected override void OnRegister()
 		{
 			base.OnRegister();
-			KERBALISM.API.OnRadiationFieldChanged.Add(RunCheck);
+			RadiationFieldTracker.AddListener(RunCheck);
 		}
 
 		protected override void OnUnregister()
 		{
 			base.OnUnregister();
-			KERBALISM.API.OnRadiationFieldChanged.Remove(RunCheck);
+			RadiationFieldTracker.RemoveListener(RunCheck);
 		}
 
 		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
-			if (v == null) return;
-			RadiationFieldTracker.Update(v, inner_belt, outer_belt, magnetosphere);
 			CheckVessel(v);
 		}
 

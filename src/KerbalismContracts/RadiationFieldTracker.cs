@@ -34,6 +34,10 @@ namespace Kerbalism.Contracts
 				state.outer_belt = outer_belt;
 				state.magnetosphere = magnetosphere;
 			}
+
+			foreach(var listener in listeners) {
+				listener(v, inner_belt, outer_belt, magnetosphere);
+			}
 		}
 
 		internal static bool InnerBelt(Vessel v)
@@ -70,6 +74,18 @@ namespace Kerbalism.Contracts
 			}
 
 			return false;
+		}
+
+		private static readonly List<Action<Vessel, bool, bool, bool>> listeners = new List<Action<Vessel, bool, bool, bool>>();
+
+		internal static void AddListener(Action<Vessel, bool, bool, bool> listener)
+		{
+			if (!listeners.Contains(listener)) listeners.Add(listener);
+		}
+
+		internal static void RemoveListener(Action<Vessel, bool, bool, bool> listener)
+		{
+			if (listeners.Contains(listener)) listeners.Remove(listener);
 		}
 
 	}
