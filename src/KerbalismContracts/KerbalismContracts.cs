@@ -94,6 +94,10 @@ namespace Kerbalism.Contracts
 				KERBALISM.API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
 				KERBALISM.API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
 				KERBALISM.API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
+
+				bd.has_inner = KERBALISM.API.HasInnerBelt(body);
+				bd.has_outer = KERBALISM.API.HasOuterBelt(body);
+				bd.has_pause = KERBALISM.API.HasMagnetopause(body);
 			}
 
 			UpdateStormObservationQuality();
@@ -156,6 +160,9 @@ namespace Kerbalism.Contracts
 		public bool inner_visible = false;
 		public bool outer_visible = false;
 		public bool pause_visible = false;
+		internal bool has_inner = false;
+		internal bool has_outer = false;
+		internal bool has_pause = false;
 
 		public BodyData() {} // empty default constructor
 

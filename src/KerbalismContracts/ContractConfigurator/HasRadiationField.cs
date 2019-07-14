@@ -106,16 +106,13 @@ namespace Kerbalism.Contracts
 
 		protected bool HasField(Vessel vessel)
 		{
+			var bd = KerbalismContracts.Instance.BodyData(vessel.mainBody);
 			switch (field)
 			{
-				case RadiationField.INNER_BELT:
-					return KERBALISM.API.HasInnerBelt(vessel.mainBody);
-				case RadiationField.OUTER_BELT:
-					return KERBALISM.API.HasOuterBelt(vessel.mainBody);
-				case RadiationField.MAGNETOPAUSE:
-					return KERBALISM.API.HasMagnetopause(vessel.mainBody);
-				case RadiationField.ANY:
-					return KERBALISM.API.HasMagneticField(vessel.mainBody);
+				case RadiationField.INNER_BELT: return bd.has_inner;
+				case RadiationField.OUTER_BELT: return bd.has_outer;
+				case RadiationField.MAGNETOPAUSE: return bd.has_pause;
+				case RadiationField.ANY: return bd.has_inner || bd.has_outer || bd.has_pause;
 			}
 
 			return false;
