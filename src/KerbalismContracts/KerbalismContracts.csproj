@@ -155,8 +155,6 @@
     <Compile Include="KerbalismContracts.cs" />
     <Compile Include="ContractConfigurator\RadiationField.cs" />
     <Compile Include="ContractConfigurator\VisitWaypoint.cs" />
-    <Compile Include="ExperimentStateTracker.cs" />
-    <Compile Include="TransmissionStateTracker.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="ContractConfigurator\HasRadiationField.cs" />
     <Compile Include="ContractConfigurator\HasNoRadiationField.cs" />

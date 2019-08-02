@@ -12,8 +12,6 @@ namespace Kerbalism.Contracts
 
 		public void Start()
 		{
-			KERBALISM.API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
-			KERBALISM.API.OnTransmitStateChanged.Add(TransmissionStateTracker.Update);
 			KERBALISM.API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
 		}
 	}
@@ -25,9 +23,9 @@ namespace Kerbalism.Contracts
 		// permit global access
 		public static KerbalismContracts Instance { get; private set; } = null;
 
-		public static float SunObservationL1 { get; private set; } = 0.05f;
-		public static float SunObservationL2 { get; private set; } = 0.20f;
-		public static float SunObservationL3 { get; private set; } = 0.35f;
+		//public static float SunObservationL1 { get; private set; } = 0.05f;
+		//public static float SunObservationL2 { get; private set; } = 0.20f;
+		//public static float SunObservationL3 { get; private set; } = 0.35f;
 
 		//  constructor
 		public KerbalismContracts()
@@ -105,6 +103,7 @@ namespace Kerbalism.Contracts
 
 		public void UpdateStormObservationQuality()
 		{
+			/*
 			float q = SunObservationL3;
 
 			// basic observation quality from the tracking station
@@ -124,6 +123,7 @@ namespace Kerbalism.Contracts
 			Lib.Log("Setting sun observation quality to " + q);
 
 			KERBALISM.API.SetStormObservationQuality(q);
+			*/
 		}
 
 		public override void OnLoad(ConfigNode node)
@@ -139,9 +139,6 @@ namespace Kerbalism.Contracts
 					}
 				}
 			}
-
-			if (FlightGlobals.ready)
-				InitKerbalism();
 		}
 
 		public override void OnSave(ConfigNode node)

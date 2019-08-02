@@ -310,28 +310,35 @@ namespace Kerbalism.Contracts
 			if (targetBody == null) return;
 
 			bool wasVisible = false;
+			bool hasField = false;
 
-			switch(field)
+			var bd = KerbalismContracts.Instance.BodyData(targetBody);
+
+			switch (field)
 			{
 				case RadiationField.INNER_BELT:
 					wasVisible = KERBALISM.API.IsInnerBeltVisible(targetBody);
+					hasField = bd.has_inner;
 					KerbalismContracts.SetInnerBeltVisible(targetBody, set_visible);
 					break;
 
 				case RadiationField.OUTER_BELT:
 					wasVisible = KERBALISM.API.IsOuterBeltVisible(targetBody);
 					KerbalismContracts.SetOuterBeltVisible(targetBody, set_visible);
+					hasField = bd.has_outer;
 					break;
 
 				case RadiationField.MAGNETOPAUSE:
 					wasVisible = KERBALISM.API.IsMagnetopauseVisible(targetBody);
 					KerbalismContracts.SetMagnetopauseVisible(targetBody, set_visible);
+					hasField = bd.has_pause;
 					break;
 
 				case RadiationField.ANY:
 					wasVisible = KERBALISM.API.IsInnerBeltVisible(targetBody);
 					wasVisible |= KERBALISM.API.IsOuterBeltVisible(targetBody);
 					wasVisible |= KERBALISM.API.IsMagnetopauseVisible(targetBody);
+					hasField = bd.has_inner | bd.has_outer | bd.has_pause;
 					KerbalismContracts.SetInnerBeltVisible(targetBody, set_visible);
 					KerbalismContracts.SetOuterBeltVisible(targetBody, set_visible);
 					KerbalismContracts.SetMagnetopauseVisible(targetBody, set_visible);
@@ -340,7 +347,10 @@ namespace Kerbalism.Contracts
 
 			if(wasVisible != set_visible)
 			{
-				String message = targetBody.CleanDisplayName() + ": " + RadiationFieldParameter.FieldName(field);
+				String message = targetBody.CleanDisplayName() + ": ";
+
+				if (hasField) message += message += RadiationFieldParameter.FieldName(field);
+				else message += "radiation levels";
 				if (set_visible) message += " discovered";
 				else message += " lost";
 				KERBALISM.API.Message(message);
