@@ -197,6 +197,106 @@ namespace Kerbalism.Contracts
 		}
 	}
 
+	public class RadiationFieldVisibleFactory : ParameterFactory
+	{
+		protected RadiationField field;
+
+		public override bool Load(ConfigNode configNode)
+		{
+			bool valid = base.Load(configNode);
+
+			valid &= ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", x => field = x, this, RadiationField.ANY);
+			valid &= ValidateTargetBody(configNode);
+
+			return valid;
+		}
+
+		public override ContractParameter Generate(Contract contract)
+		{
+			if (!ValidateTargetBody())
+			{
+				return null;
+			}
+
+			return new RadiationFieldVisibleParameter(field, targetBody, title);
+		}
+	}
+
+	public class RadiationFieldVisibleParameter : ContractConfiguratorParameter
+	{
+		public RadiationField field;
+
+		public RadiationFieldVisibleParameter() : base(null) { }
+
+		public RadiationFieldVisibleParameter(RadiationField field, CelestialBody targetBody, string title)
+		{
+			this.field = field;
+			this.targetBody = targetBody;
+			this.title = title;
+		}
+
+		protected override string GetParameterTitle()
+		{
+			if (!string.IsNullOrEmpty(title)) return title;
+
+			string bodyName = targetBody != null ? targetBody.CleanDisplayName() : "a body";
+			return RadiationFieldParameter.FieldName(field) + " of " + bodyName + " is researched";
+		}
+
+		protected override void OnParameterSave(ConfigNode node)
+		{
+			node.AddValue("field", field);
+			node.AddValue("targetBody", targetBody.name);
+		}
+
+		protected override void OnParameterLoad(ConfigNode node)
+		{
+			try
+			{
+				field = ConfigNodeUtil.ParseValue<RadiationField>(node, "field", RadiationField.UNDEFINED);
+				targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
+			}
+			finally
+			{
+				ParameterDelegate<Vessel>.OnDelegateContainerLoad(node);
+			}
+		}
+
+		protected override void OnRegister()
+		{
+			base.OnRegister();
+			RadiationFieldTracker.AddListener(RunCheck);
+		}
+
+		protected override void OnUnregister()
+		{
+			base.OnUnregister();
+			RadiationFieldTracker.RemoveListener(RunCheck);
+		}
+
+		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
+		{
+			var bd = KerbalismContracts.Instance.BodyData(targetBody);
+
+			switch(field)
+			{
+				case RadiationField.INNER_BELT:
+					SetState(bd.inner_visible | !bd.has_inner ? ParameterState.Complete : ParameterState.Incomplete);
+					break;
+				case RadiationField.OUTER_BELT:
+					SetState(bd.outer_visible | !bd.has_outer ? ParameterState.Complete : ParameterState.Incomplete);
+					break;
+				case RadiationField.MAGNETOPAUSE:
+					SetState(bd.pause_visible | !bd.has_pause ? ParameterState.Complete : ParameterState.Incomplete);
+					break;
+				case RadiationField.ANY:
+					bool hasNone = !bd.has_inner && !bd.has_outer && !bd.has_pause;
+					SetState(hasNone | bd.inner_visible | bd.outer_visible | bd.pause_visible ? ParameterState.Complete : ParameterState.Incomplete);
+					break;
+			}
+		}
+	}
+
 	public class ShowRadiationFieldFactory : BehaviourFactory
 	{
 		protected RadiationField field;
@@ -309,51 +409,25 @@ namespace Kerbalism.Contracts
 		{
 			if (targetBody == null) return;
 
-			bool wasVisible = false;
-			bool hasField = false;
-
-			var bd = KerbalismContracts.Instance.BodyData(targetBody);
-
 			switch (field)
 			{
 				case RadiationField.INNER_BELT:
-					wasVisible = KERBALISM.API.IsInnerBeltVisible(targetBody);
-					hasField = bd.has_inner;
 					KerbalismContracts.SetInnerBeltVisible(targetBody, set_visible);
 					break;
 
 				case RadiationField.OUTER_BELT:
-					wasVisible = KERBALISM.API.IsOuterBeltVisible(targetBody);
 					KerbalismContracts.SetOuterBeltVisible(targetBody, set_visible);
-					hasField = bd.has_outer;
 					break;
 
 				case RadiationField.MAGNETOPAUSE:
-					wasVisible = KERBALISM.API.IsMagnetopauseVisible(targetBody);
 					KerbalismContracts.SetMagnetopauseVisible(targetBody, set_visible);
-					hasField = bd.has_pause;
 					break;
 
 				case RadiationField.ANY:
-					wasVisible = KERBALISM.API.IsInnerBeltVisible(targetBody);
-					wasVisible |= KERBALISM.API.IsOuterBeltVisible(targetBody);
-					wasVisible |= KERBALISM.API.IsMagnetopauseVisible(targetBody);
-					hasField = bd.has_inner | bd.has_outer | bd.has_pause;
 					KerbalismContracts.SetInnerBeltVisible(targetBody, set_visible);
 					KerbalismContracts.SetOuterBeltVisible(targetBody, set_visible);
 					KerbalismContracts.SetMagnetopauseVisible(targetBody, set_visible);
 					break;
-			}
-
-			if(wasVisible != set_visible)
-			{
-				String message = targetBody.CleanDisplayName() + ": ";
-
-				if (hasField) message += message += RadiationFieldParameter.FieldName(field);
-				else message += "radiation levels";
-				if (set_visible) message += " discovered";
-				else message += " lost";
-				KERBALISM.API.Message(message);
 			}
 		}
 	}

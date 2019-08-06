@@ -9,6 +9,7 @@ namespace Kerbalism.Contracts
 	public class KerbalismContractsMain : MonoBehaviour
 	{
 		public static bool initialized = false;
+		public static bool KerbalismInitialized = false;
 
 		public void Start()
 		{
@@ -16,22 +17,22 @@ namespace Kerbalism.Contracts
 		}
 	}
 
-
 	[KSPScenario(ScenarioCreationOptions.AddToAllGames, new[] { GameScenes.SPACECENTER, GameScenes.TRACKSTATION, GameScenes.FLIGHT, GameScenes.EDITOR })]
 	public sealed class KerbalismContracts : ScenarioModule
 	{
 		// permit global access
 		public static KerbalismContracts Instance { get; private set; } = null;
 
-		//public static float SunObservationL1 { get; private set; } = 0.05f;
-		//public static float SunObservationL2 { get; private set; } = 0.20f;
-		//public static float SunObservationL3 { get; private set; } = 0.35f;
+		private float lastUpdate = 0;
+		private static Dictionary<Guid, bool> HasRadiationSensorCache = new Dictionary<Guid, bool>();
 
 		//  constructor
 		public KerbalismContracts()
 		{
 			// enable global access
 			Instance = this;
+
+			GameEvents.onVesselWasModified.Add((_) => { HasRadiationSensorCache.Clear(); });
 		}
 
 		private void OnDestroy()
@@ -45,6 +46,77 @@ namespace Kerbalism.Contracts
 				StartCoroutine(InitializeVisiblityDeferred());
 				KerbalismContractsMain.initialized = true;
 			}
+
+			var now = Time.time;
+			if (lastUpdate + 5 < now)
+				return;
+
+			if(KerbalismContractsMain.KerbalismInitialized)
+			{
+				lastUpdate = now;
+
+				foreach(var vessel in FlightGlobals.Vessels)
+				{
+					TestVesselBelts(vessel);
+				}
+			}
+		}
+
+		private void TestVesselBelts(Vessel vessel)
+		{
+			if (!RelevantVessel(vessel))
+				return;
+
+			var bd = BodyData(vessel.mainBody);
+
+			bool skip = bd.has_inner && bd.has_outer && bd.has_pause;
+			if (skip) return;
+
+			// for missing fields, test if vessel would be in a plausible fake field
+			bool in_inner = bd.has_inner ? RadiationFieldTracker.InnerBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.INNER_BELT);
+			bool in_outer = bd.has_outer ? RadiationFieldTracker.OuterBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.OUTER_BELT);
+			bool in_pause = bd.has_pause ? RadiationFieldTracker.Magnetosphere(vessel) : InPlausibleBeltLocation(vessel, RadiationField.MAGNETOPAUSE);
+
+			RadiationFieldTracker.Update(vessel, in_inner, in_outer, in_pause);
+		}
+
+		private bool InPlausibleBeltLocation(Vessel vessel, RadiationField field)
+		{
+			switch(field)
+			{
+				case RadiationField.INNER_BELT:
+					return vessel.altitude > vessel.mainBody.Radius * 2.8 && vessel.altitude > vessel.mainBody.Radius * 3 && Math.Abs(vessel.longitude) < 30;
+				case RadiationField.OUTER_BELT:
+					return vessel.altitude > vessel.mainBody.Radius * 4.5 && vessel.altitude > vessel.mainBody.Radius * 5 && Math.Abs(vessel.longitude) < 65; ;
+				case RadiationField.MAGNETOPAUSE:
+					return vessel.altitude < vessel.mainBody.Radius * 6;
+			}
+			return false;
+		}
+
+		internal static bool RelevantVessel(Vessel vessel)
+		{
+			if (vessel == null)
+				return false;
+
+			switch (vessel.vesselType)
+			{
+				case VesselType.Unknown:
+				case VesselType.EVA:
+				case VesselType.Debris:
+				case VesselType.Flag:
+				case VesselType.SpaceObject:
+					return false;
+			}
+			if (vessel.Landed) return false;
+
+			if(!HasRadiationSensorCache.ContainsKey(vessel.id))
+			{
+				HasRadiationSensorCache[vessel.id] = Lib.HasRadiationSensor(vessel.protoVessel);
+			}
+			if (!HasRadiationSensorCache[vessel.id]) return false;
+
+			return true;
 		}
 
 		private IEnumerator InitializeVisiblityDeferred()
@@ -60,25 +132,48 @@ namespace Kerbalism.Contracts
 			return bodyData[body.flightGlobalsIndex];
 		}
 
+		private static void ShowMessage(CelestialBody body, bool wasVisible, bool visible, RadiationField field)
+		{
+			if (wasVisible != visible)
+			{
+				String message = body.GetDisplayName() + ": ";
+
+				if (KERBALISM.API.HasInnerBelt(body)) message += message += RadiationFieldParameter.FieldName(field);
+				else message += "radiation levels";
+				if (visible) message += " discovered";
+				else message += " lost";
+				KERBALISM.API.Message(message);
+			}
+		}
+
 		public static void SetInnerBeltVisible(CelestialBody body, bool visible = true)
 		{
 			Lib.Log("Setting visibility for inner belt of " + body + " to " + visible);
 			Instance.BodyData(body).inner_visible = visible;
+			bool wasVisible = KERBALISM.API.IsInnerBeltVisible(body);
 			KERBALISM.API.SetInnerBeltVisible(body, visible);
+
+			ShowMessage(body, wasVisible, visible, RadiationField.INNER_BELT);
 		}
 
 		public static void SetOuterBeltVisible(CelestialBody body, bool visible = true)
 		{
 			Lib.Log("Setting visibility for outer belt of " + body + " to " + visible);
 			Instance.BodyData(body).outer_visible = visible;
+			bool wasVisible = KERBALISM.API.IsOuterBeltVisible(body);
 			KERBALISM.API.SetOuterBeltVisible(body, visible);
+
+			ShowMessage(body, wasVisible, visible, RadiationField.OUTER_BELT);
 		}
 
 		public static void SetMagnetopauseVisible(CelestialBody body, bool visible = true)
 		{
 			Lib.Log("Setting visibility for magnetosphere of " + body + " to " + visible);
 			Instance.BodyData(body).pause_visible = visible;
+			bool wasVisible = KERBALISM.API.IsMagnetopauseVisible(body);
 			KERBALISM.API.SetMagnetopauseVisible(body, visible);
+
+			ShowMessage(body, wasVisible, visible, RadiationField.MAGNETOPAUSE);
 		}
 
 		public void InitKerbalism()
@@ -98,37 +193,16 @@ namespace Kerbalism.Contracts
 				bd.has_pause = KERBALISM.API.HasMagnetopause(body);
 			}
 
-			UpdateStormObservationQuality();
-		}
-
-		public void UpdateStormObservationQuality()
-		{
-			/*
-			float q = SunObservationL3;
-
-			// basic observation quality from the tracking station
-			if(ScenarioUpgradeableFacilities.Instance != null && HighLogic.CurrentGame.Mode != Game.Modes.SANDBOX)
-			{
-				q = SunObservationL1;
-
-				var dsnLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation);
-				if (dsnLevel > 0.5f) q = SunObservationL3;
-				else if (dsnLevel > 0.1f) q = SunObservationL2;
-			}
-
-
-			// add sun observing satellites values here
-			// TODO
-
-			Lib.Log("Setting sun observation quality to " + q);
-
-			KERBALISM.API.SetStormObservationQuality(q);
-			*/
+			KerbalismContractsMain.KerbalismInitialized = true;
 		}
 
 		public override void OnLoad(ConfigNode node)
 		{
+			KerbalismContractsMain.initialized = false;
+			KerbalismContractsMain.KerbalismInitialized = false;
+			HasRadiationSensorCache.Clear();
 			bodyData.Clear();
+			
 			if (node.HasNode("BodyData"))
 			{
 				foreach (var body_node in node.GetNode("BodyData").GetNodes())
@@ -160,19 +234,28 @@ namespace Kerbalism.Contracts
 		internal bool has_inner = false;
 		internal bool has_outer = false;
 		internal bool has_pause = false;
+		internal int inner_crossings = 0;
+		internal int outer_crossings = 0;
+		internal int pause_crossings = 0;
 
 		public BodyData() {} // empty default constructor
 
 		public BodyData(ConfigNode node) {
 			inner_visible = Lib.ConfigValue(node, "inner_visible", false);	
-			outer_visible = Lib.ConfigValue(node, "outer_visible", false);	
-			pause_visible = Lib.ConfigValue(node, "pause_visible", false);	
+			outer_visible = Lib.ConfigValue(node, "outer_visible", false);
+			pause_visible = Lib.ConfigValue(node, "pause_visible", false);
+			inner_crossings = Lib.ConfigValue(node, "inner_crossings", 0);
+			outer_crossings = Lib.ConfigValue(node, "outer_crossings", 0);
+			pause_crossings = Lib.ConfigValue(node, "pause_crossings", 0);
 		}
 
 		public void Save(ConfigNode node) {
 			node.AddValue("inner_visible", inner_visible);
 			node.AddValue("outer_visible", outer_visible);
 			node.AddValue("pause_visible", pause_visible);
+			node.AddValue("inner_crossings", inner_crossings);
+			node.AddValue("outer_crossings", outer_crossings);
+			node.AddValue("pause_crossings", pause_crossings);
 		}
 	}
 

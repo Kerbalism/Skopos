@@ -70,5 +70,23 @@ namespace Kerbalism.Contracts
 				return def_value;
 			}
 		}
+
+
+		public static bool HasRadiationSensor(ProtoVessel v)
+		{
+			foreach (var p in v.protoPartSnapshots)
+			{
+				foreach(var pm in p.modules)
+				{
+					if(pm.moduleName == "Sensor")
+					{
+						var type = ConfigValue(pm.moduleValues, "type", string.Empty);
+						if (type == "radiation") return true;
+					}
+				}
+			}
+
+			return false;
+		}
 	}
 }

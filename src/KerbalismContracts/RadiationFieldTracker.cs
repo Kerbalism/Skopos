@@ -21,7 +21,8 @@ namespace Kerbalism.Contracts
 
 		internal static void Update(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
-			if (v == null) return;
+			if (!KerbalismContracts.RelevantVessel(v))
+				return;
 
 			if(!states.ContainsKey(v.id))
 			{
@@ -29,7 +30,27 @@ namespace Kerbalism.Contracts
 			}
 			else
 			{
+				var bd = KerbalismContracts.Instance.BodyData(v.mainBody);
+
 				var state = states[v.id];
+
+				if (state.inner_belt != inner_belt) {
+					Lib.Log(v + " in inner belt of " + v.mainBody + ": " + inner_belt);
+					bd.inner_crossings++;
+				}
+
+				if (state.outer_belt != outer_belt)
+				{
+					Lib.Log(v + " in outer belt of " + v.mainBody + ": " + inner_belt);
+					bd.outer_crossings++;
+				}
+
+				if (state.magnetosphere != magnetosphere)
+				{
+					Lib.Log(v + " in magnetosphere of " + v.mainBody + ": " + inner_belt);
+					bd.pause_crossings++;
+				}
+
 				state.inner_belt = inner_belt;
 				state.outer_belt = outer_belt;
 				state.magnetosphere = magnetosphere;
