@@ -158,6 +158,7 @@
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="ContractConfigurator\HasRadiationField.cs" />
     <Compile Include="ContractConfigurator\HasNoRadiationField.cs" />
+    <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

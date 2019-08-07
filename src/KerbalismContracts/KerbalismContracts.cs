@@ -2,6 +2,7 @@
 using UnityEngine;
 using System.Collections;
 using System;
+using KSP.UI.Screens;
 
 namespace Kerbalism.Contracts
 {
@@ -13,6 +14,7 @@ namespace Kerbalism.Contracts
 
 		public void Start()
 		{
+			Settings.Parse();
 			KERBALISM.API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
 		}
 	}
@@ -143,14 +145,38 @@ namespace Kerbalism.Contracts
 				if (visible) message += " discovered";
 				else message += " lost";
 				KERBALISM.API.Message(message);
+
+				if(!wasVisible && visible)
+				{
+					float funds = Settings.discovery_base_funds;
+					float science = Settings.discovery_base_science;
+					switch (field)
+					{
+						case RadiationField.INNER_BELT: funds += Settings.discovery_inner_funds_bonus; science += Settings.discovery_inner_science_bonus; break;
+						case RadiationField.OUTER_BELT: funds += Settings.discovery_outer_funds_bonus; science += Settings.discovery_outer_science_bonus; break;
+						case RadiationField.MAGNETOPAUSE: funds += Settings.discovery_pause_funds_bonus; science += Settings.discovery_pause_science_bonus; break;
+					}
+
+					message += "\n\n<color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1>" + funds.ToString("N0") + "</color>";
+					message += "\n<color=cyan><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=0>" + science.ToString("N0") + "</color>";
+
+					MessageSystem.Message m = new MessageSystem.Message("Radiation Field Researched", message, MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
+					MessageSystem.Instance.AddMessage(m);
+
+					var funding = Funding.Instance;
+					if(funding != null)funding.AddFunds(funds, TransactionReasons.ContractAdvance);
+
+					var rnd = ResearchAndDevelopment.Instance;
+					if (rnd != null) rnd.AddScience(science, TransactionReasons.ContractAdvance);
+				}
 			}
 		}
 
 		public static void SetInnerBeltVisible(CelestialBody body, bool visible = true)
 		{
 			Lib.Log("Setting visibility for inner belt of " + body + " to " + visible);
+			bool wasVisible = Instance.BodyData(body).inner_visible;
 			Instance.BodyData(body).inner_visible = visible;
-			bool wasVisible = KERBALISM.API.IsInnerBeltVisible(body);
 			KERBALISM.API.SetInnerBeltVisible(body, visible);
 
 			ShowMessage(body, wasVisible, visible, RadiationField.INNER_BELT);
@@ -159,8 +185,8 @@ namespace Kerbalism.Contracts
 		public static void SetOuterBeltVisible(CelestialBody body, bool visible = true)
 		{
 			Lib.Log("Setting visibility for outer belt of " + body + " to " + visible);
+			bool wasVisible = Instance.BodyData(body).outer_visible;
 			Instance.BodyData(body).outer_visible = visible;
-			bool wasVisible = KERBALISM.API.IsOuterBeltVisible(body);
 			KERBALISM.API.SetOuterBeltVisible(body, visible);
 
 			ShowMessage(body, wasVisible, visible, RadiationField.OUTER_BELT);
@@ -169,8 +195,8 @@ namespace Kerbalism.Contracts
 		public static void SetMagnetopauseVisible(CelestialBody body, bool visible = true)
 		{
 			Lib.Log("Setting visibility for magnetosphere of " + body + " to " + visible);
+			bool wasVisible = Instance.BodyData(body).pause_visible;
 			Instance.BodyData(body).pause_visible = visible;
-			bool wasVisible = KERBALISM.API.IsMagnetopauseVisible(body);
 			KERBALISM.API.SetMagnetopauseVisible(body, visible);
 
 			ShowMessage(body, wasVisible, visible, RadiationField.MAGNETOPAUSE);
@@ -200,6 +226,7 @@ namespace Kerbalism.Contracts
 		{
 			KerbalismContractsMain.initialized = false;
 			KerbalismContractsMain.KerbalismInitialized = false;
+
 			HasRadiationSensorCache.Clear();
 			bodyData.Clear();
 			

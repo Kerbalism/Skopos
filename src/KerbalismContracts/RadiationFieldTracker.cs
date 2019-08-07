@@ -54,9 +54,22 @@ namespace Kerbalism.Contracts
 				state.inner_belt = inner_belt;
 				state.outer_belt = outer_belt;
 				state.magnetosphere = magnetosphere;
+
+				if(!bd.inner_visible && bd.inner_crossings > Settings.inner_discovery_crossings)
+				{
+					KerbalismContracts.SetInnerBeltVisible(v.mainBody, true);
+				}
+				if (!bd.outer_visible && bd.outer_crossings > Settings.outer_discovery_crossings)
+				{
+					KerbalismContracts.SetOuterBeltVisible(v.mainBody, true);
+				}
+				if (!bd.pause_visible && bd.pause_crossings > Settings.pause_discovery_crossings)
+				{
+					KerbalismContracts.SetMagnetopauseVisible(v.mainBody, true);
+				}
 			}
 
-			foreach(var listener in listeners) {
+			foreach (var listener in listeners) {
 				listener(v, inner_belt, outer_belt, magnetosphere);
 			}
 		}
