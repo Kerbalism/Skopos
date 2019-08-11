@@ -24,30 +24,36 @@ namespace Kerbalism.Contracts
 			if (!KerbalismContracts.RelevantVessel(v))
 				return;
 
-			if(!states.ContainsKey(v.id))
+			var bd = KerbalismContracts.Instance.BodyData(v.mainBody);
+
+			bool skip = bd.has_inner && bd.has_outer && bd.has_pause;
+			if (skip) return; // we'll get events for all belts, no custom tracking needed
+
+			// no tracking needed, we know all the belts already
+			if (bd.inner_visible && bd.outer_visible && bd.pause_visible) return;
+
+			if (!states.ContainsKey(v.id))
 			{
 				states.Add(v.id, new State(inner_belt, outer_belt, magnetosphere));
 			}
 			else
 			{
-				var bd = KerbalismContracts.Instance.BodyData(v.mainBody);
-
 				var state = states[v.id];
 
 				if (state.inner_belt != inner_belt) {
-					Lib.Log(v + " in inner belt of " + v.mainBody + ": " + inner_belt);
+					Lib.Log(v + " crossed boundary of inner belt of " + v.mainBody + ": " + inner_belt);
 					bd.inner_crossings++;
 				}
 
 				if (state.outer_belt != outer_belt)
 				{
-					Lib.Log(v + " in outer belt of " + v.mainBody + ": " + inner_belt);
+					Lib.Log(v + " crossed boundary of outer belt of " + v.mainBody + ": " + inner_belt);
 					bd.outer_crossings++;
 				}
 
 				if (state.magnetosphere != magnetosphere)
 				{
-					Lib.Log(v + " in magnetosphere of " + v.mainBody + ": " + inner_belt);
+					Lib.Log(v + " crossed boundary of magnetosphere of " + v.mainBody + ": " + inner_belt);
 					bd.pause_crossings++;
 				}
 

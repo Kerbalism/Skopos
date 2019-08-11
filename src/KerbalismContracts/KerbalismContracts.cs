@@ -50,7 +50,7 @@ namespace Kerbalism.Contracts
 			}
 
 			var now = Time.time;
-			if (lastUpdate + 5 < now)
+			if (lastUpdate + 5 > now)
 				return;
 
 			if(KerbalismContractsMain.KerbalismInitialized)
@@ -72,7 +72,10 @@ namespace Kerbalism.Contracts
 			var bd = BodyData(vessel.mainBody);
 
 			bool skip = bd.has_inner && bd.has_outer && bd.has_pause;
-			if (skip) return;
+			if (skip) return; // we'll get events for all belts, no custom tracking needed
+
+			// no tracking needed, we know all the belts already
+			if (bd.inner_visible && bd.outer_visible && bd.pause_visible) return;
 
 			// for missing fields, test if vessel would be in a plausible fake field
 			bool in_inner = bd.has_inner ? RadiationFieldTracker.InnerBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.INNER_BELT);
@@ -138,27 +141,45 @@ namespace Kerbalism.Contracts
 		{
 			if (wasVisible != visible)
 			{
-				String message = body.GetDisplayName() + ": ";
+				String message = body.bodyName + ": ";
 
 				if (KERBALISM.API.HasInnerBelt(body)) message += message += RadiationFieldParameter.FieldName(field);
 				else message += "radiation levels";
 				if (visible) message += " discovered";
 				else message += " lost";
+
+				Lib.Log("Message to Kerbalism: " + message);
+
 				KERBALISM.API.Message(message);
 
 				if(!wasVisible && visible)
 				{
 					float funds = Settings.discovery_base_funds;
 					float science = Settings.discovery_base_science;
+					float reputation = Settings.discovery_base_reputation;
 					switch (field)
 					{
-						case RadiationField.INNER_BELT: funds += Settings.discovery_inner_funds_bonus; science += Settings.discovery_inner_science_bonus; break;
-						case RadiationField.OUTER_BELT: funds += Settings.discovery_outer_funds_bonus; science += Settings.discovery_outer_science_bonus; break;
-						case RadiationField.MAGNETOPAUSE: funds += Settings.discovery_pause_funds_bonus; science += Settings.discovery_pause_science_bonus; break;
+						case RadiationField.INNER_BELT:
+							funds += Settings.discovery_inner_funds_bonus;
+							science += Settings.discovery_inner_science_bonus;
+							reputation += Settings.discovery_inner_reputation_bonus;
+							break;
+						case RadiationField.OUTER_BELT:
+							funds += Settings.discovery_outer_funds_bonus;
+							science += Settings.discovery_outer_science_bonus;
+							reputation += Settings.discovery_outer_reputation_bonus;
+							break;
+						case RadiationField.MAGNETOPAUSE:
+							funds += Settings.discovery_pause_funds_bonus;
+							science += Settings.discovery_pause_science_bonus;
+							reputation += Settings.discovery_pause_reputation_bonus;
+							break;
 					}
 
-					message += "\n\n<color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1>" + funds.ToString("N0") + "</color>";
-					message += "\n<color=cyan><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=0>" + science.ToString("N0") + "</color>";
+					message += "<b><color=#8BED8B>Rewards:</color></b>\n";
+					message += "<color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1>" + funds.ToString("N0") + " </color>";
+					message += "<color=#6DCFF6><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=1> " + science.ToString("N0") + " </color>";
+					message += "<color=#E0D503><sprite=\"CurrencySpriteAsset\" name=\"Reputation\" tint=1> " + reputation.ToString("N0") + " </color>";
 
 					MessageSystem.Message m = new MessageSystem.Message("Radiation Field Researched", message, MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
 					MessageSystem.Instance.AddMessage(m);
@@ -168,6 +189,9 @@ namespace Kerbalism.Contracts
 
 					var rnd = ResearchAndDevelopment.Instance;
 					if (rnd != null) rnd.AddScience(science, TransactionReasons.ContractAdvance);
+
+					var rep = Reputation.Instance;
+					if (rep != null) rep.AddReputation(reputation, TransactionReasons.ContractAdvance);
 				}
 			}
 		}
