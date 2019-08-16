@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections;
 using System;
 using KSP.UI.Screens;
+using System.Text;
 
 namespace Kerbalism.Contracts
 {
@@ -74,9 +75,6 @@ namespace Kerbalism.Contracts
 			bool skip = bd.has_inner && bd.has_outer && bd.has_pause;
 			if (skip) return; // we'll get events for all belts, no custom tracking needed
 
-			// no tracking needed, we know all the belts already
-			if (bd.inner_visible && bd.outer_visible && bd.pause_visible) return;
-
 			// for missing fields, test if vessel would be in a plausible fake field
 			bool in_inner = bd.has_inner ? RadiationFieldTracker.InnerBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.INNER_BELT);
 			bool in_outer = bd.has_outer ? RadiationFieldTracker.OuterBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.OUTER_BELT);
@@ -139,60 +137,75 @@ namespace Kerbalism.Contracts
 
 		private static void ShowMessage(CelestialBody body, bool wasVisible, bool visible, RadiationField field)
 		{
-			if (wasVisible != visible)
+			if (visible && !wasVisible)
 			{
-				String message = body.bodyName + ": ";
-
-				if (KERBALISM.API.HasInnerBelt(body)) message += message += RadiationFieldParameter.FieldName(field);
-				else message += "radiation levels";
-				if (visible) message += " discovered";
-				else message += " lost";
-
-				Lib.Log("Message to Kerbalism: " + message);
-
+				String message = Lib.BuildString("<b><color=#8BED8B>", body.bodyName, ": ", RadiationFieldParameter.FieldName(field), "</color> researched</b>");
 				KERBALISM.API.Message(message);
 
-				if(!wasVisible && visible)
+				StringBuilder sb = new StringBuilder(256);
+				sb.Append(message);
+				sb.Append("\n\n");
+
+				var bd = Instance.BodyData(body);
+
+				float funds = Settings.discovery_base_funds;
+				float science = Settings.discovery_base_science;
+				float reputation = Settings.discovery_base_reputation;
+				switch (field)
 				{
-					float funds = Settings.discovery_base_funds;
-					float science = Settings.discovery_base_science;
-					float reputation = Settings.discovery_base_reputation;
-					switch (field)
-					{
-						case RadiationField.INNER_BELT:
-							funds += Settings.discovery_inner_funds_bonus;
-							science += Settings.discovery_inner_science_bonus;
-							reputation += Settings.discovery_inner_reputation_bonus;
-							break;
-						case RadiationField.OUTER_BELT:
-							funds += Settings.discovery_outer_funds_bonus;
-							science += Settings.discovery_outer_science_bonus;
-							reputation += Settings.discovery_outer_reputation_bonus;
-							break;
-						case RadiationField.MAGNETOPAUSE:
-							funds += Settings.discovery_pause_funds_bonus;
-							science += Settings.discovery_pause_science_bonus;
-							reputation += Settings.discovery_pause_reputation_bonus;
-							break;
-					}
-
-					message += "<b><color=#8BED8B>Rewards:</color></b>\n";
-					message += "<color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1>" + funds.ToString("N0") + " </color>";
-					message += "<color=#6DCFF6><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=1> " + science.ToString("N0") + " </color>";
-					message += "<color=#E0D503><sprite=\"CurrencySpriteAsset\" name=\"Reputation\" tint=1> " + reputation.ToString("N0") + " </color>";
-
-					MessageSystem.Message m = new MessageSystem.Message("Radiation Field Researched", message, MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
-					MessageSystem.Instance.AddMessage(m);
-
-					var funding = Funding.Instance;
-					if(funding != null)funding.AddFunds(funds, TransactionReasons.ContractAdvance);
-
-					var rnd = ResearchAndDevelopment.Instance;
-					if (rnd != null) rnd.AddScience(science, TransactionReasons.ContractAdvance);
-
-					var rep = Reputation.Instance;
-					if (rep != null) rep.AddReputation(reputation, TransactionReasons.ContractAdvance);
+					case RadiationField.INNER_BELT:
+						funds += Settings.discovery_inner_funds_bonus;
+						science += Settings.discovery_inner_science_bonus;
+						reputation += Settings.discovery_inner_reputation_bonus;
+						sb.Append(bd.has_inner ? "The belt is now visible in map view" : "There seems to be no noticeable radiation belt.");
+						break;
+					case RadiationField.OUTER_BELT:
+						funds += Settings.discovery_outer_funds_bonus;
+						science += Settings.discovery_outer_science_bonus;
+						reputation += Settings.discovery_outer_reputation_bonus;
+						sb.Append(bd.has_outer ? "The belt is now visible in map view" : "There seems to be no noticeable radiation belt.");
+						break;
+					case RadiationField.MAGNETOPAUSE:
+						funds += Settings.discovery_pause_funds_bonus;
+						science += Settings.discovery_pause_science_bonus;
+						reputation += Settings.discovery_pause_reputation_bonus;
+						sb.Append(bd.has_pause ? "The field is now visible in map view" : "There seems to be no discernable magnetosphere.");
+						break;
 				}
+
+				if(funds > 0 || science > 0 || reputation > 0)
+					sb.Append("\n\n<b><color=#8BED8B>Rewards:</color></b>");
+
+				if (funds > 0)
+				{
+					sb.Append("\n<color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1> ");
+					sb.Append(funds.ToString("N0"));
+					sb.Append(" </color>");
+				}
+				if (science > 0)
+				{
+					sb.Append("\n<color=#6DCFF6><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=1> ");
+					sb.Append(science.ToString("N0"));
+					sb.Append(" </color>");
+				}
+				if (reputation > 0)
+				{
+					sb.Append("\n<color=#E0D503><sprite=\"CurrencySpriteAsset\" name=\"Reputation\" tint=1> ");
+					sb.Append(reputation.ToString("N0"));
+					sb.Append(" </color>");
+				}
+
+				MessageSystem.Message m = new MessageSystem.Message("Radiation Field Researched", sb.ToString(), MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
+				MessageSystem.Instance.AddMessage(m);
+
+				var funding = Funding.Instance;
+				if(funding != null)funding.AddFunds(funds, TransactionReasons.ContractAdvance);
+
+				var rnd = ResearchAndDevelopment.Instance;
+				if (rnd != null) rnd.AddScience(science, TransactionReasons.ContractAdvance);
+
+				var rep = Reputation.Instance;
+				if (rep != null) rep.AddReputation(reputation, TransactionReasons.ContractAdvance);
 			}
 		}
 

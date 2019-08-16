@@ -93,5 +93,50 @@ namespace Kerbalism.Contracts
 			Lib.Log("Vessel has no radiation sensor: " + v.vesselRef);
 			return false;
 		}
+
+
+		// compose a set of strings together, without creating temporary objects
+		// note: the objective here is to minimize number of temporary variables for GC
+		// note: okay to call recursively, as long as all individual concatenation is atomic
+		static StringBuilder sb = new StringBuilder(256);
+
+		public static string BuildString(string a, string b)
+		{
+			sb.Length = 0;
+			sb.Append(a);
+			sb.Append(b);
+			return sb.ToString();
+		}
+
+		public static string BuildString(string a, string b, string c)
+		{
+			sb.Length = 0;
+			sb.Append(a);
+			sb.Append(b);
+			sb.Append(c);
+			return sb.ToString();
+		}
+
+		public static string BuildString(string a, string b, string c, string d)
+		{
+			sb.Length = 0;
+			sb.Append(a);
+			sb.Append(b);
+			sb.Append(c);
+			sb.Append(d);
+			return sb.ToString();
+		}
+
+		public static string BuildString(string a, string b, string c, string d, string e)
+		{
+			sb.Length = 0;
+			sb.Append(a);
+			sb.Append(b);
+			sb.Append(c);
+			sb.Append(d);
+			sb.Append(e);
+			return sb.ToString();
+		}
+
 	}
 }

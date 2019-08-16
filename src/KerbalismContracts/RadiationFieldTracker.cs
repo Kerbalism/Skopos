@@ -26,12 +26,6 @@ namespace Kerbalism.Contracts
 
 			var bd = KerbalismContracts.Instance.BodyData(v.mainBody);
 
-			bool skip = bd.has_inner && bd.has_outer && bd.has_pause;
-			if (skip) return; // we'll get events for all belts, no custom tracking needed
-
-			// no tracking needed, we know all the belts already
-			if (bd.inner_visible && bd.outer_visible && bd.pause_visible) return;
-
 			if (!states.ContainsKey(v.id))
 			{
 				states.Add(v.id, new State(inner_belt, outer_belt, magnetosphere));
