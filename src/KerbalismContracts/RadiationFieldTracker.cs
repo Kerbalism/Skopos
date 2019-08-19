@@ -69,8 +69,10 @@ namespace Kerbalism.Contracts
 				}
 			}
 
-			foreach (var listener in listeners) {
-				listener(v, inner_belt, outer_belt, magnetosphere);
+
+			for (int i = listeners.Count - 1; i >= 0; i--)
+			{
+				listeners[i](v, inner_belt, outer_belt, magnetosphere);
 			}
 		}
 

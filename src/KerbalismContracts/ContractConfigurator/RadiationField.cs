@@ -101,10 +101,10 @@ namespace Kerbalism.Contracts
 		{
 			switch (field)
 			{
-				case RadiationField.INNER_BELT: return "inner radiation belt";
-				case RadiationField.OUTER_BELT: return "outer radiation belt";
+				case RadiationField.INNER_BELT: return "Inner radiation belt";
+				case RadiationField.OUTER_BELT: return "Outer radiation belt";
 				case RadiationField.MAGNETOPAUSE: return "magnetopause";
-				case RadiationField.ANY: return "any radiation field";
+				case RadiationField.ANY: return "A radiation field";
 			}
 			return "INVALID FIELD TYPE";
 		}
@@ -280,17 +280,17 @@ namespace Kerbalism.Contracts
 			switch(field)
 			{
 				case RadiationField.INNER_BELT:
-					SetState(bd.inner_visible | !bd.has_inner ? ParameterState.Complete : ParameterState.Incomplete);
+					SetState(bd.inner_visible || !bd.has_inner ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
 				case RadiationField.OUTER_BELT:
-					SetState(bd.outer_visible | !bd.has_outer ? ParameterState.Complete : ParameterState.Incomplete);
+					SetState(bd.outer_visible || !bd.has_outer ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
 				case RadiationField.MAGNETOPAUSE:
-					SetState(bd.pause_visible | !bd.has_pause ? ParameterState.Complete : ParameterState.Incomplete);
+					SetState(bd.pause_visible || !bd.has_pause ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
 				case RadiationField.ANY:
 					bool hasNone = !bd.has_inner && !bd.has_outer && !bd.has_pause;
-					SetState(hasNone | bd.inner_visible | bd.outer_visible | bd.pause_visible ? ParameterState.Complete : ParameterState.Incomplete);
+					SetState(hasNone || bd.inner_visible || bd.outer_visible || bd.pause_visible ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
 			}
 		}

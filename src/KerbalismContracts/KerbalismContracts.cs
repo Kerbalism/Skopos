@@ -139,10 +139,8 @@ namespace Kerbalism.Contracts
 		{
 			if (visible && !wasVisible)
 			{
-				String message = Lib.BuildString("<b><color=#8BED8B>", body.bodyName, ": ", RadiationFieldParameter.FieldName(field), "</color> researched</b>");
-				KERBALISM.API.Message(message);
-
 				StringBuilder sb = new StringBuilder(256);
+				String message = Lib.BuildString("<b>", body.bodyName, ": <color=#8BED8B>", RadiationFieldParameter.FieldName(field), "</color> researched</b>");
 				sb.Append(message);
 				sb.Append("\n\n");
 
@@ -173,24 +171,31 @@ namespace Kerbalism.Contracts
 						break;
 				}
 
-				if(funds > 0 || science > 0 || reputation > 0)
+				KERBALISM.API.Message(sb.ToString());
+
+				float factor = body.scienceValues.InSpaceHighDataValue;
+				funds *= factor;
+				science *= factor;
+				reputation *= factor;
+
+				if (funds > 0 || science > 0 || reputation > 0)
 					sb.Append("\n\n<b><color=#8BED8B>Rewards:</color></b>");
 
 				if (funds > 0)
 				{
-					sb.Append("\n<color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1> ");
+					sb.Append(" <color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1> ");
 					sb.Append(funds.ToString("N0"));
 					sb.Append(" </color>");
 				}
 				if (science > 0)
 				{
-					sb.Append("\n<color=#6DCFF6><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=1> ");
+					sb.Append(" <color=#6DCFF6><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=1> ");
 					sb.Append(science.ToString("N0"));
 					sb.Append(" </color>");
 				}
 				if (reputation > 0)
 				{
-					sb.Append("\n<color=#E0D503><sprite=\"CurrencySpriteAsset\" name=\"Reputation\" tint=1> ");
+					sb.Append(" <color=#E0D503><sprite=\"CurrencySpriteAsset\" name=\"Reputation\" tint=1> ");
 					sb.Append(reputation.ToString("N0"));
 					sb.Append(" </color>");
 				}
@@ -199,7 +204,7 @@ namespace Kerbalism.Contracts
 				MessageSystem.Instance.AddMessage(m);
 
 				var funding = Funding.Instance;
-				if(funding != null)funding.AddFunds(funds, TransactionReasons.ContractAdvance);
+				if(funding != null) funding.AddFunds(funds, TransactionReasons.ContractAdvance);
 
 				var rnd = ResearchAndDevelopment.Instance;
 				if (rnd != null) rnd.AddScience(science, TransactionReasons.ContractAdvance);
