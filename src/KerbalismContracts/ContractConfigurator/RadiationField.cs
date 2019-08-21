@@ -171,7 +171,9 @@ namespace Kerbalism.Contracts
 
 		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
+#if DEBUG
 			Lib.Log("RunCheck " + v + ": inner " + inner_belt + " outer " + outer_belt + " magneto " + magnetosphere);
+#endif
 			CheckVessel(v);
 		}
 

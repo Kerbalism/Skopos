@@ -35,19 +35,25 @@ namespace Kerbalism.Contracts
 				var state = states[v.id];
 
 				if (state.inner_belt != inner_belt) {
+#if DEBUG
 					Lib.Log(v + " crossed boundary of inner belt of " + v.mainBody + ": " + inner_belt);
+#endif
 					bd.inner_crossings++;
 				}
 
 				if (state.outer_belt != outer_belt)
 				{
+#if DEBUG
 					Lib.Log(v + " crossed boundary of outer belt of " + v.mainBody + ": " + inner_belt);
+#endif
 					bd.outer_crossings++;
 				}
 
 				if (state.magnetosphere != magnetosphere)
 				{
+#if DEBUG
 					Lib.Log(v + " crossed boundary of magnetosphere of " + v.mainBody + ": " + inner_belt);
+#endif
 					bd.pause_crossings++;
 				}
 

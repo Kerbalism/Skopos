@@ -83,14 +83,18 @@ namespace Kerbalism.Contracts
 						var type = ConfigValue(pm.moduleValues, "type", string.Empty);
 						if (type == "radiation")
 						{
+#if DEBUG
 							Lib.Log("Vessel has radiation sensor: " + v.vesselRef);
+#endif
 							return true;
 						}
 					}
 				}
 			}
 
+#if DEBUG
 			Lib.Log("Vessel has no radiation sensor: " + v.vesselRef);
+#endif
 			return false;
 		}
 
