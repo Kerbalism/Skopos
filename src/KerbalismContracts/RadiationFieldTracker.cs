@@ -61,11 +61,13 @@ namespace Kerbalism.Contracts
 				state.outer_belt = outer_belt;
 				state.magnetosphere = magnetosphere;
 
-				if(!bd.inner_visible && bd.inner_crossings > Settings.inner_discovery_crossings)
+				bool isSun = KERBALISM.Lib.IsSun(v.mainBody);
+
+				if(!isSun && !bd.inner_visible && bd.inner_crossings > Settings.inner_discovery_crossings)
 				{
 					KerbalismContracts.SetInnerBeltVisible(v.mainBody, true);
 				}
-				if (!bd.outer_visible && bd.outer_crossings > Settings.outer_discovery_crossings)
+				if (!isSun && !bd.outer_visible && bd.outer_crossings > Settings.outer_discovery_crossings)
 				{
 					KerbalismContracts.SetOuterBeltVisible(v.mainBody, true);
 				}

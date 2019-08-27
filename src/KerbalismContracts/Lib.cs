@@ -141,6 +141,5 @@ namespace Kerbalism.Contracts
 			sb.Append(e);
 			return sb.ToString();
 		}
-
 	}
 }
