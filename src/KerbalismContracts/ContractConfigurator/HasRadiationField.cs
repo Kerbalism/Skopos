@@ -9,13 +9,13 @@ namespace Kerbalism.Contracts
 {
 	public class HasRadiationFieldFactory : ParameterFactory
 	{
-		protected RadiationField field;
+		protected RadiationFieldType field;
 
 		public override bool Load(ConfigNode configNode)
 		{
 			bool valid = base.Load(configNode);
 
-			valid &= ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", x => field = x, this, RadiationField.ANY, ValidateField);
+			valid &= ConfigNodeUtil.ParseValue<RadiationFieldType>(configNode, "field", x => field = x, this, RadiationFieldType.ANY, ValidateField);
 			valid &= ValidateTargetBody(configNode);
 
 			return valid;
@@ -31,9 +31,9 @@ namespace Kerbalism.Contracts
 			return new HasRadiationFieldParameter(field, targetBody, title);
 		}
 
-		protected bool ValidateField(RadiationField f)
+		protected bool ValidateField(RadiationFieldType f)
 		{
-			if (f == RadiationField.UNDEFINED)
+			if (f == RadiationFieldType.UNDEFINED)
 			{
 				LoggingUtil.LogError(this, "Missing field. You must specify field = INNER_BELT, OUTER_BELT, MAGNETOPAUSE or ANY.");
 				return false;
@@ -45,11 +45,11 @@ namespace Kerbalism.Contracts
 
 	public class HasRadiationFieldParameter : VesselParameter
 	{
-		public RadiationField field;
+		public RadiationFieldType field;
 
 		public HasRadiationFieldParameter() : base(null) { }
 
-		public HasRadiationFieldParameter(RadiationField field, CelestialBody targetBody, string title)
+		public HasRadiationFieldParameter(RadiationFieldType field, CelestialBody targetBody, string title)
 		{
 			this.field = field;
 			this.targetBody = targetBody;
@@ -61,7 +61,7 @@ namespace Kerbalism.Contracts
 			if (!string.IsNullOrEmpty(title)) return title;
 
 			string bodyName = targetBody != null ? targetBody.CleanDisplayName() : "a body";
-			return bodyName + " has " + RadiationFieldParameter.FieldName(field);
+			return bodyName + " has " + RadiationField.Name(field);
 		}
 
 		protected override void OnParameterSave(ConfigNode node)
@@ -78,7 +78,7 @@ namespace Kerbalism.Contracts
 			{
 				base.OnParameterLoad(node);
 
-				field = ConfigNodeUtil.ParseValue<RadiationField>(node, "field", RadiationField.UNDEFINED);
+				field = ConfigNodeUtil.ParseValue<RadiationFieldType>(node, "field", RadiationFieldType.UNDEFINED);
 				targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
 			}
 			finally
@@ -109,10 +109,10 @@ namespace Kerbalism.Contracts
 			var bd = KerbalismContracts.Instance.BodyData(vessel.mainBody);
 			switch (field)
 			{
-				case RadiationField.INNER_BELT: return bd.has_inner;
-				case RadiationField.OUTER_BELT: return bd.has_outer;
-				case RadiationField.MAGNETOPAUSE: return bd.has_pause;
-				case RadiationField.ANY: return bd.has_inner || bd.has_outer || bd.has_pause;
+				case RadiationFieldType.INNER_BELT: return bd.has_inner;
+				case RadiationFieldType.OUTER_BELT: return bd.has_outer;
+				case RadiationFieldType.MAGNETOPAUSE: return bd.has_pause;
+				case RadiationFieldType.ANY: return bd.has_inner || bd.has_outer || bd.has_pause;
 			}
 
 			return false;
@@ -122,7 +122,7 @@ namespace Kerbalism.Contracts
 		{
 			if (vessel == null) return false;
 
-			LoggingUtil.LogVerbose(this, "Checking VesselMeetsCondition: " + vessel.id);
+			//LoggingUtil.LogVerbose(this, "Checking VesselMeetsCondition: " + vessel.id);
 
 			if (targetBody != null && vessel.mainBody != targetBody) return false;
 

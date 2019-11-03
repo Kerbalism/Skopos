@@ -76,22 +76,22 @@ namespace Kerbalism.Contracts
 			if (skip) return; // we'll get events for all belts, no custom tracking needed
 
 			// for missing fields, test if vessel would be in a plausible fake field
-			bool in_inner = bd.has_inner ? RadiationFieldTracker.InnerBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.INNER_BELT);
-			bool in_outer = bd.has_outer ? RadiationFieldTracker.OuterBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationField.OUTER_BELT);
-			bool in_pause = bd.has_pause ? RadiationFieldTracker.Magnetosphere(vessel) : InPlausibleBeltLocation(vessel, RadiationField.MAGNETOPAUSE);
+			bool in_inner = bd.has_inner ? RadiationFieldTracker.InnerBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationFieldType.INNER_BELT);
+			bool in_outer = bd.has_outer ? RadiationFieldTracker.OuterBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationFieldType.OUTER_BELT);
+			bool in_pause = bd.has_pause ? RadiationFieldTracker.Magnetosphere(vessel) : InPlausibleBeltLocation(vessel, RadiationFieldType.MAGNETOPAUSE);
 
 			RadiationFieldTracker.Update(vessel, in_inner, in_outer, in_pause);
 		}
 
-		private bool InPlausibleBeltLocation(Vessel vessel, RadiationField field)
+		private bool InPlausibleBeltLocation(Vessel vessel, RadiationFieldType field)
 		{
 			switch(field)
 			{
-				case RadiationField.INNER_BELT:
+				case RadiationFieldType.INNER_BELT:
 					return vessel.altitude > vessel.mainBody.Radius * 2.8 && vessel.altitude > vessel.mainBody.Radius * 3 && Math.Abs(vessel.longitude) < 30;
-				case RadiationField.OUTER_BELT:
+				case RadiationFieldType.OUTER_BELT:
 					return vessel.altitude > vessel.mainBody.Radius * 4.5 && vessel.altitude > vessel.mainBody.Radius * 5 && Math.Abs(vessel.longitude) < 65; ;
-				case RadiationField.MAGNETOPAUSE:
+				case RadiationFieldType.MAGNETOPAUSE:
 					return vessel.altitude < vessel.mainBody.Radius * 6;
 			}
 			return false;
@@ -135,12 +135,12 @@ namespace Kerbalism.Contracts
 			return bodyData[body.flightGlobalsIndex];
 		}
 
-		private static void ShowMessage(CelestialBody body, bool wasVisible, bool visible, RadiationField field)
+		private static void ShowMessage(CelestialBody body, bool wasVisible, bool visible, RadiationFieldType field)
 		{
 			if (visible && !wasVisible)
 			{
 				StringBuilder sb = new StringBuilder(256);
-				String message = Lib.BuildString("<b>", body.bodyName, ": <color=#8BED8B>", RadiationFieldParameter.FieldName(field), "</color> researched</b>");
+				String message = Lib.BuildString("<b>", body.bodyName, ": <color=#8BED8B>", RadiationField.Name(field), "</color> researched</b>");
 				sb.Append(message);
 				sb.Append("\n\n");
 
@@ -151,19 +151,19 @@ namespace Kerbalism.Contracts
 				float reputation = Settings.discovery_base_reputation;
 				switch (field)
 				{
-					case RadiationField.INNER_BELT:
+					case RadiationFieldType.INNER_BELT:
 						funds += Settings.discovery_inner_funds_bonus;
 						science += Settings.discovery_inner_science_bonus;
 						reputation += Settings.discovery_inner_reputation_bonus;
 						sb.Append(bd.has_inner ? "The belt is now visible in map view" : "There seems to be no noticeable radiation belt.");
 						break;
-					case RadiationField.OUTER_BELT:
+					case RadiationFieldType.OUTER_BELT:
 						funds += Settings.discovery_outer_funds_bonus;
 						science += Settings.discovery_outer_science_bonus;
 						reputation += Settings.discovery_outer_reputation_bonus;
 						sb.Append(bd.has_outer ? "The belt is now visible in map view" : "There seems to be no noticeable radiation belt.");
 						break;
-					case RadiationField.MAGNETOPAUSE:
+					case RadiationFieldType.MAGNETOPAUSE:
 						funds += Settings.discovery_pause_funds_bonus;
 						science += Settings.discovery_pause_science_bonus;
 						reputation += Settings.discovery_pause_reputation_bonus;
@@ -221,7 +221,7 @@ namespace Kerbalism.Contracts
 			Instance.BodyData(body).inner_visible = visible;
 			KERBALISM.API.SetInnerBeltVisible(body, visible);
 
-			ShowMessage(body, wasVisible, visible, RadiationField.INNER_BELT);
+			ShowMessage(body, wasVisible, visible, RadiationFieldType.INNER_BELT);
 		}
 
 		public static void SetOuterBeltVisible(CelestialBody body, bool visible = true)
@@ -231,7 +231,7 @@ namespace Kerbalism.Contracts
 			Instance.BodyData(body).outer_visible = visible;
 			KERBALISM.API.SetOuterBeltVisible(body, visible);
 
-			ShowMessage(body, wasVisible, visible, RadiationField.OUTER_BELT);
+			ShowMessage(body, wasVisible, visible, RadiationFieldType.OUTER_BELT);
 		}
 
 		public static void SetMagnetopauseVisible(CelestialBody body, bool visible = true)
@@ -241,7 +241,7 @@ namespace Kerbalism.Contracts
 			Instance.BodyData(body).pause_visible = visible;
 			KERBALISM.API.SetMagnetopauseVisible(body, visible);
 
-			ShowMessage(body, wasVisible, visible, RadiationField.MAGNETOPAUSE);
+			ShowMessage(body, wasVisible, visible, RadiationFieldType.MAGNETOPAUSE);
 		}
 
 		public void InitKerbalism()

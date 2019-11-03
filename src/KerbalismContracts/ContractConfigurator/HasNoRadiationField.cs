@@ -26,7 +26,7 @@ namespace Kerbalism.Contracts
 			: base()
 		{ }
 
-		public HasNoRadiationFieldParameter(RadiationField field, CelestialBody targetBody, string title)
+		public HasNoRadiationFieldParameter(RadiationFieldType field, CelestialBody targetBody, string title)
 			: base(field, targetBody, title)
 		{ }
 
@@ -35,7 +35,7 @@ namespace Kerbalism.Contracts
 			if (!string.IsNullOrEmpty(title)) return title;
 
 			string bodyName = targetBody != null ? targetBody.CleanDisplayName() : "a body";
-			return bodyName + " has no " + RadiationFieldParameter.FieldName(field);
+			return bodyName + " has no " + RadiationField.Name(field);
 		}
 
 		protected override bool VesselMeetsCondition(Vessel vessel)

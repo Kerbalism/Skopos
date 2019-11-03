@@ -7,11 +7,26 @@ using ContractConfigurator.Parameters;
 
 namespace Kerbalism.Contracts
 {
-	public enum RadiationField { UNDEFINED, INNER_BELT, OUTER_BELT, MAGNETOPAUSE, ANY }
+	public enum RadiationFieldType { UNDEFINED, INNER_BELT, OUTER_BELT, MAGNETOPAUSE, ANY }
+
+	public class RadiationField
+	{
+		public static String Name(RadiationFieldType field)
+		{
+			switch (field)
+			{
+				case RadiationFieldType.INNER_BELT: return "Inner radiation belt";
+				case RadiationFieldType.OUTER_BELT: return "Outer radiation belt";
+				case RadiationFieldType.MAGNETOPAUSE: return "magnetopause";
+				case RadiationFieldType.ANY: return "A radiation field";
+			}
+			return "INVALID FIELD TYPE";
+		}
+	}
 
 	public class RadiationFieldFactory : ParameterFactory
 	{
-		protected RadiationField field;
+		protected RadiationFieldType field;
 		protected int crossings_min, crossings_max;
 		protected bool stay_in, stay_out;
 
@@ -19,7 +34,7 @@ namespace Kerbalism.Contracts
 		{
 			bool valid = base.Load(configNode);
 
-			valid &= ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", x => field = x, this, RadiationField.UNDEFINED, ValidateField);
+			valid &= ConfigNodeUtil.ParseValue<RadiationFieldType>(configNode, "field", x => field = x, this, RadiationFieldType.UNDEFINED, ValidateField);
 			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "crossings_min", x => crossings_min = x, this, -1);
 			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "crossings_max", x => crossings_max = x, this, -1);
 			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "stay_in", x => stay_in = x, this, false);
@@ -53,9 +68,9 @@ namespace Kerbalism.Contracts
 			return new RadiationFieldParameter(field, crossings_min, crossings_max, stay_in, stay_out, targetBody, title);
 		}
 
-		private bool ValidateField(RadiationField f)
+		private bool ValidateField(RadiationFieldType f)
 		{
-			if(f == RadiationField.UNDEFINED)
+			if(f == RadiationFieldType.UNDEFINED)
 			{
 				LoggingUtil.LogError(this, "Missing field. You must specify field = INNER_BELT, OUTER_BELT, MAGNETOPAUSE or ANY.");
 				return false;
@@ -67,7 +82,7 @@ namespace Kerbalism.Contracts
 
 	public class RadiationFieldParameter : VesselParameter
 	{
-		public RadiationField field;
+		public RadiationFieldType field;
 		protected int crossings_min;
 		protected int crossings_max;
 		protected bool stay_in;
@@ -78,7 +93,7 @@ namespace Kerbalism.Contracts
 
 		public RadiationFieldParameter(): base(null) {}
 
-		public RadiationFieldParameter(RadiationField field, int crossings_min, int crossings_max, bool stay_in, bool stay_out, CelestialBody targetBody, string title)
+		public RadiationFieldParameter(RadiationFieldType field, int crossings_min, int crossings_max, bool stay_in, bool stay_out, CelestialBody targetBody, string title)
 		{
 			this.field = field;
 			this.crossings_min = crossings_min;
@@ -94,30 +109,18 @@ namespace Kerbalism.Contracts
 			if (!string.IsNullOrEmpty(title)) return title;
 
 			string bodyName = targetBody != null ? targetBody.CleanDisplayName() : "a body";
-			return "Find " + FieldName(field) + " of " + bodyName;
+			return "Find " + RadiationField.Name(field) + " of " + bodyName;
 		}
 
-		public static String FieldName(RadiationField field)
-		{
-			switch (field)
-			{
-				case RadiationField.INNER_BELT: return "Inner radiation belt";
-				case RadiationField.OUTER_BELT: return "Outer radiation belt";
-				case RadiationField.MAGNETOPAUSE: return "magnetopause";
-				case RadiationField.ANY: return "A radiation field";
-			}
-			return "INVALID FIELD TYPE";
-		}
-
-		protected static bool InField(Vessel v, RadiationField f)
+		protected static bool InField(Vessel v, RadiationFieldType f)
 		{
 			switch(f)
 			{
-				case RadiationField.INNER_BELT: return RadiationFieldTracker.InnerBelt(v);
-				case RadiationField.OUTER_BELT: return RadiationFieldTracker.OuterBelt(v);
-				case RadiationField.MAGNETOPAUSE: return RadiationFieldTracker.Magnetosphere(v);
-				case RadiationField.ANY:
-					return InField(v, RadiationField.INNER_BELT) || InField(v, RadiationField.OUTER_BELT) || InField(v, RadiationField.MAGNETOPAUSE);
+				case RadiationFieldType.INNER_BELT: return RadiationFieldTracker.InnerBelt(v);
+				case RadiationFieldType.OUTER_BELT: return RadiationFieldTracker.OuterBelt(v);
+				case RadiationFieldType.MAGNETOPAUSE: return RadiationFieldTracker.Magnetosphere(v);
+				case RadiationFieldType.ANY:
+					return InField(v, RadiationFieldType.INNER_BELT) || InField(v, RadiationFieldType.OUTER_BELT) || InField(v, RadiationFieldType.MAGNETOPAUSE);
 			}
 			return false;
 		}
@@ -142,7 +145,7 @@ namespace Kerbalism.Contracts
 			{
 				base.OnParameterLoad(node);
 
-				field = ConfigNodeUtil.ParseValue<RadiationField>(node, "field", RadiationField.UNDEFINED);
+				field = ConfigNodeUtil.ParseValue<RadiationFieldType>(node, "field", RadiationFieldType.UNDEFINED);
 				crossed_count = ConfigNodeUtil.ParseValue<int>(node, "crossed_count", 0);
 				currently_in_field = ConfigNodeUtil.ParseValue<bool>(node, "currently_in_field", false);
 				targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
@@ -200,13 +203,13 @@ namespace Kerbalism.Contracts
 
 	public class RadiationFieldVisibleFactory : ParameterFactory
 	{
-		protected RadiationField field;
+		protected RadiationFieldType field;
 
 		public override bool Load(ConfigNode configNode)
 		{
 			bool valid = base.Load(configNode);
 
-			valid &= ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", x => field = x, this, RadiationField.ANY);
+			valid &= ConfigNodeUtil.ParseValue<RadiationFieldType>(configNode, "field", x => field = x, this, RadiationFieldType.ANY);
 			valid &= ValidateTargetBody(configNode);
 
 			return valid;
@@ -225,11 +228,11 @@ namespace Kerbalism.Contracts
 
 	public class RadiationFieldVisibleParameter : ContractConfiguratorParameter
 	{
-		public RadiationField field;
+		public RadiationFieldType field;
 
 		public RadiationFieldVisibleParameter() : base(null) { }
 
-		public RadiationFieldVisibleParameter(RadiationField field, CelestialBody targetBody, string title)
+		public RadiationFieldVisibleParameter(RadiationFieldType field, CelestialBody targetBody, string title)
 		{
 			this.field = field;
 			this.targetBody = targetBody;
@@ -241,7 +244,7 @@ namespace Kerbalism.Contracts
 			if (!string.IsNullOrEmpty(title)) return title;
 
 			string bodyName = targetBody != null ? targetBody.CleanDisplayName() : "a body";
-			return RadiationFieldParameter.FieldName(field) + " of " + bodyName + " is researched";
+			return RadiationField.Name(field) + " of " + bodyName + " is researched";
 		}
 
 		protected override void OnParameterSave(ConfigNode node)
@@ -254,7 +257,7 @@ namespace Kerbalism.Contracts
 		{
 			try
 			{
-				field = ConfigNodeUtil.ParseValue<RadiationField>(node, "field", RadiationField.UNDEFINED);
+				field = ConfigNodeUtil.ParseValue<RadiationFieldType>(node, "field", RadiationFieldType.UNDEFINED);
 				targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
 			}
 			finally
@@ -281,16 +284,16 @@ namespace Kerbalism.Contracts
 
 			switch(field)
 			{
-				case RadiationField.INNER_BELT:
+				case RadiationFieldType.INNER_BELT:
 					SetState(bd.inner_visible || !bd.has_inner ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
-				case RadiationField.OUTER_BELT:
+				case RadiationFieldType.OUTER_BELT:
 					SetState(bd.outer_visible || !bd.has_outer ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
-				case RadiationField.MAGNETOPAUSE:
+				case RadiationFieldType.MAGNETOPAUSE:
 					SetState(bd.pause_visible || !bd.has_pause ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
-				case RadiationField.ANY:
+				case RadiationFieldType.ANY:
 					bool hasNone = !bd.has_inner && !bd.has_outer && !bd.has_pause;
 					SetState(hasNone || bd.inner_visible || bd.outer_visible || bd.pause_visible ? ParameterState.Complete : ParameterState.Incomplete);
 					break;
@@ -300,7 +303,7 @@ namespace Kerbalism.Contracts
 
 	public class ShowRadiationFieldFactory : BehaviourFactory
 	{
-		protected RadiationField field;
+		protected RadiationFieldType field;
 		protected bool set_visible = false;
 		protected bool require_completed = false;
 
@@ -308,16 +311,16 @@ namespace Kerbalism.Contracts
 		{
 			bool valid = base.Load(configNode);
 
-			valid &= ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", x => field = x, this, RadiationField.UNDEFINED, ValidateField);
+			valid &= ConfigNodeUtil.ParseValue<RadiationFieldType>(configNode, "field", x => field = x, this, RadiationFieldType.UNDEFINED, ValidateField);
 			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "set_visible", x => set_visible = x, this, true);
 			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "require_completed", x => require_completed = x, this, false);
 
 			return valid;
 		}
 
-		private bool ValidateField(RadiationField f)
+		private bool ValidateField(RadiationFieldType f)
 		{
-			if (f == RadiationField.UNDEFINED)
+			if (f == RadiationFieldType.UNDEFINED)
 			{
 				LoggingUtil.LogError(this, "Missing field. You must specify field = INNER_BELT, OUTER_BELT, MAGNETOPAUSE or ANY.");
 				return false;
@@ -334,13 +337,13 @@ namespace Kerbalism.Contracts
 	public class ShowRadiationField : ContractBehaviour
 	{
 		protected CelestialBody targetBody;
-		protected RadiationField field;
+		protected RadiationFieldType field;
 		protected bool set_visible;
 		protected bool require_completed;
 
 		public ShowRadiationField(): base() {}
 
-		public ShowRadiationField(CelestialBody targetBody, RadiationField field, bool set_visible, bool require_completed)
+		public ShowRadiationField(CelestialBody targetBody, RadiationFieldType field, bool set_visible, bool require_completed)
 		{
 			this.targetBody = targetBody;
 			this.field = field;
@@ -353,7 +356,7 @@ namespace Kerbalism.Contracts
 			base.OnLoad(configNode);
 
 			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(configNode, "targetBody");
-			field = ConfigNodeUtil.ParseValue<RadiationField>(configNode, "field", RadiationField.UNDEFINED);
+			field = ConfigNodeUtil.ParseValue<RadiationFieldType>(configNode, "field", RadiationFieldType.UNDEFINED);
 			set_visible = ConfigNodeUtil.ParseValue<bool>(configNode, "set_visible", true);
 			require_completed = ConfigNodeUtil.ParseValue<bool>(configNode, "require_completed", true);
 		}
@@ -399,7 +402,7 @@ namespace Kerbalism.Contracts
 					if (result != null) return result;
 				}	
 			}
-			else if (radiationFieldParameter.field == field || field == RadiationField.ANY)
+			else if (radiationFieldParameter.field == field || field == RadiationFieldType.ANY)
 			{
 				return radiationFieldParameter;
 			}
@@ -412,19 +415,19 @@ namespace Kerbalism.Contracts
 
 			switch (field)
 			{
-				case RadiationField.INNER_BELT:
+				case RadiationFieldType.INNER_BELT:
 					KerbalismContracts.SetInnerBeltVisible(targetBody, set_visible);
 					break;
 
-				case RadiationField.OUTER_BELT:
+				case RadiationFieldType.OUTER_BELT:
 					KerbalismContracts.SetOuterBeltVisible(targetBody, set_visible);
 					break;
 
-				case RadiationField.MAGNETOPAUSE:
+				case RadiationFieldType.MAGNETOPAUSE:
 					KerbalismContracts.SetMagnetopauseVisible(targetBody, set_visible);
 					break;
 
-				case RadiationField.ANY:
+				case RadiationFieldType.ANY:
 					KerbalismContracts.SetInnerBeltVisible(targetBody, set_visible);
 					KerbalismContracts.SetOuterBeltVisible(targetBody, set_visible);
 					KerbalismContracts.SetMagnetopauseVisible(targetBody, set_visible);
