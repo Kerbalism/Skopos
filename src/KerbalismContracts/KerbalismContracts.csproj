@@ -159,7 +159,8 @@
     <Compile Include="ContractConfigurator\HasNoRadiationField.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="ContractConfigurator\ExperimentProgress.cs" />
-    <Compile Include="ContractConfigurator\ExperimentState.cs" />
+    <Compile Include="ContractConfigurator\ExperimentRunning.cs" />
+    <Compile Include="ExperimentStateTracker.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

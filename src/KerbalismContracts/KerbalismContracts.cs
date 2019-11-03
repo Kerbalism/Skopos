@@ -8,7 +8,7 @@ using System.Text;
 namespace Kerbalism.Contracts
 {
 	[KSPAddon(KSPAddon.Startup.MainMenu, false)]
-	public class KerbalismContractsMain : MonoBehaviour
+	public class KerbalismContractsMain :	MonoBehaviour
 	{
 		public static bool initialized = false;
 		public static bool KerbalismInitialized = false;
@@ -16,7 +16,9 @@ namespace Kerbalism.Contracts
 		public void Start()
 		{
 			Settings.Parse();
+
 			KERBALISM.API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
+			KERBALISM.API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
 		}
 	}
 
