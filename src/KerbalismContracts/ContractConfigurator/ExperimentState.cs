@@ -19,7 +19,7 @@ namespace Kerbalism.Contracts
 			bool valid = base.Load(configNode);
 
 			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "experiment_id", x => experiment_id = x, this, string.Empty, ValidateExperimentId);
-			valid &= ConfigNodeUtil.ParseValue<ExperimentState>(configNode, "expected_state", x => expected_state = x, this, ExperimentState.UNDEFINED, ValidateState);
+			valid &= ConfigNodeUtil.ParseValue<ExperimentState>(configNode, "expected_state", x => expected_state = x, this, ExperimentState.RUNNING, ValidateState);
 
 			return valid;
 		}
@@ -34,12 +34,6 @@ namespace Kerbalism.Contracts
 			if (string.IsNullOrEmpty(id))
 			{
 				LoggingUtil.LogError(this, "Missing experiment_id.");
-				return false;
-			}
-
-			if (KERBALISM.ScienceDB.GetExperimentInfo(id) == null)
-			{
-				LoggingUtil.LogError(this, "Invalid experiment_id " + id);
 				return false;
 			}
 
@@ -63,6 +57,9 @@ namespace Kerbalism.Contracts
 		protected string experiment_id;
 		protected ExperimentState expected_state;
 
+		private float lastUpdate = 0.0f;
+		private const float UPDATE_FREQUENCY = 0.5f;
+
 		public ExperimentStateParameter() : base(null) { }
 
 		public ExperimentStateParameter(string experiment_id, ExperimentState expected_state, string title)
@@ -70,6 +67,16 @@ namespace Kerbalism.Contracts
 			this.experiment_id = experiment_id;
 			this.expected_state = expected_state;
 			this.title = title;
+		}
+
+		protected override void OnUpdate()
+		{
+			base.OnUpdate();
+			if (UnityEngine.Time.fixedTime - lastUpdate > UPDATE_FREQUENCY)
+			{
+				lastUpdate = UnityEngine.Time.fixedTime;
+				CheckVessel(FlightGlobals.ActiveVessel);
+			}
 		}
 
 		protected override bool VesselMeetsCondition(Vessel vessel)

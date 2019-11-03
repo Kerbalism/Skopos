@@ -30,7 +30,7 @@ namespace Kerbalism.Contracts
 
 		public static void Parse()
 		{
-			var cfg = GameDatabase.Instance.GetConfigNode("KerbalismContracts/KerbalismContracts") ?? new ConfigNode();
+			var cfg = GameDatabase.Instance.GetConfigNode("KerbalismContracts") ?? new ConfigNode();
 
 			discovery_base_funds = Lib.ConfigValue(cfg, "discovery_base_funds", 1000.0f);
 			discovery_base_science = Lib.ConfigValue(cfg, "discovery_base_science", 1.0f);
