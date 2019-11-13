@@ -25,7 +25,6 @@ namespace Kerbalism.Contracts
 	[KSPScenario(ScenarioCreationOptions.AddToAllGames, new[] { GameScenes.SPACECENTER, GameScenes.TRACKSTATION, GameScenes.FLIGHT, GameScenes.EDITOR })]
 	public sealed class KerbalismContracts : ScenarioModule
 	{
-		// permit global access
 		public static KerbalismContracts Instance { get; private set; } = null;
 
 		private float lastUpdate = 0;
@@ -148,71 +147,10 @@ namespace Kerbalism.Contracts
 
 				var bd = Instance.BodyData(body);
 
-				float funds = Settings.discovery_base_funds;
-				float science = Settings.discovery_base_science;
-				float reputation = Settings.discovery_base_reputation;
-				switch (field)
-				{
-					case RadiationFieldType.INNER_BELT:
-						funds += Settings.discovery_inner_funds_bonus;
-						science += Settings.discovery_inner_science_bonus;
-						reputation += Settings.discovery_inner_reputation_bonus;
-						sb.Append(bd.has_inner ? "The belt is now visible in map view" : "There seems to be no noticeable radiation belt.");
-						break;
-					case RadiationFieldType.OUTER_BELT:
-						funds += Settings.discovery_outer_funds_bonus;
-						science += Settings.discovery_outer_science_bonus;
-						reputation += Settings.discovery_outer_reputation_bonus;
-						sb.Append(bd.has_outer ? "The belt is now visible in map view" : "There seems to be no noticeable radiation belt.");
-						break;
-					case RadiationFieldType.MAGNETOPAUSE:
-						funds += Settings.discovery_pause_funds_bonus;
-						science += Settings.discovery_pause_science_bonus;
-						reputation += Settings.discovery_pause_reputation_bonus;
-						sb.Append(bd.has_pause ? "The field is now visible in map view" : "There seems to be no discernable magnetosphere.");
-						break;
-				}
-
 				KERBALISM.API.Message(sb.ToString());
-
-				float factor = body.scienceValues.InSpaceHighDataValue;
-				funds *= factor;
-				science *= factor;
-				reputation *= factor;
-
-				if (funds > 0 || science > 0 || reputation > 0)
-					sb.Append("\n\n<b><color=#8BED8B>Rewards:</color></b>");
-
-				if (funds > 0)
-				{
-					sb.Append(" <color=#B4D455><sprite=\"CurrencySpriteAsset\" name=\"Funds\" tint=1> ");
-					sb.Append(funds.ToString("N0"));
-					sb.Append(" </color>");
-				}
-				if (science > 0)
-				{
-					sb.Append(" <color=#6DCFF6><sprite=\"CurrencySpriteAsset\" name=\"Science\" tint=1> ");
-					sb.Append(science.ToString("N0"));
-					sb.Append(" </color>");
-				}
-				if (reputation > 0)
-				{
-					sb.Append(" <color=#E0D503><sprite=\"CurrencySpriteAsset\" name=\"Reputation\" tint=1> ");
-					sb.Append(reputation.ToString("N0"));
-					sb.Append(" </color>");
-				}
 
 				MessageSystem.Message m = new MessageSystem.Message("Radiation Field Researched", sb.ToString(), MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
 				MessageSystem.Instance.AddMessage(m);
-
-				var funding = Funding.Instance;
-				if(funding != null) funding.AddFunds(funds, TransactionReasons.ContractAdvance);
-
-				var rnd = ResearchAndDevelopment.Instance;
-				if (rnd != null) rnd.AddScience(science, TransactionReasons.ContractAdvance);
-
-				var rep = Reputation.Instance;
-				if (rep != null) rep.AddReputation(reputation, TransactionReasons.ContractAdvance);
 			}
 		}
 
@@ -221,7 +159,9 @@ namespace Kerbalism.Contracts
 			Lib.Log("Setting visibility for inner belt of " + body + " to " + visible);
 			bool wasVisible = Instance.BodyData(body).inner_visible;
 			Instance.BodyData(body).inner_visible = visible;
-			KERBALISM.API.SetInnerBeltVisible(body, visible);
+
+			if (Settings.enable_radiation_belt_discovery)
+				KERBALISM.API.SetInnerBeltVisible(body, visible);
 
 			ShowMessage(body, wasVisible, visible, RadiationFieldType.INNER_BELT);
 		}
@@ -231,7 +171,9 @@ namespace Kerbalism.Contracts
 			Lib.Log("Setting visibility for outer belt of " + body + " to " + visible);
 			bool wasVisible = Instance.BodyData(body).outer_visible;
 			Instance.BodyData(body).outer_visible = visible;
-			KERBALISM.API.SetOuterBeltVisible(body, visible);
+
+			if (Settings.enable_radiation_belt_discovery)
+				KERBALISM.API.SetOuterBeltVisible(body, visible);
 
 			ShowMessage(body, wasVisible, visible, RadiationFieldType.OUTER_BELT);
 		}
@@ -241,7 +183,9 @@ namespace Kerbalism.Contracts
 			Lib.Log("Setting visibility for magnetosphere of " + body + " to " + visible);
 			bool wasVisible = Instance.BodyData(body).pause_visible;
 			Instance.BodyData(body).pause_visible = visible;
-			KERBALISM.API.SetMagnetopauseVisible(body, visible);
+
+			if (Settings.enable_radiation_belt_discovery)
+				KERBALISM.API.SetMagnetopauseVisible(body, visible);
 
 			ShowMessage(body, wasVisible, visible, RadiationFieldType.MAGNETOPAUSE);
 		}
@@ -249,18 +193,22 @@ namespace Kerbalism.Contracts
 		public void InitKerbalism()
 		{
 			bool isSandboxGame = HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX;
-			foreach (var body in FlightGlobals.Bodies)
+
+			if(Settings.enable_radiation_belt_discovery)
 			{
-				var bd = BodyData(body);
+				foreach (var body in FlightGlobals.Bodies)
+				{
+					var bd = BodyData(body);
 
-				Lib.Log("Setting magnetic field visibility for " + body.bodyName + " to " + bd.inner_visible + "/" + bd.outer_visible + "/" + bd.pause_visible);
-				KERBALISM.API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
-				KERBALISM.API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
-				KERBALISM.API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
+					Lib.Log("Setting magnetic field visibility for " + body.bodyName + " to " + bd.inner_visible + "/" + bd.outer_visible + "/" + bd.pause_visible);
+					KERBALISM.API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
+					KERBALISM.API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
+					KERBALISM.API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
 
-				bd.has_inner = KERBALISM.API.HasInnerBelt(body);
-				bd.has_outer = KERBALISM.API.HasOuterBelt(body);
-				bd.has_pause = KERBALISM.API.HasMagnetopause(body);
+					bd.has_inner = KERBALISM.API.HasInnerBelt(body);
+					bd.has_outer = KERBALISM.API.HasOuterBelt(body);
+					bd.has_pause = KERBALISM.API.HasMagnetopause(body);
+				}
 			}
 
 			KerbalismContractsMain.KerbalismInitialized = true;
@@ -305,9 +253,6 @@ namespace Kerbalism.Contracts
 		internal bool has_inner = false;
 		internal bool has_outer = false;
 		internal bool has_pause = false;
-		internal int inner_crossings = 0;
-		internal int outer_crossings = 0;
-		internal int pause_crossings = 0;
 
 		public BodyData() {} // empty default constructor
 
@@ -315,19 +260,12 @@ namespace Kerbalism.Contracts
 			inner_visible = Lib.ConfigValue(node, "inner_visible", false);	
 			outer_visible = Lib.ConfigValue(node, "outer_visible", false);
 			pause_visible = Lib.ConfigValue(node, "pause_visible", false);
-			inner_crossings = Lib.ConfigValue(node, "inner_crossings", 0);
-			outer_crossings = Lib.ConfigValue(node, "outer_crossings", 0);
-			pause_crossings = Lib.ConfigValue(node, "pause_crossings", 0);
 		}
 
 		public void Save(ConfigNode node) {
 			node.AddValue("inner_visible", inner_visible);
 			node.AddValue("outer_visible", outer_visible);
 			node.AddValue("pause_visible", pause_visible);
-			node.AddValue("inner_crossings", inner_crossings);
-			node.AddValue("outer_crossings", outer_crossings);
-			node.AddValue("pause_crossings", pause_crossings);
 		}
 	}
-
 }

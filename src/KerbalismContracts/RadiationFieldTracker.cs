@@ -34,47 +34,9 @@ namespace Kerbalism.Contracts
 			{
 				var state = states[v.id];
 
-				if (state.inner_belt != inner_belt) {
-#if DEBUG
-					Lib.Log(v + " crossed boundary of inner belt of " + v.mainBody + ": " + inner_belt);
-#endif
-					bd.inner_crossings++;
-				}
-
-				if (state.outer_belt != outer_belt)
-				{
-#if DEBUG
-					Lib.Log(v + " crossed boundary of outer belt of " + v.mainBody + ": " + inner_belt);
-#endif
-					bd.outer_crossings++;
-				}
-
-				if (state.magnetosphere != magnetosphere)
-				{
-#if DEBUG
-					Lib.Log(v + " crossed boundary of magnetosphere of " + v.mainBody + ": " + inner_belt);
-#endif
-					bd.pause_crossings++;
-				}
-
 				state.inner_belt = inner_belt;
 				state.outer_belt = outer_belt;
 				state.magnetosphere = magnetosphere;
-
-				bool isSun = KERBALISM.Lib.IsSun(v.mainBody);
-
-				if(!isSun && !bd.inner_visible && bd.inner_crossings > Settings.inner_discovery_crossings)
-				{
-					KerbalismContracts.SetInnerBeltVisible(v.mainBody, true);
-				}
-				if (!isSun && !bd.outer_visible && bd.outer_crossings > Settings.outer_discovery_crossings)
-				{
-					KerbalismContracts.SetOuterBeltVisible(v.mainBody, true);
-				}
-				if (!bd.pause_visible && bd.pause_crossings > Settings.pause_discovery_crossings)
-				{
-					KerbalismContracts.SetMagnetopauseVisible(v.mainBody, true);
-				}
 			}
 
 

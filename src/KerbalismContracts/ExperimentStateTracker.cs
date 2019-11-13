@@ -24,7 +24,13 @@ namespace Kerbalism.Contracts
 
 		internal static void Add(Vessel vessel, string experient_id)
 		{
-			if(!states.ContainsKey(vessel.id))
+			if (vessel == null)
+			{
+				Lib.Log("Cannot add experiment id " + experient_id + " to null vessel");
+				return;
+			}
+
+			if (!states.ContainsKey(vessel.id))
 				states[vessel.id] = new List<string>();
 
 			var list = states[vessel.id];
@@ -34,7 +40,13 @@ namespace Kerbalism.Contracts
 
 		internal static void Remove(Vessel vessel, string experient_id)
 		{
-			if(states.ContainsKey(vessel.id))
+			if(vessel == null)
+			{
+				Lib.Log("Cannot remove experiment id " + experient_id + " from null vessel");
+				return;
+			}
+
+			if (states.ContainsKey(vessel.id))
 			{
 				states[vessel.id].Remove(experient_id);
 			}

@@ -99,9 +99,9 @@
     <Compile Include="ContractConfigurator\HasRadiationField.cs" />
     <Compile Include="ContractConfigurator\HasNoRadiationField.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="ContractConfigurator\ExperimentProgress.cs" />
     <Compile Include="ContractConfigurator\ExperimentRunning.cs" />
     <Compile Include="ExperimentStateTracker.cs" />
+    <Compile Include="ContractConfigurator\ShowRadiationField.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

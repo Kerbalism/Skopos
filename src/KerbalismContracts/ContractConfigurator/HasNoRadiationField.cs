@@ -42,8 +42,6 @@ namespace Kerbalism.Contracts
 		{
 			if (vessel == null) return false;
 
-			LoggingUtil.LogVerbose(this, "Checking VesselMeetsCondition: " + vessel.id);
-
 			if (targetBody != null && vessel.mainBody != targetBody) return false;
 
 			return !HasField(vessel);
