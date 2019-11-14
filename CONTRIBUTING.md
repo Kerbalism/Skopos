@@ -2,7 +2,7 @@
 
 All Contributions welcome. Just create a PR on GitHub.
 
-# Building
+# Building the Plugin
 
 I use VisualStudio, community edition. You can get that for free.
 
@@ -16,7 +16,10 @@ of writing this work on MacOS, if you use a different platform you should be
 able to build pretty easily. Just change KSPDevPath and KSPDevDllsRelativePath
 to your needs.
 
-# Dependencies
+## Dependencies
+
+* Kerbalism (read below!)
+* Contract Configurator
 
 ## Kerbalism
 
@@ -32,3 +35,11 @@ files (f.i. Kerbalism18.kbin) to Kerbalism.dll.
 
 You need to install ContractConfigurator to your GameData. If it is there,
 the project should be able to find it.
+
+
+# Contracts
+
+Some random notes:
+
+* Due to the way ContractConfigurator works, all contract parameters that are
+  supposed to work with unloaded vessels must be in a VesselParameterGroup.

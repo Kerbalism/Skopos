@@ -94,19 +94,23 @@
     <Compile Include="Lib.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="KerbalismContracts.cs" />
-    <Compile Include="ContractConfigurator\RadiationField.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
-    <Compile Include="ContractConfigurator\HasRadiationField.cs" />
-    <Compile Include="ContractConfigurator\HasNoRadiationField.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="ContractConfigurator\ExperimentRunning.cs" />
     <Compile Include="ExperimentStateTracker.cs" />
-    <Compile Include="ContractConfigurator\ShowRadiationField.cs" />
+    <Compile Include="Parameter\ExperimentRunning.cs" />
+    <Compile Include="Parameter\HasNoRadiationField.cs" />
+    <Compile Include="Parameter\HasRadiationField.cs" />
+    <Compile Include="Parameter\RadiationField.cs" />
+    <Compile Include="Behavior\ShowRadiationField.cs" />
+    <Compile Include="ContractConfigurator\HasResource.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="ContractConfigurator\" />
+    <Folder Include="Parameter\" />
+    <Folder Include="Behavior\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
