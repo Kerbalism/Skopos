@@ -28,15 +28,12 @@ namespace Kerbalism.Contracts
 		public static KerbalismContracts Instance { get; private set; } = null;
 
 		private float lastUpdate = 0;
-		private static Dictionary<Guid, bool> HasRadiationSensorCache = new Dictionary<Guid, bool>();
 
 		//  constructor
 		public KerbalismContracts()
 		{
 			// enable global access
 			Instance = this;
-
-			GameEvents.onVesselWasModified.Add((_) => { HasRadiationSensorCache.Clear(); });
 		}
 
 		private void OnDestroy()
@@ -113,12 +110,6 @@ namespace Kerbalism.Contracts
 					return false;
 			}
 			if (vessel.Landed) return false;
-
-			if(!HasRadiationSensorCache.ContainsKey(vessel.id))
-			{
-				HasRadiationSensorCache[vessel.id] = Lib.HasRadiationSensor(vessel.protoVessel);
-			}
-			if (!HasRadiationSensorCache[vessel.id]) return false;
 
 			return true;
 		}
@@ -219,7 +210,6 @@ namespace Kerbalism.Contracts
 			KerbalismContractsMain.initialized = false;
 			KerbalismContractsMain.KerbalismInitialized = false;
 
-			HasRadiationSensorCache.Clear();
 			bodyData.Clear();
 			
 			if (node.HasNode("BodyData"))

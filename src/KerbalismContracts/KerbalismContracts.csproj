@@ -98,12 +98,11 @@
     <Compile Include="Settings.cs" />
     <Compile Include="ExperimentStateTracker.cs" />
     <Compile Include="Parameter\ExperimentRunning.cs" />
-    <Compile Include="Parameter\HasNoRadiationField.cs" />
-    <Compile Include="Parameter\HasRadiationField.cs" />
     <Compile Include="Parameter\RadiationField.cs" />
     <Compile Include="Behavior\ShowRadiationField.cs" />
     <Compile Include="ContractConfigurator\HasResource.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Requirement\HasRadiationField.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -111,6 +110,7 @@
     <Folder Include="ContractConfigurator\" />
     <Folder Include="Parameter\" />
     <Folder Include="Behavior\" />
+    <Folder Include="Requirement\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">

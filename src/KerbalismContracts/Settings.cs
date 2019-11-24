@@ -14,7 +14,7 @@ namespace Kerbalism.Contracts
 		{
 			var cfg = GameDatabase.Instance.GetConfigNode("KerbalismContracts") ?? new ConfigNode();
 
-			enable_radiation_belt_discovery = Lib.ConfigValue(cfg, "enable_radiation_belt_discovery", false);
+			enable_radiation_belt_discovery = Lib.ConfigValue(cfg, "enable_radiation_belt_discovery", true);
 			enable_sun_observations = Lib.ConfigValue(cfg, "enable_sun_observations", false);
 		}
 	}

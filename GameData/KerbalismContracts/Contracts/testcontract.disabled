@@ -28,16 +28,25 @@ CONTRACT_TYPE:NEEDS[Kerbalism,FeatureRadiation]
       type = ExperimentRunning
       title = Run geigerCounter
       experiment_id = geigerCounter
-      disableOnStateChange = true
     }
-    
+
     PARAMETER
     {
       name = HasResource
       type = HasResource
       resource = ElectricCharge
       minQuantity = 10.0
-      disableOnStateChange = true
     }
+
+    PARAMETER
+    {
+      name = Duration
+      type = Duration
+      duration = 1h
+      preWaitText = Mission duration
+      waitingText = Remaining mission duration
+      completionText = Mission goal reached
+    }
+
   }
 }
