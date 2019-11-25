@@ -137,6 +137,7 @@ namespace Kerbalism.Contracts
 			node.AddValue("stay_out", stay_out);
 			node.AddValue("crossings_min", crossings_min);
 			node.AddValue("crossings_max", crossings_max);
+			node.AddValue("title", title);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -153,6 +154,7 @@ namespace Kerbalism.Contracts
 				stay_out = ConfigNodeUtil.ParseValue<bool>(node, "stay_out", false);
 				crossings_min = ConfigNodeUtil.ParseValue<int>(node, "crossings_min", 0);
 				crossings_max = ConfigNodeUtil.ParseValue<int>(node, "crossings_max", 0);
+				title = ConfigNodeUtil.ParseValue(node, "title", string.Empty);
 			}
 			finally
 			{

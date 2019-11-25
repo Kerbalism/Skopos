@@ -103,6 +103,7 @@
     <Compile Include="ContractConfigurator\HasResource.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Requirement\HasRadiationField.cs" />
+    <Compile Include="Parameter\ExperimentDone.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
