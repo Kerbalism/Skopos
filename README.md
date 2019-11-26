@@ -2,9 +2,11 @@
 
 A contract pack that builds on top of Kerbalism.
 
-## Magnetic fields
+## Radiation fields
 
 Magnetic fields and radiation belts need to be researched before they will become visible. There is a mission for each body that has you send a probe with a radiation sensor to go looking for things like radiation belts and magnetospheres. Some bodies don't have them, others do - it is your job to find out if there are any, and where they are. You won't see those fields in the map view unless you researched them. Fields are discovered independently, so you might see an inner belt but not know about the outer belt until later.
+
+# Plans for the future
 
 ## Solar observation
 
