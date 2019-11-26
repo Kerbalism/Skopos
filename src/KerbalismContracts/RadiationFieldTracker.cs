@@ -3,21 +3,42 @@ using System;
 
 namespace Kerbalism.Contracts
 {
+	public class RadiationFieldState
+	{
+		internal RadiationFieldState() { }
+
+		internal RadiationFieldState(CelestialBody body, bool inner_belt, bool outer_belt, bool magnetosphere)
+		{
+			this.inner_belt = inner_belt;
+			this.outer_belt = outer_belt;
+			this.magnetosphere = magnetosphere;
+			bodyIndex = body.flightGlobalsIndex;
+		}
+
+		internal bool IsValid()
+		{
+			return inner_crossings >= 0 && outer_crossings >= 0 && magneto_crossings >= 0;
+		}
+
+		internal void Validate()
+		{
+			inner_crossings = 0;
+			outer_crossings = 0;
+			magneto_crossings = 0;
+		}
+
+		internal bool inner_belt;
+		internal bool outer_belt;
+		internal bool magnetosphere;
+		internal int inner_crossings = -1;
+		internal int outer_crossings = -1;
+		internal int magneto_crossings = -1;
+		internal int bodyIndex = -1;
+	}
+
 	public static class RadiationFieldTracker
 	{
-		private class State {
-			internal State(bool inner_belt, bool outer_belt, bool magnetosphere)
-			{
-				this.inner_belt = inner_belt;
-				this.outer_belt = outer_belt;
-				this.magnetosphere = magnetosphere;
-			}
-
-			internal bool inner_belt;
-			internal bool outer_belt;
-			internal bool magnetosphere;
-		}
-		private static readonly Dictionary<Guid, State> states = new Dictionary<Guid, State>();
+		private static readonly Dictionary<Guid, List<RadiationFieldState>> states = new Dictionary<Guid, List<RadiationFieldState>>();
 
 		internal static void Update(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
@@ -28,71 +49,119 @@ namespace Kerbalism.Contracts
 
 			if (!states.ContainsKey(v.id))
 			{
-				states.Add(v.id, new State(inner_belt, outer_belt, magnetosphere));
+				states.Add(v.id, new List<RadiationFieldState>());
+			}
+
+			var statesForVessel = states[v.id];
+			var state = statesForVessel.Find(s => s.bodyIndex == v.mainBody.flightGlobalsIndex);
+			if(state == null)
+			{
+				statesForVessel.Add(new RadiationFieldState(v.mainBody, inner_belt, outer_belt, magnetosphere));
 			}
 			else
 			{
-				var state = states[v.id];
+				if(!state.IsValid())
+				{
+					// got our first update, set all counters to 0 so we don't count spawning into a field as crossing into it
+					state.Validate();
+				}
+				else
+				{
+					if (state.inner_belt != inner_belt) state.inner_crossings++;
+					if (state.outer_belt != outer_belt) state.outer_crossings++;
+					if (state.magnetosphere != magnetosphere) state.magneto_crossings++;
+				}
 
 				state.inner_belt = inner_belt;
 				state.outer_belt = outer_belt;
 				state.magnetosphere = magnetosphere;
 			}
 
-
 			for (int i = listeners.Count - 1; i >= 0; i--)
 			{
-				listeners[i](v, inner_belt, outer_belt, magnetosphere);
+				listeners[i](v, state);
 			}
 		}
 
-		internal static bool InnerBelt(Vessel v)
+		internal static List<RadiationFieldState> RadiationFieldStates(Vessel v)
 		{
-			if (v == null) return false;
+			if (v == null) return null;
 
 			if (states.ContainsKey(v.id))
 			{
-				return states[v.id].inner_belt;
+				return states[v.id];
 			}
-
-			return false;
+			return null;
 		}
 
-		internal static bool OuterBelt(Vessel v)
+		internal static RadiationFieldState RadiationFieldState(Vessel v)
 		{
-			if (v == null) return false;
+			if (v == null) return null;
 
 			if (states.ContainsKey(v.id))
 			{
-				return states[v.id].outer_belt;
+				return states[v.id].Find(s => s.bodyIndex == v.mainBody.flightGlobalsIndex);
 			}
-
-			return false;
+			return null;
 		}
 
-		internal static bool Magnetosphere(Vessel v)
-		{
-			if (v == null) return false;
+		private static readonly List<Action<Vessel, RadiationFieldState>> listeners = new List<Action<Vessel, RadiationFieldState>>();
 
-			if (states.ContainsKey(v.id))
-			{
-				return states[v.id].magnetosphere;
-			}
-
-			return false;
-		}
-
-		private static readonly List<Action<Vessel, bool, bool, bool>> listeners = new List<Action<Vessel, bool, bool, bool>>();
-
-		internal static void AddListener(Action<Vessel, bool, bool, bool> listener)
+		internal static void AddListener(Action<Vessel, RadiationFieldState> listener)
 		{
 			if (!listeners.Contains(listener)) listeners.Add(listener);
 		}
 
-		internal static void RemoveListener(Action<Vessel, bool, bool, bool> listener)
+		internal static void RemoveListener(Action<Vessel, RadiationFieldState> listener)
 		{
 			if (listeners.Contains(listener)) listeners.Remove(listener);
 		}
 
+		internal static void Save(ConfigNode node)
+		{
+			foreach(var id in states.Keys)
+			{
+				// test if vessel still exists
+				if(FlightGlobals.FindVessel(id) == null) continue;
+
+				var vesselNode = node.AddNode(id.ToString());
+				foreach(var state in states[id])
+				{
+					var stateNode = vesselNode.AddNode(state.bodyIndex.ToString());
+					stateNode.SetValue("inner_belt", state.inner_belt);
+					stateNode.SetValue("outer_belt", state.outer_belt);
+					stateNode.SetValue("magnetosphere", state.magnetosphere);
+					stateNode.SetValue("inner_crossings", state.inner_crossings);
+					stateNode.SetValue("outer_crossings", state.outer_crossings);
+					stateNode.SetValue("magneto_crossings", state.magneto_crossings);
+				}
+			}
+		}
+
+		internal static void Load(ConfigNode node)
+		{
+			states.Clear();
+
+			foreach(var vesselNode in node.GetNodes())
+			{
+				Guid id = Guid.Parse(vesselNode.name);
+				var statesList = new List<RadiationFieldState>();
+				states[id] = statesList;
+
+				foreach(var stateNode in vesselNode.GetNodes())
+				{
+					var state = new RadiationFieldState();
+					statesList.Add(state);
+
+					state.bodyIndex = int.Parse(stateNode.name);
+					state.inner_belt = Lib.ConfigValue(stateNode, "inner_belt", false);
+					state.outer_belt = Lib.ConfigValue(stateNode, "outer_belt", false);
+					state.magnetosphere = Lib.ConfigValue(stateNode, "magnetosphere", false);
+					state.inner_crossings = Lib.ConfigValue(stateNode, "inner_crossings", 0);
+					state.outer_crossings = Lib.ConfigValue(stateNode, "outer_crossings", 0);
+					state.magneto_crossings = Lib.ConfigValue(stateNode, "magneto_crossings", 0);
+				}
+			}
+		}
 	}
 }

@@ -31,7 +31,7 @@ namespace Kerbalism.Contracts
 
 		protected override string RequirementText()
 		{
-			return targetBody.displayName + " has " + RadiationField.Name(field);
+			return targetBody.name + " has " + RadiationField.Name(field);
 		}
 
 		public override bool RequirementMet(ConfiguredContract contract)

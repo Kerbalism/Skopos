@@ -112,15 +112,15 @@ namespace Kerbalism.Contracts
 			return "Find " + RadiationField.Name(field) + " of " + bodyName;
 		}
 
-		protected static bool InField(Vessel v, RadiationFieldType f)
+		protected static bool InField(RadiationFieldType f, RadiationFieldState state)
 		{
 			switch(f)
 			{
-				case RadiationFieldType.INNER_BELT: return RadiationFieldTracker.InnerBelt(v);
-				case RadiationFieldType.OUTER_BELT: return RadiationFieldTracker.OuterBelt(v);
-				case RadiationFieldType.MAGNETOPAUSE: return RadiationFieldTracker.Magnetosphere(v);
+				case RadiationFieldType.INNER_BELT: return state.inner_belt;
+				case RadiationFieldType.OUTER_BELT: return state.outer_belt;
+				case RadiationFieldType.MAGNETOPAUSE: return state.magnetosphere;
 				case RadiationFieldType.ANY:
-					return InField(v, RadiationFieldType.INNER_BELT) || InField(v, RadiationFieldType.OUTER_BELT) || InField(v, RadiationFieldType.MAGNETOPAUSE);
+					return state.inner_belt || state.outer_belt || state.magnetosphere;
 			}
 			return false;
 		}
@@ -174,25 +174,26 @@ namespace Kerbalism.Contracts
 			RadiationFieldTracker.RemoveListener(RunCheck);
 		}
 
-		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
+		private void RunCheck(Vessel v, RadiationFieldState state)
 		{
-#if DEBUG
-			Lib.Log("RunCheck " + v + ": inner " + inner_belt + " outer " + outer_belt + " magneto " + magnetosphere);
-#endif
 			CheckVessel(v);
 		}
 
 		protected override bool VesselMeetsCondition(Vessel vessel)
 		{
-			if (vessel == null) return false;
+			var states = RadiationFieldTracker.RadiationFieldStates(vessel);
+			if (states == null) return false;
 
-			if (targetBody != null && vessel.mainBody != targetBody) return false;
+			var state = states.Find(s => s.bodyIndex == targetBody.flightGlobalsIndex);
+			if (state == null) return false;
 
-			bool in_field = InField(vessel, field);
+			bool in_field = InField(field, state);
 
-			if (stay_in && in_field) return false;
+			if (stay_in && !in_field) return false;
 			if (stay_out && in_field) return false;
 			if (stay_in || stay_out) return true;
+
+			Lib.Log("RadiationFieldParameter " + field + " / " + vessel + ": in_field " + in_field + " currently " + currently_in_field + " crossed " + crossed_count);
 
 			if (in_field != currently_in_field) crossed_count++;
 			currently_in_field = in_field;
@@ -280,7 +281,7 @@ namespace Kerbalism.Contracts
 			RadiationFieldTracker.RemoveListener(RunCheck);
 		}
 
-		private void RunCheck(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
+		private void RunCheck(Vessel v, RadiationFieldState newState)
 		{
 			var bd = KerbalismContracts.Instance.BodyData(targetBody);
 

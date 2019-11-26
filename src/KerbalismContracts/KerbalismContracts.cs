@@ -8,7 +8,7 @@ using System.Text;
 namespace Kerbalism.Contracts
 {
 	[KSPAddon(KSPAddon.Startup.MainMenu, false)]
-	public class KerbalismContractsMain :	MonoBehaviour
+	public class KerbalismContractsMain : MonoBehaviour
 	{
 		public static bool initialized = false;
 		public static bool KerbalismInitialized = false;
@@ -27,8 +27,6 @@ namespace Kerbalism.Contracts
 	{
 		public static KerbalismContracts Instance { get; private set; } = null;
 
-		private float lastUpdate = 0;
-
 		//  constructor
 		public KerbalismContracts()
 		{
@@ -43,59 +41,14 @@ namespace Kerbalism.Contracts
 
 		private void Update()
 		{
-			if(!KerbalismContractsMain.initialized) {
+			if (!KerbalismContractsMain.initialized)
+			{
 				StartCoroutine(InitializeVisiblityDeferred());
 				KerbalismContractsMain.initialized = true;
 			}
-
-			var now = Time.time;
-			if (lastUpdate + 5 > now)
-				return;
-
-			if(KerbalismContractsMain.KerbalismInitialized)
-			{
-				lastUpdate = now;
-
-				foreach(var vessel in FlightGlobals.Vessels)
-				{
-					TestVesselBelts(vessel);
-				}
-			}
 		}
 
-		private void TestVesselBelts(Vessel vessel)
-		{
-			if (!RelevantVessel(vessel))
-				return;
-
-			var bd = BodyData(vessel.mainBody);
-
-			bool skip = bd.has_inner && bd.has_outer && bd.has_pause;
-			if (skip) return; // we'll get events for all belts, no custom tracking needed
-
-			// for missing fields, test if vessel would be in a plausible fake field
-			bool in_inner = bd.has_inner ? RadiationFieldTracker.InnerBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationFieldType.INNER_BELT);
-			bool in_outer = bd.has_outer ? RadiationFieldTracker.OuterBelt(vessel) : InPlausibleBeltLocation(vessel, RadiationFieldType.OUTER_BELT);
-			bool in_pause = bd.has_pause ? RadiationFieldTracker.Magnetosphere(vessel) : InPlausibleBeltLocation(vessel, RadiationFieldType.MAGNETOPAUSE);
-
-			RadiationFieldTracker.Update(vessel, in_inner, in_outer, in_pause);
-		}
-
-		private bool InPlausibleBeltLocation(Vessel vessel, RadiationFieldType field)
-		{
-			switch(field)
-			{
-				case RadiationFieldType.INNER_BELT:
-					return vessel.altitude > vessel.mainBody.Radius * 2.8 && vessel.altitude > vessel.mainBody.Radius * 3 && Math.Abs(vessel.longitude) < 30;
-				case RadiationFieldType.OUTER_BELT:
-					return vessel.altitude > vessel.mainBody.Radius * 4.5 && vessel.altitude > vessel.mainBody.Radius * 5 && Math.Abs(vessel.longitude) < 65; ;
-				case RadiationFieldType.MAGNETOPAUSE:
-					return vessel.altitude < vessel.mainBody.Radius * 6;
-			}
-			return false;
-		}
-
-		internal static bool RelevantVessel(Vessel vessel)
+	internal static bool RelevantVessel(Vessel vessel)
 		{
 			if (vessel == null)
 				return false;
@@ -185,22 +138,25 @@ namespace Kerbalism.Contracts
 		{
 			bool isSandboxGame = HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX;
 
-			if(Settings.enable_radiation_belt_discovery)
+			foreach (var body in FlightGlobals.Bodies)
 			{
-				foreach (var body in FlightGlobals.Bodies)
-				{
-					var bd = BodyData(body);
+				var bd = BodyData(body);
 
-					Lib.Log("Setting magnetic field visibility for " + body.bodyName + " to " + bd.inner_visible + "/" + bd.outer_visible + "/" + bd.pause_visible);
+				if (Settings.enable_radiation_belt_discovery)
+				{
+					Lib.Log("Field visibility " + body.name + ": " + bd.inner_visible + "/" + bd.outer_visible + "/" + bd.pause_visible);
 					KERBALISM.API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
 					KERBALISM.API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
 					KERBALISM.API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
-
-					bd.has_inner = KERBALISM.API.HasInnerBelt(body);
-					bd.has_outer = KERBALISM.API.HasOuterBelt(body);
-					bd.has_pause = KERBALISM.API.HasMagnetopause(body);
 				}
+
+				bd.has_inner = KERBALISM.API.HasInnerBelt(body);
+				bd.has_outer = KERBALISM.API.HasOuterBelt(body);
+				bd.has_pause = KERBALISM.API.HasMagnetopause(body);
+
+				Lib.Log("Fields for " + body.name + ": " + bd.has_inner + "/" + bd.has_outer + "/" + bd.has_pause);
 			}
+			
 
 			KerbalismContractsMain.KerbalismInitialized = true;
 		}
@@ -222,6 +178,11 @@ namespace Kerbalism.Contracts
 					}
 				}
 			}
+
+			if (node.HasNode("RadiationFieldTracker"))
+			{
+				RadiationFieldTracker.Load(node.GetNode("RadiationFieldTracker"));
+			}
 		}
 
 		public override void OnSave(ConfigNode node)
@@ -231,6 +192,8 @@ namespace Kerbalism.Contracts
 			{
 				p.Value.Save(bodies_node.AddNode("index_" + p.Key));
 			}
+
+			RadiationFieldTracker.Save(node.AddNode("RadiationFieldTracker"));
 		}
 
 		private readonly Dictionary<int, BodyData> bodyData = new Dictionary<int, BodyData>();
