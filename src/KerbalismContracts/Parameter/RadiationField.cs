@@ -184,7 +184,8 @@ namespace Kerbalism.Contracts
 			var states = RadiationFieldTracker.RadiationFieldStates(vessel);
 			if (states == null) return false;
 
-			var state = states.Find(s => s.bodyIndex == targetBody.flightGlobalsIndex);
+			var body = targetBody != null ? targetBody : vessel.mainBody;
+			var state = states.Find(s => s.bodyIndex == body.flightGlobalsIndex);
 			if (state == null) return false;
 
 			bool in_field = InField(field, state);
