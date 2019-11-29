@@ -9,20 +9,20 @@ namespace Kerbalism.Contracts
 {
 	public class ExperimentRunningFactory : ParameterFactory
 	{
-		protected string experiment_id;
+		protected string experiment;
 
 		public override bool Load(ConfigNode configNode)
 		{
 			bool valid = base.Load(configNode);
 
-			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "experiment_id", x => experiment_id = x, this, string.Empty, ValidateExperimentId);
+			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "experiment", x => experiment = x, this, string.Empty, ValidateExperimentId);
 
 			return valid;
 		}
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			return new ExperimentRunningParameter(experiment_id, title);
+			return new ExperimentRunningParameter(experiment, title);
 		}
 
 		private bool ValidateExperimentId(string id)
@@ -39,26 +39,26 @@ namespace Kerbalism.Contracts
 
 	public class ExperimentRunningParameter : VesselParameter
 	{
-		protected string experiment_id;
+		protected string experiment;
 
 		public ExperimentRunningParameter() : base(null) { }
 
-		public ExperimentRunningParameter(string experiment_id, string title)
+		public ExperimentRunningParameter(string experiment, string title)
 		{
-			this.experiment_id = experiment_id;
+			this.experiment = experiment;
 			this.title = title;
 		}
 
 		protected override void OnParameterSave(ConfigNode node)
 		{
 			base.OnParameterSave(node);
-			node.AddValue("experiment_id", experiment_id);
+			node.AddValue("experiment", experiment);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
 		{
 			base.OnParameterLoad(node);
-			experiment_id = node.GetValue("experiment_id");
+			experiment = node.GetValue("experiment");
 		}
 
 		protected override void OnRegister()
@@ -71,10 +71,10 @@ namespace Kerbalism.Contracts
 				if (!KerbalismContracts.RelevantVessel(v))
 					return;
 
-				if(KERBALISM.API.ExperimentIsRunning(v, experiment_id))
+				if(KERBALISM.API.ExperimentIsRunning(v, experiment))
 				{
-					Lib.Log("Experiment Running detected upon register on " + v + " " + experiment_id);
-					ExperimentStateTracker.Add(v, experiment_id);
+					Lib.Log("Experiment Running detected upon register on " + v + " " + experiment);
+					ExperimentStateTracker.Add(v, experiment);
 				}
 			}
 		}
@@ -94,9 +94,9 @@ namespace Kerbalism.Contracts
 		{
 			if (vessel == null) return false;
 
-			Lib.Log("Checking ExperimentStateParameter.VesselMeetsCondition: " + vessel + " " + experiment_id);
+			Lib.Log("Checking ExperimentStateParameter.VesselMeetsCondition: " + vessel + " " + experiment);
 
-			return ExperimentStateTracker.IsRunning(vessel, experiment_id);
+			return ExperimentStateTracker.IsRunning(vessel, experiment);
 		}	
 	}
 }

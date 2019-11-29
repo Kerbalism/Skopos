@@ -100,15 +100,15 @@
     <Compile Include="Parameter\ExperimentRunning.cs" />
     <Compile Include="Parameter\RadiationField.cs" />
     <Compile Include="Behavior\ShowRadiationField.cs" />
-    <Compile Include="ContractConfigurator\HasResource.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Requirement\HasRadiationField.cs" />
     <Compile Include="Parameter\ExperimentDone.cs" />
+    <Compile Include="Parameter\ExperimentAboveWaypoint.cs" />
+    <Compile Include="Parameter\BackgroundVesselParameter.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <Folder Include="Properties\" />
-    <Folder Include="ContractConfigurator\" />
     <Folder Include="Parameter\" />
     <Folder Include="Behavior\" />
     <Folder Include="Requirement\" />
