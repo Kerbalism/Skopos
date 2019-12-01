@@ -107,38 +107,37 @@ namespace Kerbalism.Contracts
 			experiment = ConfigNodeUtil.ParseValue(node, "experiment", string.Empty);
 		}
 
-		protected void CreateElevationParameter()
-		{
-		}
-
 		protected override void BeforeUpdate()
-		{
-		}
-
-		protected override void AfterUpdate()
-		{
-		}
-
-		protected override bool VesselMeetsCondition(Vessel vessel)
 		{
 			// Make sure we have a waypoint
 			if (waypoint == null && Root != null)
 			{
 				waypoint = FetchWaypoint(Root, true);
 			}
+		}
+
+		protected override void AfterUpdate()
+		{
+		}
+
+		protected override bool UpdateVesselState(Vessel vessel, ParameterDelegate<Vessel> parameter)
+		{
 			if (waypoint == null)
 			{
+				parameter.SetTitle(vessel.vesselName + ": no waypoint");
 				return false;
 			}
 
 			// Not even close
 			if (vessel.mainBody.name != waypoint.celestialName)
 			{
+				parameter.SetTitle(vessel.vesselName + ": not in SOI");
 				return false;
 			}
 
 			if (!string.IsNullOrEmpty(experiment) && !ExperimentStateTracker.IsRunning(vessel, experiment))
 			{
+				parameter.SetTitle(vessel.vesselName + ": Equipment is off");
 				return false;
 			}
 
@@ -147,7 +146,20 @@ namespace Kerbalism.Contracts
 			double elevation = 90.0 - (surfaceDistance / r) * (180.0 / Math.PI);
 
 			bool pass = min_elevation <= elevation;
+
+			string elevString = "elevation " + elevation.ToString("F0") + "°";
+			if (!pass) elevString = "<color=orange>" + elevString + "</color>";
+			else elevString = "<color=green>" + elevString + "</color>";
+
+			parameter.SetTitle(vessel.vesselName + ": " + elevString + " (min. " + min_elevation.ToString("F0") + "°)");
+
 			return pass;
+		}
+
+		protected override string GetNotes()
+		{
+			String waypointName = waypoint != null ? waypoint.name : "waypoint";
+			return "Vessels must be over " + waypointName + ", min. elevation above horizon " + min_elevation + "°";
 		}
 
 		protected override bool VesselIsCandidate(Vessel vessel)
@@ -187,6 +199,11 @@ namespace Kerbalism.Contracts
 			}
 
 			return waypoint;
+		}
+
+		protected override ParameterDelegate<Vessel> CreateVesselParameter(Vessel vessel)
+		{
+			return new ParameterDelegate<Vessel>(vessel.vesselName, v => false);
 		}
 	}
 }
