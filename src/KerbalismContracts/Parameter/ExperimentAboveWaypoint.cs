@@ -39,8 +39,7 @@ namespace Kerbalism.Contracts
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, min_elevation, experiment, title);
-			aw.SetDuration(duration.Value);
+			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, min_elevation, experiment, title);
 			aw.SetAllowInterruption(allow_interruption);
 			return aw.FetchWaypoint(contract) != null ? aw : null;
 		}
@@ -53,10 +52,6 @@ namespace Kerbalism.Contracts
 		protected string experiment { get; set; }
 
 		protected Waypoint waypoint { get; set; }
-
-		protected SubParameter elevationParameter;
-
-		protected double best_elevation;
 
 		/// <summary>
 		/// Child class for checking waypoints, because completed/disabled parameters don't get events.
@@ -83,8 +78,8 @@ namespace Kerbalism.Contracts
 
 		public ExperimentAboveWaypoint() { }
 
-		public ExperimentAboveWaypoint(int waypointIndex, double min_elevation, string experiment_id, string title)
-			: base(string.IsNullOrEmpty(title) ? "Above waypoint" : title)
+		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, string experiment_id, string title)
+			: base(string.IsNullOrEmpty(title) ? "Above waypoint" : title, duration)
 		{
 			this.min_elevation = min_elevation;
 			this.waypointIndex = waypointIndex;
@@ -114,27 +109,14 @@ namespace Kerbalism.Contracts
 
 		protected void CreateElevationParameter()
 		{
-			/*
-			if (elevationParameter != null) return;
-
-			elevationParameter = new SubParameter("Min. Elevation: " + min_elevation.ToString("F0"));
-			elevationParameter.Optional = true;
-			AddParameter(elevationParameter);
-		*/}
+		}
 
 		protected override void BeforeUpdate()
 		{
-			best_elevation = -100;
 		}
 
 		protected override void AfterUpdate()
 		{
-			CreateElevationParameter();
-
-			if(best_elevation <= -100)
-				elevationParameter.SetTitle("Min. Elevation: " + min_elevation.ToString("F0"));
-			else
-				elevationParameter.SetTitle("Elevation: " + best_elevation.ToString("F0"));
 		}
 
 		protected override bool VesselMeetsCondition(Vessel vessel)
@@ -165,7 +147,6 @@ namespace Kerbalism.Contracts
 			double elevation = 90.0 - (surfaceDistance / r) * (180.0 / Math.PI);
 
 			bool pass = min_elevation <= elevation;
-			if (best_elevation < elevation) best_elevation = elevation;
 			return pass;
 		}
 

@@ -15,32 +15,6 @@ using ContractConfigurator.Behaviour;
 
 namespace Kerbalism.Contracts
 {
-	public class SubParameter : ContractConfiguratorParameter
-	{
-		public SubParameter() { }
-		public SubParameter(string title) : base(title) { }
-
-		protected override void OnParameterLoad(ConfigNode node)
-		{
-		}
-
-		protected override void OnParameterSave(ConfigNode node)
-		{
-		}
-
-		public void SetTitle(string newTitle)
-		{
-			if (title != newTitle)
-			{
-				title = newTitle;
-
-				// Force a call to GetTitle to update the contracts app
-				GetTitle();
-			}
-		}
-	}
-
-
 	public abstract class BackgroundVesselParameter : ContractConfiguratorParameter, ParameterDelegateContainer
  	{
 		private readonly Dictionary<Guid, bool> validCandidates = new Dictionary<Guid, bool>();
@@ -52,16 +26,18 @@ namespace Kerbalism.Contracts
 		protected bool allow_interruption = true;
 		protected double duration = -1;
 		protected double endTime = double.MaxValue;
-		private SubParameter durationParameter;
+		private ParameterDelegate<Vessel> durationParameter;
 
 		public bool ChildChanged { get; set; }
 
-		protected BackgroundVesselParameter() : base() { }
-		protected BackgroundVesselParameter(string title) : base(title) { }
-
-		public void SetDuration(double value)
+		protected BackgroundVesselParameter() : base()
 		{
-			duration = value;
+		}
+
+		protected BackgroundVesselParameter(string title, double duration = 0.0) : base(title)
+		{
+			this.duration = duration;
+			CreateDurationParameter();
 		}
 
 		public void SetAllowInterruption(bool value)
@@ -69,25 +45,42 @@ namespace Kerbalism.Contracts
 			allow_interruption = value;
 		}
 
-		protected void CreateTimerParameter()
+		protected void CreateDurationParameter()
 		{
 			if (duration > 0.0 && durationParameter == null)
 			{
-				durationParameter = new SubParameter("Duration: " + DurationUtil.StringValue(duration));
+				durationParameter = new ParameterDelegate<Vessel>("Duration: " + DurationUtil.StringValue(duration), v => false);
 				durationParameter.Optional = true;
 				durationParameter.fakeOptional = true;
 				AddParameter(durationParameter);
 			}
 		}
 
+		protected void OnContractLoaded(ConfiguredContract contract)
+		{
+			if (contract == Root)
+			{
+				CreateDurationParameter();
+			}
+		}
+
 		protected override void OnParameterLoad(ConfigNode node)
 		{
-			title = ConfigNodeUtil.ParseValue(node, "title", string.Empty);
-			condition_met = ConfigNodeUtil.ParseValue(node, "condition_met", false);
-			allow_interruption = ConfigNodeUtil.ParseValue(node, "allow_interruption", false);
-			duration = Convert.ToDouble(node.GetValue("duration"));
-			endTime = Convert.ToDouble(node.GetValue("endTime"));
-			validCandidates.Clear();
+			try
+			{
+				title = ConfigNodeUtil.ParseValue(node, "title", string.Empty);
+				condition_met = ConfigNodeUtil.ParseValue(node, "condition_met", false);
+				allow_interruption = ConfigNodeUtil.ParseValue(node, "allow_interruption", false);
+				duration = Convert.ToDouble(node.GetValue("duration"));
+				endTime = Convert.ToDouble(node.GetValue("endTime"));
+				validCandidates.Clear();
+
+				CreateDurationParameter();
+			}
+			finally
+			{
+				ParameterDelegate<Vessel>.OnDelegateContainerLoad(node);
+			}
 		}
 
 		protected override void OnParameterSave(ConfigNode node)
@@ -152,15 +145,18 @@ namespace Kerbalism.Contracts
 
 			GetTitle();
 
-			CreateTimerParameter();
 			if (durationParameter != null)
 			{
 				if(condition_met)
 					durationParameter.SetTitle("Time Remaining: " + DurationUtil.StringValue(endTime - Planetarium.GetUniversalTime()));
 				else
 					durationParameter.SetTitle("Duration: " + DurationUtil.StringValue(duration));
+			}
 
-				durationParameter.SetState(condition_met ? ParameterState.Incomplete : ParameterState.Failed);
+			if (ChildChanged)
+			{
+				ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+				ChildChanged = false;
 			}
 		}
 
