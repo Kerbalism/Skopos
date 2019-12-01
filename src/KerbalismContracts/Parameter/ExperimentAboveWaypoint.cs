@@ -79,15 +79,15 @@ namespace Kerbalism.Contracts
 		public ExperimentAboveWaypoint() { }
 
 		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, string experiment_id, string title)
-			: base(string.IsNullOrEmpty(title) ? "Above waypoint" : title, duration)
+			: base(title, duration)
 		{
 			this.min_elevation = min_elevation;
 			this.waypointIndex = waypointIndex;
 			this.experiment = experiment_id;
 
-			if (string.IsNullOrEmpty(title) && waypoint != null)
+			if (string.IsNullOrEmpty(title))
 			{
-				this.title = "Above " + waypoint.name;
+				this.title = "Min. elevation " + min_elevation.ToString("F0") + "° above " + (waypoint == null ? "waypoint" : waypoint.name);
 			}
 		}
 
@@ -147,7 +147,7 @@ namespace Kerbalism.Contracts
 
 			bool pass = min_elevation <= elevation;
 
-			string elevString = "elevation " + elevation.ToString("F0") + "°";
+			string elevString = "elevation " + elevation.ToString("F1") + "°";
 			if (!pass) elevString = "<color=orange>" + elevString + "</color>";
 			else elevString = "<color=green>" + elevString + "</color>";
 
@@ -164,6 +164,9 @@ namespace Kerbalism.Contracts
 
 		protected override bool VesselIsCandidate(Vessel vessel)
 		{
+			if(!string.IsNullOrEmpty(experiment))
+				return Lib.HasExperiment(vessel.protoVessel, experiment);
+
 			return true;
 		}
 

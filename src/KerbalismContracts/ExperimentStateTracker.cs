@@ -9,8 +9,6 @@ namespace Kerbalism.Contracts
 
 		internal static void Update(Vessel vessel, string experiment_id, bool running)
 		{
-			Lib.Log("ExperimentStateTracker.StateChanged: " + vessel + " " + experiment_id + " running=" + running);
-
 			if (running)
 				Add(vessel, experiment_id);
 			else
@@ -24,11 +22,7 @@ namespace Kerbalism.Contracts
 
 		internal static void Add(Vessel vessel, string experient_id)
 		{
-			if (vessel == null)
-			{
-				Lib.Log("Cannot add experiment id " + experient_id + " to null vessel");
-				return;
-			}
+			if (vessel == null) return;
 
 			if (!states.ContainsKey(vessel.id))
 				states[vessel.id] = new List<string>();
@@ -40,24 +34,16 @@ namespace Kerbalism.Contracts
 
 		internal static void Remove(Vessel vessel, string experient_id)
 		{
-			if(vessel == null)
-			{
-				Lib.Log("Cannot remove experiment id " + experient_id + " from null vessel");
-				return;
-			}
+			if (vessel == null) return;
 
 			if (states.ContainsKey(vessel.id))
-			{
 				states[vessel.id].Remove(experient_id);
-			}
 		}
 
 		internal static bool IsRunning(Vessel vessel, string experiment_id)
 		{
 			if(states.ContainsKey(vessel.id))
-			{
 				return states[vessel.id].Contains(experiment_id);
-			}
 			return false;
 		}
 

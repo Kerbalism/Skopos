@@ -71,33 +71,102 @@ namespace Kerbalism.Contracts
 			}
 		}
 
-
-		public static bool HasRadiationSensor(ProtoVessel v)
+		///<summary>used by ModulePrefab function, to support multiple modules of the same type in a part</summary>
+		public sealed class Module_prefab_data
 		{
-			foreach (var p in v.protoPartSnapshots)
+			public int index;                         // index of current module of this type
+			public List<PartModule> prefabs;          // set of module prefabs of this type
+		}
+
+		///<summary>
+		/// get module prefab
+		///  This function is used to solve the problem of obtaining a specific module prefab,
+		/// and support the case where there are multiple modules of the same type in the part.
+		/// </summary>
+		public static PartModule ModulePrefab(List<PartModule> module_prefabs, string module_name, Dictionary<string, Module_prefab_data> PD)
+		{
+			// get data related to this module type, or create it
+			Module_prefab_data data;
+			if (!PD.TryGetValue(module_name, out data))
 			{
-				foreach(var pm in p.modules)
+				data = new Module_prefab_data
 				{
-					if(pm.moduleName == "Sensor")
+					prefabs = module_prefabs.FindAll(k => k.moduleName == module_name)
+				};
+				PD.Add(module_name, data);
+			}
+
+			// return the module prefab, and increment module-specific index
+			// note: if something messed up the prefab, or module were added dynamically,
+			// then we have no chances of finding the module prefab so we return null
+			return data.index < data.prefabs.Count ? data.prefabs[data.index++] : null;
+		}
+
+		public static bool HasExperiment(ProtoVessel v, string experiment_id)
+		{
+			// store data required to support multiple modules of same type in a part
+			var PD = new Dictionary<string, Module_prefab_data>();
+
+			// for each part
+			foreach (ProtoPartSnapshot p in v.protoPartSnapshots)
+			{
+				// get part prefab (required for module properties)
+				Part part_prefab = PartLoader.getPartInfoByName(p.partName).partPrefab;
+
+				// get all module prefabs
+				var module_prefabs = part_prefab.FindModulesImplementing<PartModule>();
+
+				// clear module indexes
+				PD.Clear();
+
+				// for each module
+				foreach (ProtoPartModuleSnapshot m in p.modules)
+				{
+					// get the module prefab
+					// if the prefab doesn't contain this module, skip it
+					PartModule module_prefab = ModulePrefab(module_prefabs, m.moduleName, PD);
+					if (!module_prefab) continue;
+
+					// if the module is disabled, skip it
+					// note: this must be done after ModulePrefab is called, so that indexes are right
+					if (!ProtoGetBool(m, "isEnabled")) continue;
+
+					if(m.moduleName == "Experiment")
 					{
-						var type = ConfigValue(pm.moduleValues, "type", string.Empty);
-						if (type == "radiation")
-						{
-#if DEBUG
-							Lib.Log("Vessel has radiation sensor: " + v.vesselRef);
-#endif
-							return true;
-						}
+						var id = ReflectionValue<string>(module_prefab, "experiment_id");
+						if (id == experiment_id) return true;
 					}
 				}
 			}
-
-#if DEBUG
-			Lib.Log("Vessel has no radiation sensor: " + v.vesselRef);
-#endif
 			return false;
 		}
 
+		public static bool ProtoGetBool(ProtoPartModuleSnapshot m, string name, bool def_value = false)
+		{
+			bool v;
+			string s = m.moduleValues.GetValue(name);
+			return s != null && bool.TryParse(s, out v) ? v : def_value;
+		}
+
+		public static string ProtoGetString(ProtoPartModuleSnapshot m, string name, string def_value = "")
+		{
+			string s = m.moduleValues.GetValue(name);
+			Lib.Log("ProtoGetString " + name + " = " + s);
+			return s ?? def_value;
+		}
+
+		private static readonly BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
+		///<summary>
+		/// return a value from a module using reflection
+		/// note: useful when the module is from another assembly, unknown at build time
+		/// note: useful when the value isn't persistent
+		/// note: this function break hard when external API change, by design
+		/// </summary>
+		public static T ReflectionValue<T>(PartModule m, string value_name)
+		{
+			return (T)m.GetType().GetField(value_name, flags).GetValue(m);
+		}
 
 		// compose a set of strings together, without creating temporary objects
 		// note: the objective here is to minimize number of temporary variables for GC

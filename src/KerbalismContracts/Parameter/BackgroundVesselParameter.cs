@@ -106,7 +106,7 @@ namespace Kerbalism.Contracts
 		protected void RemoveOneDeadVessel()
 		{
 			// remove vessels that no longer exist
-			foreach (Guid id in vesselParameters.Keys)
+			foreach (Guid id in validCandidates.Keys)
 			{
 				if (FlightGlobals.FindVessel(id) == null)
 				{
