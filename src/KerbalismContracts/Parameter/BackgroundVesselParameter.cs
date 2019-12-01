@@ -15,8 +15,34 @@ using ContractConfigurator.Behaviour;
 
 namespace Kerbalism.Contracts
 {
-	public abstract class BackgroundVesselParameter : ContractConfiguratorParameter
+	public class SubParameter : ContractConfiguratorParameter
 	{
+		public SubParameter() { }
+		public SubParameter(string title) : base(title) { }
+
+		protected override void OnParameterLoad(ConfigNode node)
+		{
+		}
+
+		protected override void OnParameterSave(ConfigNode node)
+		{
+		}
+
+		public void SetTitle(string newTitle)
+		{
+			if (title != newTitle)
+			{
+				title = newTitle;
+
+				// Force a call to GetTitle to update the contracts app
+				GetTitle();
+			}
+		}
+	}
+
+
+	public abstract class BackgroundVesselParameter : ContractConfiguratorParameter, ParameterDelegateContainer
+ 	{
 		private readonly Dictionary<Guid, bool> validCandidates = new Dictionary<Guid, bool>();
 
 		private float lastUpdate = 0.0f;
@@ -26,6 +52,9 @@ namespace Kerbalism.Contracts
 		protected bool allow_interruption = true;
 		protected double duration = -1;
 		protected double endTime = double.MaxValue;
+		private SubParameter durationParameter;
+
+		public bool ChildChanged { get; set; }
 
 		protected BackgroundVesselParameter() : base() { }
 		protected BackgroundVesselParameter(string title) : base(title) { }
@@ -38,6 +67,17 @@ namespace Kerbalism.Contracts
 		public void SetAllowInterruption(bool value)
 		{
 			allow_interruption = value;
+		}
+
+		protected void CreateTimerParameter()
+		{
+			if (duration > 0.0 && durationParameter == null)
+			{
+				durationParameter = new SubParameter("Duration: " + DurationUtil.StringValue(duration));
+				durationParameter.Optional = true;
+				durationParameter.fakeOptional = true;
+				AddParameter(durationParameter);
+			}
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -59,11 +99,8 @@ namespace Kerbalism.Contracts
 			node.AddValue("endTime", endTime);
 		}
 
-		protected override string GetParameterTitle()
-		{
-			if(!condition_met || duration <= 0 || duration == double.MaxValue) return title;
-			return title + ": Time to completion: " + DurationUtil.StringValue(endTime - Planetarium.GetUniversalTime());
-		}
+		protected virtual void BeforeUpdate() { }
+		protected virtual void AfterUpdate() { }
 
 		protected override void OnUpdate()
 		{
@@ -71,6 +108,9 @@ namespace Kerbalism.Contracts
 
 			if (state != ParameterState.Incomplete) return;
 			if (Time.fixedTime - lastUpdate < UPDATE_FREQUENCY) return;
+
+			BeforeUpdate();
+
 			lastUpdate = Time.fixedTime;
 
 			bool was_condition_met = condition_met;
@@ -78,8 +118,9 @@ namespace Kerbalism.Contracts
 			foreach (Vessel vessel in FlightGlobals.Vessels)
 			{
 				if (IsValidCandidate(vessel)) condition_met |= VesselMeetsCondition(vessel);
-				if (condition_met) break;
 			}
+
+			AfterUpdate();
 
 			double now = Planetarium.GetUniversalTime();
 			if (condition_met)
@@ -110,6 +151,17 @@ namespace Kerbalism.Contracts
 			}
 
 			GetTitle();
+
+			CreateTimerParameter();
+			if (durationParameter != null)
+			{
+				if(condition_met)
+					durationParameter.SetTitle("Time Remaining: " + DurationUtil.StringValue(endTime - Planetarium.GetUniversalTime()));
+				else
+					durationParameter.SetTitle("Duration: " + DurationUtil.StringValue(duration));
+
+				durationParameter.SetState(condition_met ? ParameterState.Incomplete : ParameterState.Failed);
+			}
 		}
 
 		protected bool IsValidCandidate(Vessel vessel)
