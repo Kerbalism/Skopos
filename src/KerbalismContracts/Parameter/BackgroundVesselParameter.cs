@@ -118,6 +118,21 @@ namespace Kerbalism.Contracts
 			node.AddValue("endTime", endTime);
 		}
 
+		protected void AddVessel(Vessel vessel, bool valid)
+		{
+			if (vesselData.ContainsKey(vessel.id)) return;
+
+			vesselData[vessel.id] = new VesselData(vessel, valid);
+			if(valid && vesselData[vessel.id].parameterDelegate == null)
+			{
+				vesselData[vessel.id].parameterDelegate = CreateVesselParameter(vessel);
+				vesselData[vessel.id].parameterDelegate.Optional = true;
+				vesselData[vessel.id].parameterDelegate.fakeOptional = true;
+				AddParameter(vesselData[vessel.id].parameterDelegate);
+				ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+			}
+		}
+
 		/// <summary>
 		/// Remove vessels that are missing / no longer valid, add vessels that are now valid but were not before
 		/// </summary>
@@ -130,27 +145,32 @@ namespace Kerbalism.Contracts
 				{
 					// vessel no longer exists -> remove
 					if(vesselData[id].parameterDelegate != null)
+					{
 						RemoveParameter(vesselData[id].parameterDelegate);
+						ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+					}
 					vesselData.Remove(id);
 					return;
 				}
 
-				if(vesselData[id].expiration < Time.time)
+				if (vesselData[id].expiration < Time.time)
 				{
-					bool isCandidate = IsValidCandidate(vessel);
+					bool isCandidate = IsValidCandidate(vessel, true);
+					vesselData[id].expiration = Time.time + 30;
 
-					if(isCandidate == vesselData[id].valid)
-					{
-						vesselData[id].expiration = Time.time + 30;
-					}
-					else
+					if (isCandidate != vesselData[id].valid)
 					{
 						if(!isCandidate)
 						{
 							// remove vessel that no longer is a candidate
 							if (vesselData[id].parameterDelegate != null)
+							{
 								RemoveParameter(vesselData[id].parameterDelegate);
-							vesselData.Remove(id);
+								ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+							}
+
+							vesselData[id].parameterDelegate = null;
+							vesselData[id].valid = false;
 						}
 						else
 						{
@@ -158,6 +178,10 @@ namespace Kerbalism.Contracts
 							vesselData[id].valid = true;
 							vesselData[id].expiration = Time.time + 30;
 							vesselData[id].parameterDelegate = CreateVesselParameter(vessel);
+							vesselData[id].parameterDelegate.Optional = true;
+							vesselData[id].parameterDelegate.fakeOptional = true;
+							AddParameter(vesselData[id].parameterDelegate);
+							ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
 						}
 					}
 
@@ -188,6 +212,8 @@ namespace Kerbalism.Contracts
 			{
 				if(IsValidCandidate(vessel))
 				{
+					AddVessel(vessel, true);
+
 					bool check = UpdateVesselState(vessel, vesselData[vessel.id]);
 					condition_met |= check;
 					vesselData[vessel.id].parameterDelegate.SetState(check ? ParameterState.Complete : ParameterState.Incomplete);
@@ -241,7 +267,7 @@ namespace Kerbalism.Contracts
 			}
 		}
 
-		protected bool IsValidCandidate(Vessel vessel)
+		protected bool IsValidCandidate(Vessel vessel, bool forceCheck = false)
 		{
 			switch(vessel.vesselType)
 			{
@@ -252,14 +278,9 @@ namespace Kerbalism.Contracts
 					return false;
 			}
 
-			if(!vesselData.ContainsKey(vessel.id))
+			if(forceCheck || !vesselData.ContainsKey(vessel.id))
 			{
-				vesselData[vessel.id] = new VesselData(vessel, VesselIsCandidate(vessel));
-
-				if(vesselData[vessel.id].valid)
-				{
-					AddVesselParameter(vessel);
-				}
+				return VesselIsCandidate(vessel);
 			}
 
 			return vesselData[vessel.id].valid;

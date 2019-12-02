@@ -102,7 +102,25 @@ namespace Kerbalism.Contracts
 			return data.index < data.prefabs.Count ? data.prefabs[data.index++] : null;
 		}
 
-		public static bool HasExperiment(ProtoVessel v, string experiment_id)
+		public static bool HasExperiment(Vessel v, string experiment_id)
+		{
+			if (!v.loaded) return HasExperiment(v.protoVessel, experiment_id);
+
+			foreach(var part in v.parts)
+			{
+				foreach(var pm in part.Modules)
+				{
+					if(pm.isEnabled && pm.moduleName == "Experiment")
+					{
+						var id = ReflectionValue<string>(pm, "experiment_id");
+						if (id == experiment_id) return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		private static bool HasExperiment(ProtoVessel v, string experiment_id)
 		{
 			// store data required to support multiple modules of same type in a part
 			var PD = new Dictionary<string, Module_prefab_data>();

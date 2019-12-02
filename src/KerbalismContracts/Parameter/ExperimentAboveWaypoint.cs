@@ -164,8 +164,9 @@ namespace Kerbalism.Contracts
 
 		protected override bool VesselIsCandidate(Vessel vessel)
 		{
+			Lib.Log("Looking into vessel " + vessel);
 			if(!string.IsNullOrEmpty(experiment))
-				return Lib.HasExperiment(vessel.protoVessel, experiment);
+				return Lib.HasExperiment(vessel, experiment);
 			return true;
 		}
 
