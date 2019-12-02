@@ -120,24 +120,24 @@ namespace Kerbalism.Contracts
 		{
 		}
 
-		protected override bool UpdateVesselState(Vessel vessel, ParameterDelegate<Vessel> parameter)
+		protected override bool UpdateVesselState(Vessel vessel, VesselData vesselData)
 		{
 			if (waypoint == null)
 			{
-				parameter.SetTitle(vessel.vesselName + ": no waypoint");
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no waypoint");
 				return false;
 			}
 
 			// Not even close
 			if (vessel.mainBody.name != waypoint.celestialName)
 			{
-				parameter.SetTitle(vessel.vesselName + ": not in SOI");
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": not in SOI");
 				return false;
 			}
 
 			if (!string.IsNullOrEmpty(experiment) && !ExperimentStateTracker.IsRunning(vessel, experiment))
 			{
-				parameter.SetTitle(vessel.vesselName + ": Equipment is off");
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": Equipment is off");
 				return false;
 			}
 
@@ -151,14 +151,14 @@ namespace Kerbalism.Contracts
 			if (!pass) elevString = "<color=orange>" + elevString + "</color>";
 			else elevString = "<color=green>" + elevString + "</color>";
 
-			parameter.SetTitle(vessel.vesselName + ": " + elevString + " (min. " + min_elevation.ToString("F0") + "°)");
+			vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": " + elevString + " (min. " + min_elevation.ToString("F0") + "°)");
 
 			return pass;
 		}
 
 		protected override string GetNotes()
 		{
-			String waypointName = waypoint != null ? waypoint.name : "waypoint";
+			string waypointName = waypoint != null ? waypoint.name : "waypoint";
 			return "Vessels must be over " + waypointName + ", min. elevation above horizon " + min_elevation + "°";
 		}
 
@@ -166,7 +166,6 @@ namespace Kerbalism.Contracts
 		{
 			if(!string.IsNullOrEmpty(experiment))
 				return Lib.HasExperiment(vessel.protoVessel, experiment);
-
 			return true;
 		}
 

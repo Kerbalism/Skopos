@@ -17,8 +17,22 @@ namespace Kerbalism.Contracts
 {
 	public abstract class BackgroundVesselParameter : ContractConfiguratorParameter, ParameterDelegateContainer
  	{
-		private readonly Dictionary<Guid, bool> validCandidates = new Dictionary<Guid, bool>();
-		private readonly Dictionary<Guid, ParameterDelegate<Vessel>> vesselParameters = new Dictionary<Guid, ParameterDelegate<Vessel>>();
+		protected class VesselData
+		{
+			internal bool valid;
+			internal double expiration;
+			internal ParameterDelegate<Vessel> parameterDelegate;
+			private Vessel vessel;
+
+			public VesselData(Vessel vessel, bool valid)
+			{
+				this.vessel = vessel;
+				this.valid = valid;
+				this.expiration = Time.time + 10;
+			}
+		}
+
+		private readonly Dictionary<Guid, VesselData> vesselData = new Dictionary<Guid, VesselData>();
 
 		private float lastUpdate = 0.0f;
 		private const float UPDATE_FREQUENCY = 1f;
@@ -59,12 +73,13 @@ namespace Kerbalism.Contracts
 
 		protected void AddVesselParameter(Vessel vessel)
 		{
-			if (vesselParameters.ContainsKey(vessel.id)) return;
+			if (!vesselData.ContainsKey(vessel.id)) return;
+			if (vesselData[vessel.id].parameterDelegate != null) return;
 
-			vesselParameters[vessel.id] = CreateVesselParameter(vessel);
-			vesselParameters[vessel.id].Optional = true;
-			vesselParameters[vessel.id].fakeOptional = true;
-			AddParameter(vesselParameters[vessel.id]);
+			vesselData[vessel.id].parameterDelegate = CreateVesselParameter(vessel);
+			vesselData[vessel.id].parameterDelegate.Optional = true;
+			vesselData[vessel.id].parameterDelegate.fakeOptional = true;
+			AddParameter(vesselData[vessel.id].parameterDelegate);
 		}
 
 		protected void OnContractLoaded(ConfiguredContract contract)
@@ -84,7 +99,7 @@ namespace Kerbalism.Contracts
 				allow_interruption = ConfigNodeUtil.ParseValue(node, "allow_interruption", true);
 				duration = Convert.ToDouble(node.GetValue("duration"));
 				endTime = Convert.ToDouble(node.GetValue("endTime"));
-				validCandidates.Clear();
+				vesselData.Clear();
 
 				CreateDurationParameter();
 			}
@@ -103,17 +118,49 @@ namespace Kerbalism.Contracts
 			node.AddValue("endTime", endTime);
 		}
 
-		protected void RemoveOneDeadVessel()
+		/// <summary>
+		/// Remove vessels that are missing / no longer valid, add vessels that are now valid but were not before
+		/// </summary>
+		protected void RefreshVesselData()
 		{
-			// remove vessels that no longer exist
-			foreach (Guid id in validCandidates.Keys)
+			foreach (Guid id in vesselData.Keys)
 			{
-				if (FlightGlobals.FindVessel(id) == null)
+				var vessel = FlightGlobals.FindVessel(id);
+				if (vessel == null)
 				{
-					vesselParameters.Remove(id);
-					validCandidates.Remove(id);
+					// vessel no longer exists -> remove
+					if(vesselData[id].parameterDelegate != null)
+						RemoveParameter(vesselData[id].parameterDelegate);
+					vesselData.Remove(id);
+					return;
+				}
 
-					// do only one per call should be enough
+				if(vesselData[id].expiration < Time.time)
+				{
+					bool isCandidate = IsValidCandidate(vessel);
+
+					if(isCandidate == vesselData[id].valid)
+					{
+						vesselData[id].expiration = Time.time + 30;
+					}
+					else
+					{
+						if(!isCandidate)
+						{
+							// remove vessel that no longer is a candidate
+							if (vesselData[id].parameterDelegate != null)
+								RemoveParameter(vesselData[id].parameterDelegate);
+							vesselData.Remove(id);
+						}
+						else
+						{
+							// add vessel that now is a candidate
+							vesselData[id].valid = true;
+							vesselData[id].expiration = Time.time + 30;
+							vesselData[id].parameterDelegate = CreateVesselParameter(vessel);
+						}
+					}
+
 					return;
 				}
 			}
@@ -129,7 +176,7 @@ namespace Kerbalism.Contracts
 			if (state != ParameterState.Incomplete) return;
 			if (Time.fixedTime - lastUpdate < UPDATE_FREQUENCY) return;
 
-			RemoveOneDeadVessel();
+			RefreshVesselData();
 			BeforeUpdate();
 
 			lastUpdate = Time.fixedTime;
@@ -141,9 +188,9 @@ namespace Kerbalism.Contracts
 			{
 				if(IsValidCandidate(vessel))
 				{
-					bool check = UpdateVesselState(vessel, vesselParameters[vessel.id]);
+					bool check = UpdateVesselState(vessel, vesselData[vessel.id]);
 					condition_met |= check;
-					vesselParameters[vessel.id].SetState(check ? ParameterState.Complete : ParameterState.Incomplete);
+					vesselData[vessel.id].parameterDelegate.SetState(check ? ParameterState.Complete : ParameterState.Incomplete);
 				}
 			}
 
@@ -205,17 +252,17 @@ namespace Kerbalism.Contracts
 					return false;
 			}
 
-			if(!validCandidates.ContainsKey(vessel.id))
+			if(!vesselData.ContainsKey(vessel.id))
 			{
-				validCandidates[vessel.id] = VesselIsCandidate(vessel);
+				vesselData[vessel.id] = new VesselData(vessel, VesselIsCandidate(vessel));
 
-				if(validCandidates[vessel.id])
+				if(vesselData[vessel.id].valid)
 				{
 					AddVesselParameter(vessel);
 				}
 			}
 
-			return validCandidates[vessel.id];
+			return vesselData[vessel.id].valid;
 		}
 
 		/// <summary>
@@ -226,7 +273,7 @@ namespace Kerbalism.Contracts
 		/// <param name="vessel">can be loaded or unloaded</param> 
 		protected abstract bool VesselIsCandidate(Vessel vessel);
 
-		protected abstract bool UpdateVesselState(Vessel vessel, ParameterDelegate<Vessel> parameter);
+		protected abstract bool UpdateVesselState(Vessel vessel, VesselData vesselData);
 
 		protected abstract ParameterDelegate<Vessel> CreateVesselParameter(Vessel vessel);
 	}
