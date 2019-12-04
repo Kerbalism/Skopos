@@ -42,7 +42,12 @@ namespace Kerbalism.Contracts
 		protected bool allow_interruption = true;
 		protected int min_vessels = 1;
 		protected double duration = -1;
+		protected double allowed_gap = -1;
+		// TODO add setup duration (partial uptimes without failure allowed before then)
+
 		protected double endTime = double.MaxValue;
+		protected double gapFailTime = double.MaxValue;
+
 		private ParameterDelegate<Vessel> durationParameter;
 
 		public bool ChildChanged { get; set; }
@@ -51,9 +56,10 @@ namespace Kerbalism.Contracts
 		{
 		}
 
-		protected BackgroundVesselParameter(string title, int min_vessels, double duration = 0.0) : base(title)
+		protected BackgroundVesselParameter(string title, int min_vessels, double duration = 0.0, double allowed_gap = 0.0) : base(title)
 		{
 			this.duration = duration;
+			this.allowed_gap = allowed_gap;
 			this.min_vessels = min_vessels;
 			CreateDurationParameter();
 		}
@@ -61,6 +67,11 @@ namespace Kerbalism.Contracts
 		public void SetAllowInterruption(bool value)
 		{
 			allow_interruption = value;
+		}
+
+		public void SetAllowedGap(double value)
+		{
+			allowed_gap = value;
 		}
 
 		protected void CreateDurationParameter()
@@ -102,6 +113,8 @@ namespace Kerbalism.Contracts
 				allow_interruption = ConfigNodeUtil.ParseValue(node, "allow_interruption", true);
 				duration = Convert.ToDouble(node.GetValue("duration"));
 				endTime = Convert.ToDouble(node.GetValue("endTime"));
+				allowed_gap = Convert.ToDouble(node.GetValue("allowed_gap"));
+				gapFailTime = Convert.ToDouble(node.GetValue("gapFailTime"));
 				min_vessels = Convert.ToInt32(node.GetValue("min_vessels"));
 				vesselData.Clear();
 
@@ -120,6 +133,8 @@ namespace Kerbalism.Contracts
 			node.SetValue("allow_interruption", allow_interruption);
 			node.AddValue("duration", duration);
 			node.AddValue("endTime", endTime);
+			node.AddValue("allowed_gap", allowed_gap);
+			node.AddValue("gapFailTime", gapFailTime);
 			node.AddValue("min_vessels", min_vessels);
 		}
 
@@ -244,10 +259,10 @@ namespace Kerbalism.Contracts
 			double now = Planetarium.GetUniversalTime();
 			if (condition_met)
 			{
+				gapFailTime = double.MaxValue;
+
 				if(endTime == double.MaxValue)
-				{
 					endTime = now + duration - 1;
-				}
 
 				if(endTime < now)
 				{
@@ -259,13 +274,24 @@ namespace Kerbalism.Contracts
 				// condition not met
 				if (was_condition_met && !allow_interruption)
 				{
-					// interruption not allowed -> fail
+					// interruption not allowed -> fail immediately
 					SetState(ParameterState.Failed);
 				}
 				else
 				{
+					// TODO end time should not reset when gaps are allowed
+
 					// interruptions allowed, reset timer
 					endTime = double.MaxValue;
+
+					if(allowed_gap > 0)
+					{
+						// set the gap fail time, if it was not set already
+						if (gapFailTime == double.MaxValue && was_condition_met)
+							gapFailTime = now + allowed_gap;
+						else if(now > gapFailTime) // fail if we're past allowed gap
+							SetState(ParameterState.Failed);
+					}
 				}
 			}
 
@@ -275,6 +301,8 @@ namespace Kerbalism.Contracts
 			{
 				if(condition_met)
 					durationParameter.SetTitle("Time Remaining: " + DurationUtil.StringValue(endTime - Planetarium.GetUniversalTime()));
+				else if (gapFailTime < double.MaxValue)
+					durationParameter.SetTitle("Restore in: " + DurationUtil.StringValue(gapFailTime - Planetarium.GetUniversalTime()));
 				else
 					durationParameter.SetTitle("Duration: " + DurationUtil.StringValue(duration));
 			}

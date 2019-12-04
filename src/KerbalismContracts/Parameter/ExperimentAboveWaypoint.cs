@@ -24,6 +24,7 @@ namespace Kerbalism.Contracts
 		protected string experiment;
 		protected bool allow_interruption;
 		protected ContractConfigurator.Duration duration;
+		protected ContractConfigurator.Duration allowed_gap;
 		protected int min_vessels;
 
 		public override bool Load(ConfigNode configNode)
@@ -34,11 +35,12 @@ namespace Kerbalism.Contracts
 			valid &= ConfigNodeUtil.ParseValue(configNode, "index", x => index = x, this, 0, x => Validation.GE(x, 0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "min_elevation", x => min_elevation = x, this, 10.0, x => Validation.GE(x, -90.0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "duration", x => duration = x, this, new ContractConfigurator.Duration(0.0));
+			valid &= ConfigNodeUtil.ParseValue(configNode, "allowed_gap", x => allowed_gap = x, this, new ContractConfigurator.Duration(0.0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "experiment", x => experiment = x, this, string.Empty);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "allow_interruption", x => allow_interruption = x, this, true);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "min_vessels", x => min_vessels = x, this, 1, x => Validation.GE(x, 1));
-			valid &= ConfigNodeUtil.ParseValue(configNode, "max_distance", x => max_distance = x, this, 1, x => Validation.GE(x, 0));
-			valid &= ConfigNodeUtil.ParseValue(configNode, "min_angle_between", x => min_angle_between = x, this, 1, x => Validation.GE(x, 0));
+			valid &= ConfigNodeUtil.ParseValue(configNode, "max_distance", x => max_distance = x, this, 0, x => Validation.GE(x, 0));
+			valid &= ConfigNodeUtil.ParseValue(configNode, "min_angle_between", x => min_angle_between = x, this, 0, x => Validation.GE(x, 0));
 
 			return valid;
 		}
@@ -47,6 +49,7 @@ namespace Kerbalism.Contracts
 		{
 			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, max_distance, min_elevation, min_vessels, min_angle_between, experiment, title);
 			aw.SetAllowInterruption(allow_interruption);
+			aw.SetAllowedGap(allowed_gap.Value);
 			return aw.FetchWaypoint(contract) != null ? aw : null;
 		}
 	}
@@ -175,7 +178,7 @@ namespace Kerbalism.Contracts
 				}
 				else
 				{
-					angStr = "<color=red>" + angStr + "</red>";
+					angStr = "<color=red>" + angStr + "</color>";
 					rd.vd.pass = false;
 				}
 
@@ -211,7 +214,7 @@ namespace Kerbalism.Contracts
 				var distance = (vesselPosition - waypointPosition).magnitude;
 				if (distance > max_distance)
 				{
-					vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": too far");
+					vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": <color=red>distance: " + Lib.HumanReadableDistance(distance) + "</color> (max: " + Lib.HumanReadableDistance(max_distance) + ")");
 					return false;
 				}
 			}
