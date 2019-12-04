@@ -22,6 +22,7 @@ namespace Kerbalism.Contracts
 		protected string experiment;
 		protected bool allow_interruption;
 		protected ContractConfigurator.Duration duration;
+		protected int min_vessels;
 
 		public override bool Load(ConfigNode configNode)
 		{
@@ -33,13 +34,14 @@ namespace Kerbalism.Contracts
 			valid &= ConfigNodeUtil.ParseValue(configNode, "duration", x => duration = x, this, new ContractConfigurator.Duration(0.0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "experiment", x => experiment = x, this, string.Empty);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "allow_interruption", x => allow_interruption = x, this, true);
+			valid &= ConfigNodeUtil.ParseValue(configNode, "min_vessels", x => min_vessels = x, this, 1, x => Validation.GE(x, 1));
 
 			return valid;
 		}
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, min_elevation, experiment, title);
+			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, min_elevation, min_vessels, experiment, title);
 			aw.SetAllowInterruption(allow_interruption);
 			return aw.FetchWaypoint(contract) != null ? aw : null;
 		}
@@ -78,8 +80,8 @@ namespace Kerbalism.Contracts
 
 		public ExperimentAboveWaypoint() { }
 
-		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, string experiment_id, string title)
-			: base(title, duration)
+		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, int min_vessels, string experiment_id, string title)
+			: base(title, min_vessels, duration)
 		{
 			this.min_elevation = min_elevation;
 			this.waypointIndex = waypointIndex;
@@ -114,9 +116,15 @@ namespace Kerbalism.Contracts
 			{
 				waypoint = FetchWaypoint(Root, true);
 			}
+
+			// TODO store 3d position of waypoint in space
 		}
 
 		protected override void AfterUpdate()
+		{
+		}
+
+		protected override void VesselValidated(Vessel vessel)
 		{
 		}
 
@@ -127,6 +135,10 @@ namespace Kerbalism.Contracts
 				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no waypoint");
 				return false;
 			}
+
+			// TODO calculate elevation, azimuth and distance from waypoint to vessel
+			// TODO determine line of sight obstruction (there may be an occluding body)
+
 
 			// Not even close
 			if (vessel.mainBody.name != waypoint.celestialName)

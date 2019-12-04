@@ -39,6 +39,7 @@ namespace Kerbalism.Contracts
 
 		protected bool condition_met = false;
 		protected bool allow_interruption = true;
+		protected int min_vessels = 1;
 		protected double duration = -1;
 		protected double endTime = double.MaxValue;
 		private ParameterDelegate<Vessel> durationParameter;
@@ -49,9 +50,10 @@ namespace Kerbalism.Contracts
 		{
 		}
 
-		protected BackgroundVesselParameter(string title, double duration = 0.0) : base(title)
+		protected BackgroundVesselParameter(string title, int min_vessels, double duration = 0.0) : base(title)
 		{
 			this.duration = duration;
+			this.min_vessels = min_vessels;
 			CreateDurationParameter();
 		}
 
@@ -99,6 +101,7 @@ namespace Kerbalism.Contracts
 				allow_interruption = ConfigNodeUtil.ParseValue(node, "allow_interruption", true);
 				duration = Convert.ToDouble(node.GetValue("duration"));
 				endTime = Convert.ToDouble(node.GetValue("endTime"));
+				min_vessels = Convert.ToInt32(node.GetValue("min_vessels"));
 				vesselData.Clear();
 
 				CreateDurationParameter();
@@ -116,6 +119,7 @@ namespace Kerbalism.Contracts
 			node.SetValue("allow_interruption", allow_interruption);
 			node.AddValue("duration", duration);
 			node.AddValue("endTime", endTime);
+			node.AddValue("min_vessels", min_vessels);
 		}
 
 		protected void AddVessel(Vessel vessel, bool valid)
@@ -192,6 +196,7 @@ namespace Kerbalism.Contracts
 
 		protected virtual void BeforeUpdate() { }
 		protected virtual void AfterUpdate() { }
+		protected virtual void VesselValidated(Vessel vessel) { }
 
 		protected override void OnUpdate()
 		{
@@ -207,6 +212,7 @@ namespace Kerbalism.Contracts
 
 			bool was_condition_met = condition_met;
 			condition_met = false;
+			int valid_vessels = 0;
 
 			foreach (Vessel vessel in FlightGlobals.Vessels)
 			{
@@ -215,10 +221,16 @@ namespace Kerbalism.Contracts
 					AddVessel(vessel, true);
 
 					bool check = UpdateVesselState(vessel, vesselData[vessel.id]);
-					condition_met |= check;
+					if (check)
+					{
+						valid_vessels++;
+						VesselValidated(vessel);
+					}
 					vesselData[vessel.id].parameterDelegate.SetState(check ? ParameterState.Complete : ParameterState.Incomplete);
 				}
 			}
+
+			condition_met = valid_vessels >= min_vessels;
 
 			AfterUpdate();
 
