@@ -20,6 +20,7 @@ namespace Kerbalism.Contracts
 		protected int index;
 		protected double min_elevation;
 		protected double min_angle_between;
+		protected int max_distance;
 		protected string experiment;
 		protected bool allow_interruption;
 		protected ContractConfigurator.Duration duration;
@@ -36,6 +37,7 @@ namespace Kerbalism.Contracts
 			valid &= ConfigNodeUtil.ParseValue(configNode, "experiment", x => experiment = x, this, string.Empty);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "allow_interruption", x => allow_interruption = x, this, true);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "min_vessels", x => min_vessels = x, this, 1, x => Validation.GE(x, 1));
+			valid &= ConfigNodeUtil.ParseValue(configNode, "max_distance", x => max_distance = x, this, 1, x => Validation.GE(x, 0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "min_angle_between", x => min_angle_between = x, this, 1, x => Validation.GE(x, 0));
 
 			return valid;
@@ -43,7 +45,7 @@ namespace Kerbalism.Contracts
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, min_elevation, min_vessels, min_angle_between, experiment, title);
+			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, max_distance, min_elevation, min_vessels, min_angle_between, experiment, title);
 			aw.SetAllowInterruption(allow_interruption);
 			return aw.FetchWaypoint(contract) != null ? aw : null;
 		}
@@ -52,6 +54,7 @@ namespace Kerbalism.Contracts
 	public class ExperimentAboveWaypoint : BackgroundVesselParameter
 	{
 		protected double min_elevation { get; set; }
+		protected int max_distance { get; set; }
 		protected double min_angle_between { get; set; }
 		protected int waypointIndex { get; set; }
 		protected string experiment { get; set; }
@@ -102,13 +105,14 @@ namespace Kerbalism.Contracts
 
 		public ExperimentAboveWaypoint() { }
 
-		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, int min_vessels, double min_angle_between, string experiment_id, string title)
+		public ExperimentAboveWaypoint(int waypointIndex, double duration, int max_distance, double min_elevation, int min_vessels, double min_angle_between, string experiment_id, string title)
 			: base(title, min_vessels, duration)
 		{
 			this.min_elevation = min_elevation;
 			this.waypointIndex = waypointIndex;
 			this.experiment = experiment_id;
 			this.min_angle_between = min_angle_between;
+			this.max_distance = max_distance;
 
 			if (string.IsNullOrEmpty(title))
 			{
@@ -123,6 +127,7 @@ namespace Kerbalism.Contracts
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("experiment", experiment);
 			node.AddValue("min_angle_between", min_angle_between);
+			node.AddValue("max_distance", max_distance);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -131,20 +136,20 @@ namespace Kerbalism.Contracts
 			min_elevation = Convert.ToDouble(node.GetValue("min_elevation"));
 			min_angle_between = Convert.ToDouble(node.GetValue("min_angle_between"));
 			waypointIndex = Convert.ToInt32(node.GetValue("waypointIndex"));
+			max_distance = Convert.ToInt32(node.GetValue("max_distance"));
 			experiment = ConfigNodeUtil.ParseValue(node, "experiment", string.Empty);
 		}
 
 		protected override void BeforeUpdate()
 		{
-			if (targetBody == null) return;
-
 			// Make sure we have a waypoint
 			if (waypoint == null && Root != null)
 			{
 				waypoint = FetchWaypoint(Root, true);
 			}
+			if (waypoint == null || waypoint.celestialBody == null) return;
 
-			waypointPosition = targetBody.GetWorldSurfacePosition(waypoint.latitude, waypoint.longitude, 0);
+			waypointPosition = waypoint.celestialBody.GetWorldSurfacePosition(waypoint.latitude, waypoint.longitude, 0);
 
 			if(NeedAngleBetween())
 				results = new List<ResultData>();
@@ -152,7 +157,7 @@ namespace Kerbalism.Contracts
 
 		protected override void AfterUpdate()
 		{
-			if (!NeedAngleBetween()) return;
+			if (waypoint == null || !NeedAngleBetween()) return;
 
 			condition_met = false;
 
@@ -187,15 +192,9 @@ namespace Kerbalism.Contracts
 
 		protected override bool UpdateVesselState(Vessel vessel, VesselData vesselData)
 		{
-			if (targetBody == null)
+			if (waypoint == null || waypoint.celestialBody == null)
 			{
-				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no target body");
-				return false;
-			}
-
-			if (waypoint == null)
-			{
-				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no waypoint");
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no target");
 				return false;
 			}
 
@@ -207,13 +206,24 @@ namespace Kerbalism.Contracts
 
 			var vesselPosition = Lib.VesselPosition(vessel);
 
-			var a = Vector3d.Angle(vesselPosition - targetBody.position, waypointPosition - targetBody.position);
-			var b = Vector3d.Angle(waypointPosition - vesselPosition, targetBody.position - vesselPosition);
+			if(max_distance > 0)
+			{
+				var distance = (vesselPosition - waypointPosition).magnitude;
+				if (distance > max_distance)
+				{
+					vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": too far");
+					return false;
+				}
+			}
+
+			var bodyPosition = waypoint.celestialBody.position;
+
+			var a = Vector3d.Angle(vesselPosition - bodyPosition, waypointPosition - bodyPosition);
+			var b = Vector3d.Angle(waypointPosition - vesselPosition, bodyPosition - vesselPosition);
 
 			// a + b + 90 + elevation = 180 degrees
 			// elevation = 180 - 90 - a - b = 90 - a - b
-			var elevation = Math.PI / 2 - a - b; // in rads
-			elevation = elevation * 180.0 / Math.PI; // rads to degrees
+			var elevation = 90.0 - a - b;
 
 			// TODO determine line of sight obstruction (there may be an occluding body)
 

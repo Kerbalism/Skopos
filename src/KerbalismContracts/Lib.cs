@@ -258,5 +258,26 @@ namespace Kerbalism.Contracts
 			// victory
 			return pos;
 		}
+
+		///<summary> Pretty-print a range (range is in meters) </summary>
+		public static string HumanReadableDistance(double distance)
+		{
+			if (distance == 0.0) return "none";
+			if (distance < 0.0) return Lib.BuildString("-", HumanReadableDistance(-distance));
+			if (distance < 1000.0) return BuildString(distance.ToString("F1"), " m");
+			distance /= 1000.0;
+			if (distance < 1000.0) return BuildString(distance.ToString("F1"), " Km");
+			distance /= 1000.0;
+			if (distance < 1000.0) return BuildString(distance.ToString("F2"), " Mm");
+			distance /= 1000.0;
+			if (distance < 1000.0) return BuildString(distance.ToString("F2"), " Gm");
+			distance /= 1000.0;
+			if (distance < 1000.0) return BuildString(distance.ToString("F3"), " Tm");
+			distance /= 1000.0;
+			if (distance < 1000.0) return BuildString(distance.ToString("F3"), " Pm");
+			distance /= 1000.0;
+			return BuildString(distance.ToString("F3"), " Em");
+		}
+
 	}
 }
