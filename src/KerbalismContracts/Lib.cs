@@ -228,5 +228,35 @@ namespace Kerbalism.Contracts
 			sb.Append(e);
 			return sb.ToString();
 		}
+
+		///<summary>return vessel position</summary>
+		public static Vector3d VesselPosition(Vessel v)
+		{
+			// the issue
+			//   - GetWorldPos3D() return mainBody position for a few ticks after scene changes
+			//   - we can detect that, and fall back to evaluating position from the orbit
+			//   - orbit is not valid if the vessel is landed, and for a tick on prelaunch/staging/decoupling
+			//   - evaluating position from latitude/longitude work in all cases, but is probably the slowest method
+
+			// get vessel position
+			Vector3d pos = v.GetWorldPos3D();
+
+			// during scene changes, it will return mainBody position
+			if (Vector3d.SqrMagnitude(pos - v.mainBody.position) < 1.0)
+			{
+				// try to get it from orbit
+				pos = v.orbit.getPositionAtUT(Planetarium.GetUniversalTime());
+
+				// if the orbit is invalid (landed, or 1 tick after prelaunch/staging/decoupling)
+				if (double.IsNaN(pos.x))
+				{
+					// get it from lat/long (work even if it isn't landed)
+					pos = v.mainBody.GetWorldSurfacePosition(v.latitude, v.longitude, v.altitude);
+				}
+			}
+
+			// victory
+			return pos;
+		}
 	}
 }

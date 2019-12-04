@@ -20,6 +20,7 @@ namespace Kerbalism.Contracts
 		protected class VesselData
 		{
 			internal bool valid;
+			internal bool pass;
 			internal double expiration;
 			internal ParameterDelegate<Vessel> parameterDelegate;
 			private Vessel vessel;
@@ -196,7 +197,6 @@ namespace Kerbalism.Contracts
 
 		protected virtual void BeforeUpdate() { }
 		protected virtual void AfterUpdate() { }
-		protected virtual void VesselValidated(Vessel vessel) { }
 
 		protected override void OnUpdate()
 		{
@@ -214,25 +214,32 @@ namespace Kerbalism.Contracts
 			condition_met = false;
 			int valid_vessels = 0;
 
+			foreach(var vd in vesselData.Values)
+				vd.pass = false;
+
 			foreach (Vessel vessel in FlightGlobals.Vessels)
 			{
 				if(IsValidCandidate(vessel))
 				{
 					AddVessel(vessel, true);
 
-					bool check = UpdateVesselState(vessel, vesselData[vessel.id]);
-					if (check)
+					vesselData[vessel.id].pass = UpdateVesselState(vessel, vesselData[vessel.id]);
+					if (vesselData[vessel.id].pass)
 					{
 						valid_vessels++;
-						VesselValidated(vessel);
 					}
-					vesselData[vessel.id].parameterDelegate.SetState(check ? ParameterState.Complete : ParameterState.Incomplete);
 				}
 			}
 
 			condition_met = valid_vessels >= min_vessels;
 
 			AfterUpdate();
+
+			foreach(var vd in vesselData.Values)
+			{
+				if(vd.parameterDelegate != null)
+					vd.parameterDelegate.SetState(vd.pass ? ParameterState.Complete : ParameterState.Incomplete);
+			}
 
 			double now = Planetarium.GetUniversalTime();
 			if (condition_met)

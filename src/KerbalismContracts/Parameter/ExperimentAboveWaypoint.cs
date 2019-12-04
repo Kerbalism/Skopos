@@ -19,6 +19,7 @@ namespace Kerbalism.Contracts
 	{
 		protected int index;
 		protected double min_elevation;
+		protected double min_angle_between;
 		protected string experiment;
 		protected bool allow_interruption;
 		protected ContractConfigurator.Duration duration;
@@ -35,13 +36,14 @@ namespace Kerbalism.Contracts
 			valid &= ConfigNodeUtil.ParseValue(configNode, "experiment", x => experiment = x, this, string.Empty);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "allow_interruption", x => allow_interruption = x, this, true);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "min_vessels", x => min_vessels = x, this, 1, x => Validation.GE(x, 1));
+			valid &= ConfigNodeUtil.ParseValue(configNode, "min_angle_between", x => min_angle_between = x, this, 1, x => Validation.GE(x, 0));
 
 			return valid;
 		}
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, min_elevation, min_vessels, experiment, title);
+			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, min_elevation, min_vessels, min_angle_between, experiment, title);
 			aw.SetAllowInterruption(allow_interruption);
 			return aw.FetchWaypoint(contract) != null ? aw : null;
 		}
@@ -50,13 +52,33 @@ namespace Kerbalism.Contracts
 	public class ExperimentAboveWaypoint : BackgroundVesselParameter
 	{
 		protected double min_elevation { get; set; }
+		protected double min_angle_between { get; set; }
 		protected int waypointIndex { get; set; }
 		protected string experiment { get; set; }
 
 		protected Waypoint waypoint { get; set; }
 
+		private Vector3 waypointPosition;
+		private List<ResultData> results;
+
+		private class ResultData
+		{
+			internal VesselData vd;
+			internal Vector3 vesselPosition;
+			internal string title;
+			internal double a = double.MaxValue;
+
+			public ResultData(VesselData vd, Vector3 vesselPosition, string title)
+			{
+				this.vd = vd;
+				this.vesselPosition = vesselPosition;
+				this.title = title;
+			}
+		}
+
 		/// <summary>
 		/// Child class for checking waypoints, because completed/disabled parameters don't get events.
+		/// Copied from CCs VisitWaypoint parameter.
 		/// </summary>
 		public class WaypointChecker
 		{
@@ -80,12 +102,13 @@ namespace Kerbalism.Contracts
 
 		public ExperimentAboveWaypoint() { }
 
-		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, int min_vessels, string experiment_id, string title)
+		public ExperimentAboveWaypoint(int waypointIndex, double duration, double min_elevation, int min_vessels, double min_angle_between, string experiment_id, string title)
 			: base(title, min_vessels, duration)
 		{
 			this.min_elevation = min_elevation;
 			this.waypointIndex = waypointIndex;
 			this.experiment = experiment_id;
+			this.min_angle_between = min_angle_between;
 
 			if (string.IsNullOrEmpty(title))
 			{
@@ -99,51 +122,80 @@ namespace Kerbalism.Contracts
 			node.AddValue("min_elevation", min_elevation);
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("experiment", experiment);
+			node.AddValue("min_angle_between", min_angle_between);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
 		{
 			base.OnParameterLoad(node);
 			min_elevation = Convert.ToDouble(node.GetValue("min_elevation"));
+			min_angle_between = Convert.ToDouble(node.GetValue("min_angle_between"));
 			waypointIndex = Convert.ToInt32(node.GetValue("waypointIndex"));
 			experiment = ConfigNodeUtil.ParseValue(node, "experiment", string.Empty);
 		}
 
 		protected override void BeforeUpdate()
 		{
+			if (targetBody == null) return;
+
 			// Make sure we have a waypoint
 			if (waypoint == null && Root != null)
 			{
 				waypoint = FetchWaypoint(Root, true);
 			}
 
-			// TODO store 3d position of waypoint in space
+			waypointPosition = targetBody.GetWorldSurfacePosition(waypoint.latitude, waypoint.longitude, 0);
+
+			if(NeedAngleBetween())
+				results = new List<ResultData>();
 		}
 
 		protected override void AfterUpdate()
 		{
+			if (!NeedAngleBetween()) return;
+
+			condition_met = false;
+
+
+			// TODO see if the angle between at least min_vessels is bigger than the min required
+
+
+			foreach(var rd in results)
+			{
+				string angStr = rd.a == double.MaxValue ? "n/a" : rd.a.ToString("F1") + "°";
+				if(rd.a < double.MaxValue && rd.a > min_angle_between)
+				{
+					angStr = "<color=green>" + angStr + "</color>";
+					rd.vd.pass = true;
+				}
+				else
+				{
+					angStr = "<color=red>" + angStr + "</red>";
+					rd.vd.pass = false;
+				}
+
+				rd.title += " ang. " + angStr + " (min. " + min_angle_between.ToString("F0") + "°";
+				rd.vd.parameterDelegate.SetTitle(rd.title);
+			}
 		}
 
-		protected override void VesselValidated(Vessel vessel)
+
+		private bool NeedAngleBetween()
 		{
+			return min_vessels > 1 && min_angle_between > 0;
 		}
 
 		protected override bool UpdateVesselState(Vessel vessel, VesselData vesselData)
 		{
-			if (waypoint == null)
+			if (targetBody == null)
 			{
-				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no waypoint");
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no target body");
 				return false;
 			}
 
-			// TODO calculate elevation, azimuth and distance from waypoint to vessel
-			// TODO determine line of sight obstruction (there may be an occluding body)
-
-
-			// Not even close
-			if (vessel.mainBody.name != waypoint.celestialName)
+			if (waypoint == null)
 			{
-				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": not in SOI");
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": no waypoint");
 				return false;
 			}
 
@@ -153,17 +205,29 @@ namespace Kerbalism.Contracts
 				return false;
 			}
 
-			double r = vessel.mainBody.Radius;
-			double surfaceDistance = WaypointUtil.GetDistance(vessel.latitude, vessel.longitude, waypoint.latitude, waypoint.longitude, r);
-			double elevation = 90.0 - (surfaceDistance / r) * (180.0 / Math.PI);
+			var vesselPosition = Lib.VesselPosition(vessel);
+
+			var a = Vector3d.Angle(vesselPosition - targetBody.position, waypointPosition - targetBody.position);
+			var b = Vector3d.Angle(waypointPosition - vesselPosition, targetBody.position - vesselPosition);
+
+			// a + b + 90 + elevation = 180 degrees
+			// elevation = 180 - 90 - a - b = 90 - a - b
+			var elevation = Math.PI / 2 - a - b; // in rads
+			elevation = elevation * 180.0 / Math.PI; // rads to degrees
+
+			// TODO determine line of sight obstruction (there may be an occluding body)
 
 			bool pass = min_elevation <= elevation;
 
 			string elevString = "elevation " + elevation.ToString("F1") + "°";
 			if (!pass) elevString = "<color=orange>" + elevString + "</color>";
 			else elevString = "<color=green>" + elevString + "</color>";
+			string title = vessel.vesselName + ": " + elevString + " (min. " + min_elevation.ToString("F0") + "°)";
 
-			vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": " + elevString + " (min. " + min_elevation.ToString("F0") + "°)");
+			vesselData.parameterDelegate.SetTitle(title);
+
+			if (pass && NeedAngleBetween())
+				results.Add(new ResultData(vesselData, vesselPosition, title));
 
 			return pass;
 		}
