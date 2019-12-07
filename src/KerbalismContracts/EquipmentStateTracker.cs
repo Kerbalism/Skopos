@@ -3,24 +3,24 @@ using System;
 
 namespace Kerbalism.Contracts
 {
-	public static class EquipmentStateTracker
+	public static class ExperimentStateTracker
 	{
 		static readonly Dictionary<Guid, List<string>> states = new Dictionary<Guid, List<string>>();
 
-		internal static void Update(Vessel vessel, string equipment_id, bool running)
+		internal static void Update(Vessel vessel, string experiment_id, bool running)
 		{
 			if (running)
-				Add(vessel, equipment_id);
+				Add(vessel, experiment_id);
 			else
-				Remove(vessel, equipment_id);
+				Remove(vessel, experiment_id);
 
 			for (int i = listeners.Count - 1; i >= 0; i--)
 			{
-				listeners[i](vessel, equipment_id, running);
+				listeners[i](vessel, experiment_id, running);
 			}
 		}
 
-		internal static void Add(Vessel vessel, string equipment_id)
+		internal static void Add(Vessel vessel, string experient_id)
 		{
 			if (vessel == null) return;
 
@@ -28,22 +28,22 @@ namespace Kerbalism.Contracts
 				states[vessel.id] = new List<string>();
 
 			var list = states[vessel.id];
-			if (!list.Contains(equipment_id))
-				list.Add(equipment_id);
+			if (!list.Contains(experient_id))
+				list.Add(experient_id);
 		}
 
-		internal static void Remove(Vessel vessel, string equipment_id)
+		internal static void Remove(Vessel vessel, string experient_id)
 		{
 			if (vessel == null) return;
 
 			if (states.ContainsKey(vessel.id))
-				states[vessel.id].Remove(equipment_id);
+				states[vessel.id].Remove(experient_id);
 		}
 
-		internal static bool IsRunning(Vessel vessel, string equipment_id)
+		internal static bool IsRunning(Vessel vessel, string experiment_id)
 		{
 			if(states.ContainsKey(vessel.id))
-				return states[vessel.id].Contains(equipment_id);
+				return states[vessel.id].Contains(experiment_id);
 			return false;
 		}
 

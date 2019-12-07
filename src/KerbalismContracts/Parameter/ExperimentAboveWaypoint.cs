@@ -22,6 +22,7 @@ namespace Kerbalism.Contracts
 		protected double min_angle_between;
 		protected int max_distance;
 		protected string experiment;
+		protected string equipment;
 		protected bool allow_interruption;
 		protected ContractConfigurator.Duration duration;
 		protected ContractConfigurator.Duration allowed_gap;
@@ -37,6 +38,7 @@ namespace Kerbalism.Contracts
 			valid &= ConfigNodeUtil.ParseValue(configNode, "duration", x => duration = x, this, new ContractConfigurator.Duration(0.0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "allowed_gap", x => allowed_gap = x, this, new ContractConfigurator.Duration(0.0));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "experiment", x => experiment = x, this, string.Empty);
+			valid &= ConfigNodeUtil.ParseValue(configNode, "equipment", x => equipment = x, this, string.Empty);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "allow_interruption", x => allow_interruption = x, this, true);
 			valid &= ConfigNodeUtil.ParseValue(configNode, "min_vessels", x => min_vessels = x, this, 1, x => Validation.GE(x, 1));
 			valid &= ConfigNodeUtil.ParseValue(configNode, "max_distance", x => max_distance = x, this, 0, x => Validation.GE(x, 0));
@@ -47,7 +49,7 @@ namespace Kerbalism.Contracts
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, max_distance, min_elevation, min_vessels, min_angle_between, experiment, title);
+			ExperimentAboveWaypoint aw = new ExperimentAboveWaypoint(index, duration.Value, max_distance, min_elevation, min_vessels, min_angle_between, experiment, equipment, title);
 			aw.SetAllowInterruption(allow_interruption);
 			aw.SetAllowedGap(allowed_gap.Value);
 			return aw.FetchWaypoint(contract) != null ? aw : null;
@@ -108,7 +110,7 @@ namespace Kerbalism.Contracts
 
 		public ExperimentAboveWaypoint() { }
 
-		public ExperimentAboveWaypoint(int waypointIndex, double duration, int max_distance, double min_elevation, int min_vessels, double min_angle_between, string experiment_id, string title)
+		public ExperimentAboveWaypoint(int waypointIndex, double duration, int max_distance, double min_elevation, int min_vessels, double min_angle_between, string experiment_id, string equipment_id, string title)
 			: base(title, min_vessels, duration)
 		{
 			this.min_elevation = min_elevation;

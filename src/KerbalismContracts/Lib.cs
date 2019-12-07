@@ -147,7 +147,7 @@ namespace Kerbalism.Contracts
 
 					// if the module is disabled, skip it
 					// note: this must be done after ModulePrefab is called, so that indexes are right
-					if (!ProtoGetBool(m, "isEnabled")) continue;
+					if (!Proto.GetBool(m, "isEnabled")) continue;
 
 					if(m.moduleName == "Experiment")
 					{
@@ -157,20 +157,6 @@ namespace Kerbalism.Contracts
 				}
 			}
 			return false;
-		}
-
-		public static bool ProtoGetBool(ProtoPartModuleSnapshot m, string name, bool def_value = false)
-		{
-			bool v;
-			string s = m.moduleValues.GetValue(name);
-			return s != null && bool.TryParse(s, out v) ? v : def_value;
-		}
-
-		public static string ProtoGetString(ProtoPartModuleSnapshot m, string name, string def_value = "")
-		{
-			string s = m.moduleValues.GetValue(name);
-			Lib.Log("ProtoGetString " + name + " = " + s);
-			return s ?? def_value;
 		}
 
 		private static readonly BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;

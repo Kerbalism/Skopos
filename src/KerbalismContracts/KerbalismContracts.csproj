@@ -105,6 +105,9 @@
     <Compile Include="Parameter\ExperimentDone.cs" />
     <Compile Include="Parameter\ExperimentAboveWaypoint.cs" />
     <Compile Include="Parameter\BackgroundVesselParameter.cs" />
+    <Compile Include="EquipmentStateTracker.cs" />
+    <Compile Include="Modules\KerbalismContractEquipment.cs" />
+    <Compile Include="Modules\KerbalismResources.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -112,6 +115,7 @@
     <Folder Include="Parameter\" />
     <Folder Include="Behavior\" />
     <Folder Include="Requirement\" />
+    <Folder Include="Modules\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
