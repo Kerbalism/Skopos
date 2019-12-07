@@ -107,7 +107,7 @@
     <Compile Include="Parameter\BackgroundVesselParameter.cs" />
     <Compile Include="EquipmentStateTracker.cs" />
     <Compile Include="Modules\KerbalismContractEquipment.cs" />
-    <Compile Include="Modules\KerbalismResources.cs" />
+    <Compile Include="Modules\KerbalismUtils.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
