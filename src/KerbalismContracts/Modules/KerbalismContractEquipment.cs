@@ -63,7 +63,7 @@ namespace Kerbalism.Contracts
 		}
 
 		/// <summary>
-		/// This will be called by Kerbalism. The Method must have exactly this name, must be static and must accept these parameters.
+		/// This will be called by Kerbalism in flight while the vessel is unloaded. The Method must have exactly this name, must be static and must accept these parameters.
 		/// </summary>
 		/// <param name="vessel">Vessel (unloaded)</param>
 		/// <param name="proto_part">part snapshot, this contains the persisted state of the part you're dealing with</param>
@@ -87,6 +87,38 @@ namespace Kerbalism.Contracts
 			}
 		}
 
+		/// <summary>
+		/// This will be called by Kerbalism in the editor (VAB/SPH), possibly several times after a change to the vessel.
+		///
+		/// The Kerbalism Planner allows to select different situations and bodies, and will update the simulated environment accordingly. This simulated
+		/// environment is passed into this method:
+		///
+		/// - body: the currently selected body
+		/// - environment: a string to double dictionary, currently containing:
+		///   - altitude: the altitude of the vessel above the body
+		///   - orbital_period: the duration of a circular equitorial orbit at the given altitude
+		///   - shadow_period: the duration of that orbit that will be in the planets shadow
+		///   - albedo_flux
+		///   - solar_flux
+		///   - sun_dist: distance to the sun
+		///   - temperature
+		///   - total_flux
+		/// </summary>
+		/// <param name="resources">A list of resource names and production/consumption rates.
+		/// Production is a positive rate, consumption is negatvie. Add all resources your module is going to produce/consume.</param>
+		/// <param name="body">The currently selected body in the Kerbalism planner</param>
+		/// <param name="environment">Environment variables guesstimated by Kerbalism, based on the current selection of body and vessel situation. See above.</param>
+		/// <returns>The title to display in the tooltip of the planner UI.</returns>
+		public string PlannerUpdate(List<KeyValuePair<string, double>> resources, CelestialBody body, Dictionary<string, double> environment)
+		{
+			if(running)
+			{
+				// consume the resource if running
+				resources.Add(new KeyValuePair<string, double>(resourceName, -resourceRate));
+			}
+			return title;
+		}
+
 
 #if KSP15_16
 		[KSPEvent(guiActiveUnfocused = true, guiActive = true, guiActiveEditor = true, guiName = "_", active = true)]
@@ -96,6 +128,9 @@ namespace Kerbalism.Contracts
 		public void ToggleEvent()
 		{
 			running = !running;
+
+			// refresh VAB/SPH ui
+			if (HighLogic.LoadedSceneIsEditor) GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
 		}
 
 		public List<PartResourceDefinition> GetConsumedResources()
