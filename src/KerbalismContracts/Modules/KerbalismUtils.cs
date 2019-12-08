@@ -138,7 +138,7 @@ namespace Kerbalism.Contracts
 		/// </summary>
 		public KerbalismResourceBroker Produce(string resource_name, double rate)
 		{
-			resources.Add(new RI(resource_name, -rate));
+			resources.Add(new RI(resource_name, Math.Abs(rate)));
 			return this;
 		}
 
@@ -147,7 +147,7 @@ namespace Kerbalism.Contracts
 		/// </summary>
 		public KerbalismResourceBroker Consume(string resource_name, double rate)
 		{
-			resources.Add(new RI(resource_name, rate));
+			resources.Add(new RI(resource_name, -Math.Abs(rate)));
 			return this;
 		}
 
@@ -160,26 +160,38 @@ namespace Kerbalism.Contracts
 		{
 			double rate = 1.0;
 
-			// 1st pass: calculate max. available rate
+			List<string> resource_names = new List<string>(resources.Count);
 			foreach (var r in resources)
+				resource_names.Add(r.name);
+
+			List<double> resource_amounts = KerbalismAPI.ResourceAmounts(vessel, resource_names);
+
+			// 1st pass: calculate max. available rate
+			for(int i = 0; i < resources.Count; i++)
 			{
-				if (r.rate <= 0) continue;
+				RI r = resources[i];
+
+				// productions have a positive rate. here we look at consumption only
+				if (r.rate > 0)
+					continue;
+
 				double requestedAmount = r.rate * elapsed_s;
-				double available = KerbalismAPI.ResourceAvailable(vessel, r.name);
+				double available = resource_amounts[i];
 
 				available = Math.Min(requestedAmount, available);
 				rate = Math.Min(rate, available / requestedAmount);
+				i++;
 			}
 
 			// 2nd pass: consume resources
-			foreach (var r in resources)
+			List<KeyValuePair<string, double>> resourceUpdates = new List<KeyValuePair<string, double>>(resources.Count);
+			for (int i = 0; i < resources.Count; i++)
 			{
+				RI r = resources[i];
 				double requestedAmount = r.rate * elapsed_s * rate;
-				if (requestedAmount > 0)
-					KerbalismAPI.ConsumeResource(vessel, r.name, requestedAmount, title);
-				else
-					KerbalismAPI.ProduceResource(vessel, r.name, requestedAmount, title);
+				resourceUpdates.Add(new KeyValuePair<string, double>(r.name, requestedAmount));
 			}
+			KerbalismAPI.ProcessResources(vessel, resourceUpdates, title);
 
 			return rate;
 		}
@@ -205,45 +217,45 @@ namespace Kerbalism.Contracts
 	public static class KerbalismAPI
 	{
 		private static Type API;
-		private static MethodInfo API_ProduceResource;
-		private static MethodInfo API_ConsumeResource;
-		private static MethodInfo API_ResourceAmount;
+		private static MethodInfo API_ProcessResources;
+		private static MethodInfo API_ResourceAmounts;
 		internal static readonly bool Available;
 
 		static KerbalismAPI()
 		{
 			foreach (var a in AssemblyLoader.loadedAssemblies)
 			{
-				if (a.name.StartsWith("Kerbalism1", StringComparison.Ordinal))
+				// name will be "Kerbalism" for debug builds,
+				// and "Kerbalism18" or "Kerbalism16_17" for releases
+				// there also is a KerbalismBootLoader, possibly a KerbalismContracts and other mods
+				// that start with Kerbalism, so explicitly request equality or test for anything
+				// that starts with Kerbalism1
+				if (a.name.Equals("Kerbalism") || a.name.StartsWith("Kerbalism1", StringComparison.Ordinal))
 				{
 					API = a.assembly.GetType("KERBALISM.API");
+					Lib.Log("Found KERBALISM API in " + a.name + ": " + API);
 					if(API != null)
 					{
-						API_ResourceAmount = API.GetMethod("ResourceAmount");
-						API_ProduceResource = API.GetMethod("ProduceResource");
-						API_ConsumeResource = API.GetMethod("ConsumeResource");
+						API_ResourceAmounts = API.GetMethod("ResourceAmounts");
+						API_ProcessResources = API.GetMethod("ProcessResources");
 					}
 					Available = API != null;
+
+					Lib.Log("Kerbalism available: " + Available);
 				}
 			}
 		}
 
-		public static double ResourceAvailable(Vessel vessel, string resource_name)
+		public static List<double> ResourceAmounts(Vessel vessel, List<string> resource_names)
 		{
-			if (API == null) return 0.0;
-			return (double)API_ResourceAmount.Invoke(null, new object[] { vessel, resource_name });
+			if (API == null) return new List<double>();
+			return (List<double>)API_ResourceAmounts.Invoke(null, new object[] { vessel, resource_names });
 		}
 
-		public static void ConsumeResource(Vessel vessel, string resource_name, double quantity, string title)
+		public static void ProcessResources(Vessel vessel, List<KeyValuePair<string, double>> resources, string title)
 		{
 			if (API == null) return;
-			API_ConsumeResource.Invoke(null, new object[] { vessel, resource_name, Math.Abs(quantity), title });
-		}
-
-		public static void ProduceResource(Vessel vessel, string resource_name, double quantity, string title)
-		{
-			if (API == null) return;
-			API_ProduceResource.Invoke(null, new object[] { vessel, resource_name, Math.Abs(quantity), title });
+			API_ProcessResources.Invoke(null, new object[] { vessel, resources, title });
 		}
 	}
 
