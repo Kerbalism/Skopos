@@ -19,7 +19,7 @@ namespace Kerbalism.Contracts
 
 		public override void OnLoad(ConfigNode node)
 		{
-			if(resourceHandler == null)
+			if (resourceHandler == null)
 				resourceHandler = new KerbalismResourceHandler(this, title);
 			
 			resourceHandler.AddInputResource(resourceName, resourceRate);
@@ -47,14 +47,14 @@ namespace Kerbalism.Contracts
 			if (HighLogic.LoadedSceneIsFlight)
 			{
 				bool isOn = running;
-				if(running)
+				if (running)
 				{
 					string status = string.Empty;
 					var result = resourceHandler.FixedUpdate(ref status);
 					isOn &= result >= 0.99;
 				}
 
-				if(Time.time - last_update > 0.25)
+				if (Time.time - last_update > 0.25)
 				{
 					EquipmentStateTracker.Update(vessel, id, isOn);
 					last_update = Time.time;
@@ -76,7 +76,7 @@ namespace Kerbalism.Contracts
 			KerbalismContractEquipment module = pm as KerbalismContractEquipment;
 
 			bool running = Proto.GetBool(proto_module, "running", false);
-			if(running)
+			if (running)
 			{
 				double rate = new KerbalismResourceBroker()
 					.Consume(module.resourceName, module.resourceRate)
@@ -111,7 +111,7 @@ namespace Kerbalism.Contracts
 		/// <returns>The title to display in the tooltip of the planner UI.</returns>
 		public string PlannerUpdate(List<KeyValuePair<string, double>> resources, CelestialBody body, Dictionary<string, double> environment)
 		{
-			if(running)
+			if (running)
 			{
 				// consume the resource if running
 				resources.Add(new KeyValuePair<string, double>(resourceName, -resourceRate));
