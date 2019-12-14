@@ -108,6 +108,7 @@
     <Compile Include="EquipmentStateTracker.cs" />
     <Compile Include="Modules\KerbalismContractEquipment.cs" />
     <Compile Include="Modules\KerbalismUtils.cs" />
+    <Compile Include="Modules\Specs.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

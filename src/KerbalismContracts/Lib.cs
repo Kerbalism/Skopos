@@ -102,25 +102,25 @@ namespace Kerbalism.Contracts
 			return data.index < data.prefabs.Count ? data.prefabs[data.index++] : null;
 		}
 
-		public static bool HasExperiment(Vessel v, string experiment_id)
+		public static bool HasModule(Vessel v, string moduleName, string id_name, string id_value)
 		{
-			if (!v.loaded) return HasExperiment(v.protoVessel, experiment_id);
+			if (!v.loaded) return HasExperiment(v.protoVessel, moduleName, id_name, id_value);
 
 			foreach(var part in v.parts)
 			{
 				foreach(var pm in part.Modules)
 				{
-					if(pm.isEnabled && pm.moduleName == "Experiment")
+					if(pm.isEnabled && pm.moduleName == moduleName)
 					{
-						var id = ReflectionValue<string>(pm, "experiment_id");
-						if (id == experiment_id) return true;
+						var id = ReflectionValue<string>(pm, id_name);
+						if (id == id_value) return true;
 					}
 				}
 			}
 			return false;
 		}
 
-		private static bool HasExperiment(ProtoVessel v, string experiment_id)
+		private static bool HasExperiment(ProtoVessel v, string moduleName, string id_name, string id_value)
 		{
 			// store data required to support multiple modules of same type in a part
 			var PD = new Dictionary<string, Module_prefab_data>();
@@ -149,10 +149,10 @@ namespace Kerbalism.Contracts
 					// note: this must be done after ModulePrefab is called, so that indexes are right
 					if (!Proto.GetBool(m, "isEnabled")) continue;
 
-					if(m.moduleName == "Experiment")
+					if(m.moduleName == moduleName)
 					{
-						var id = ReflectionValue<string>(module_prefab, "experiment_id");
-						if (id == experiment_id) return true;
+						var id = ReflectionValue<string>(module_prefab, id_name);
+						if (id == id_value) return true;
 					}
 				}
 			}
@@ -245,6 +245,51 @@ namespace Kerbalism.Contracts
 			return pos;
 		}
 
+		private static double hoursInDay = -1.0;
+		///<summary>return hours in a day</summary>
+		public static double HoursInDay
+		{
+			get
+			{
+				if (hoursInDay == -1.0)
+				{
+					if (FlightGlobals.ready || HighLogic.LoadedSceneIsEditor)
+					{
+						var homeBody = FlightGlobals.GetHomeBody();
+						hoursInDay = Math.Round(homeBody.rotationPeriod / 3600, 0);
+					}
+					else
+					{
+						return GameSettings.KERBIN_TIME ? 6.0 : 24.0;
+					}
+
+				}
+				return hoursInDay;
+			}
+		}
+
+		private static double daysInYear = -1.0;
+		///<summary>return year length</summary>
+		public static double DaysInYear
+		{
+			get
+			{
+				if (daysInYear == -1.0)
+				{
+					if (FlightGlobals.ready || HighLogic.LoadedSceneIsEditor)
+					{
+						var homeBody = FlightGlobals.GetHomeBody();
+						daysInYear = Math.Floor(homeBody.orbit.period / (HoursInDay * 60.0 * 60.0));
+					}
+					else
+					{
+						return GameSettings.KERBIN_TIME ? 426.0 : 365.0;
+					}
+				}
+				return daysInYear;
+			}
+		}
+
 		///<summary> Pretty-print a range (range is in meters) </summary>
 		public static string HumanReadableDistance(double distance)
 		{
@@ -265,5 +310,47 @@ namespace Kerbalism.Contracts
 			return BuildString(distance.ToString("F3"), " Em");
 		}
 
+		///<summary> Format data size, the size parameter is in MB (megabytes) </summary>
+		public static string HumanReadableDataSize(double size)
+		{
+			var bitsPerMB = 1024.0 * 1024.0 * 8.0;
+
+			size *= bitsPerMB; //< bits
+			if (size < 0.01) return "none";
+			if (size <= 32.0) return BuildString(size.ToString("F0"), " b");
+			size /= 8; //< to bytes
+			if (size < 1024.0) return BuildString(size.ToString("F0"), " B");
+			size /= 1024.0;
+			if (size < 1024.0) return BuildString(size.ToString("F2"), " kB");
+			size /= 1024.0;
+			if (size < 1024.0) return BuildString(size.ToString("F2"), " MB");
+			size /= 1024.0;
+			if (size < 1024.0) return BuildString(size.ToString("F2"), " GB");
+			size /= 1024.0;
+			return BuildString(size.ToString("F2"), " TB");
+		}
+
+		///<summary> Format data rate, the rate parameter is in Mb/s </summary>
+		public static string HumanReadableDataRate(double rate)
+		{
+			// say "none" for rates < 0.5 bits per second
+			var bitsPerMB = 1024.0 * 1024.0 * 8.0;
+			return rate < 1 / bitsPerMB / 2.0 ? "none" : BuildString(HumanReadableDataSize(rate), "/s");
+		}
+
+		///<summary> Pretty-print a resource rate (rate is per second). Return an absolute value if a negative one is provided</summary>
+		public static string HumanReadableRate(double rate, string precision = "F3")
+		{
+			if (rate == 0.0) return "none";
+			rate = Math.Abs(rate);
+			if (rate >= 0.01) return BuildString(rate.ToString(precision), "/s");
+			rate *= 60.0; // per-minute
+			if (rate >= 0.01) return BuildString(rate.ToString(precision), "/m");
+			rate *= 60.0; // per-hour
+			if (rate >= 0.01) return BuildString(rate.ToString(precision), "/h");
+			rate *= HoursInDay;  // per-day
+			if (rate >= 0.01) return BuildString(rate.ToString(precision), "/d");
+			return BuildString((rate * DaysInYear).ToString(precision), "/y");
+		}
 	}
 }

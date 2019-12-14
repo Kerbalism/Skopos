@@ -63,6 +63,7 @@ namespace Kerbalism.Contracts
 		protected double min_angle_between { get; set; }
 		protected int waypointIndex { get; set; }
 		protected string experiment { get; set; }
+		protected string equipment { get; set; }
 
 		protected Waypoint waypoint { get; set; }
 
@@ -110,12 +111,13 @@ namespace Kerbalism.Contracts
 
 		public ExperimentAboveWaypoint() { }
 
-		public ExperimentAboveWaypoint(int waypointIndex, double duration, int max_distance, double min_elevation, int min_vessels, double min_angle_between, string experiment_id, string equipment_id, string title)
+		public ExperimentAboveWaypoint(int waypointIndex, double duration, int max_distance, double min_elevation, int min_vessels, double min_angle_between, string experiment, string equipment, string title)
 			: base(title, min_vessels, duration)
 		{
 			this.min_elevation = min_elevation;
 			this.waypointIndex = waypointIndex;
-			this.experiment = experiment_id;
+			this.experiment = experiment;
+			this.equipment = equipment;
 			this.min_angle_between = min_angle_between;
 			this.max_distance = max_distance;
 
@@ -131,6 +133,7 @@ namespace Kerbalism.Contracts
 			node.AddValue("min_elevation", min_elevation);
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("experiment", experiment);
+			node.AddValue("equipment", equipment);
 			node.AddValue("min_angle_between", min_angle_between);
 			node.AddValue("max_distance", max_distance);
 		}
@@ -143,6 +146,7 @@ namespace Kerbalism.Contracts
 			waypointIndex = Convert.ToInt32(node.GetValue("waypointIndex"));
 			max_distance = Convert.ToInt32(node.GetValue("max_distance"));
 			experiment = ConfigNodeUtil.ParseValue(node, "experiment", string.Empty);
+			equipment = ConfigNodeUtil.ParseValue(node, "equipment", string.Empty);
 		}
 
 		protected override void BeforeUpdate()
@@ -205,6 +209,12 @@ namespace Kerbalism.Contracts
 
 			if (!string.IsNullOrEmpty(experiment) && !ExperimentStateTracker.IsRunning(vessel, experiment))
 			{
+				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": Experiment is off");
+				return false;
+			}
+
+			if (!string.IsNullOrEmpty(equipment) && !EquipmentStateTracker.IsRunning(vessel, equipment))
+			{
 				vesselData.parameterDelegate.SetTitle(vessel.vesselName + ": Equipment is off");
 				return false;
 			}
@@ -255,10 +265,15 @@ namespace Kerbalism.Contracts
 
 		protected override bool VesselIsCandidate(Vessel vessel)
 		{
-			Lib.Log("Looking into vessel " + vessel);
-			if(!string.IsNullOrEmpty(experiment))
-				return Lib.HasExperiment(vessel, experiment);
-			return true;
+			bool result = true;
+
+			if (!string.IsNullOrEmpty(experiment))
+				result &= Lib.HasModule(vessel, "Experiment", "experiment_id", experiment);
+
+			if (!string.IsNullOrEmpty(equipment))
+				result &= Lib.HasModule(vessel, "KerbalismContractEquipment", "id", equipment);
+
+			return result;
 		}
 
 		/// <summary>

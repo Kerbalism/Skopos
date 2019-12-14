@@ -1,90 +1,183 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using KSP.Localization;
 
 namespace Kerbalism.Contracts
 {
-	public class KerbalismContractEquipment: PartModule, IResourceConsumer
-	{
+	public class KerbalismContractEquipment: PartModule, IResourceConsumer, IModuleInfo
+	{	
 		[KSPField] public string id;                    // id of associated experiment definition
 		[KSPField] public string title = string.Empty;  // PAW compatible name
-		[KSPField] public double data_rate;             // min. data_rate to operate
+		[KSPField] public double min_bandwidth;
 
 		[KSPField] public string resourceName = "ElectricCharge";
 		[KSPField] public double resourceRate;
 
 		[KSPField(isPersistant = true)] public bool running = false;
 
-		private KerbalismResourceHandler resourceHandler;
+		private bool kerbalismDetected = false;
+		private List<PartResourceDefinition> consumedResources;
+		private List<ModuleResource> inputResources;
+
+		private enum State
+		{
+			off, nominal, no_ec, no_bandwidth
+		}
+		private State state = State.nominal;
 
 		public override void OnLoad(ConfigNode node)
 		{
-			if (resourceHandler == null)
-				resourceHandler = new KerbalismResourceHandler(this, title);
-			
-			resourceHandler.AddInputResource(resourceName, resourceRate);
-
 			if (running)
 				EquipmentStateTracker.Update(vessel, id, true);
+
+
+			List<ModuleResource> list = resHandler.inputResources;
+
+			// KSP calls OnLoad twice, so double-check if we added the resource already before we add it a second time.
+			foreach (var resource in list)
+			{
+				if (resource.name == resourceName)
+				{
+					resource.rate = resourceRate;
+					return;
+				}
+			}
+
+			ModuleResource moduleResource = new ModuleResource();
+			moduleResource.name = resourceName;
+			moduleResource.title = KSPUtil.PrintModuleName(resourceName);
+			moduleResource.id = resourceName.GetHashCode();
+			moduleResource.rate = resourceRate;
+
+			list.Add(moduleResource);
 		}
 
 		public virtual void Update()
 		{
-			Events["ToggleEvent"].guiName = title + ": " + (running ? "running" : "disabled");
+			string statusStr = title + ": ";
+			switch (state)
+			{
+				case State.off: statusStr += "off"; break;
+				case State.nominal: statusStr += "running"; break;
+				case State.no_bandwidth: statusStr += "<color=red>needs " + Lib.HumanReadableDataRate(min_bandwidth) + "</color>"; break;
+				case State.no_ec: statusStr += "<color=red>no EC</color>"; break;
+			}
+			Events["ToggleEvent"].guiName = statusStr;
 		}
 
 		public override void OnAwake()
 		{
-			if (resourceHandler == null)
-				resourceHandler = new KerbalismResourceHandler(this, title);
+			if (consumedResources == null)
+				consumedResources = new List<PartResourceDefinition>();
+			else
+				consumedResources.Clear();
 
-			resourceHandler.OnAwake();
+			if (inputResources == null) inputResources = new List<ModuleResource>();
+
+			var inResources = resHandler.inputResources;
+			int i = 0;
+			for (int count = inResources.Count; i < count; i++)
+				consumedResources.Add(PartResourceLibrary.Instance.GetDefinition(inResources[i].name));
 		}
 
-		private double last_update = 0;
+		private double last_state_update = 0;
+
 		public void FixedUpdate()
 		{
 			if (HighLogic.LoadedSceneIsFlight)
 			{
-				bool isOn = running;
-				if (running)
+				if (Time.time - last_state_update > 0.25)
 				{
-					string status = string.Empty;
-					var result = resourceHandler.FixedUpdate(ref status);
-					isOn &= result >= 0.99;
+					EquipmentStateTracker.Update(vessel, id, state == State.nominal);
+					last_state_update = Time.time;
 				}
 
-				if (Time.time - last_update > 0.25)
+				state = running ? State.nominal : State.off;
+
+				bool isOn = running;
+				if (min_bandwidth > 0 && isOn)
 				{
-					EquipmentStateTracker.Update(vessel, id, isOn);
-					last_update = Time.time;
+					isOn &= KERBALISM.API.VesselConnectionRate(vessel) > min_bandwidth;
+					if (!isOn) state = State.no_bandwidth;
+				}
+
+				// if Kerbalism is found, resource related updates will happen there
+				if (kerbalismDetected) return;
+
+				if (isOn)
+				{
+					string status = string.Empty;
+					var rate = resHandler.UpdateModuleResourceInputs(ref status, 1.0, 0.99, false, false, true);
+					isOn &= rate >= 0.99;
+					if (!isOn) state = State.no_ec;
 				}
 			}
 		}
 
 		/// <summary>
-		/// This will be called by Kerbalism in flight while the vessel is unloaded. The Method must have exactly this name, must be static and must accept these parameters.
+		/// We're always going to call you for resource handling.  You tell us what to produce or consume.  Here's how it'll look when your vessel is NOT loaded
 		/// </summary>
-		/// <param name="vessel">Vessel (unloaded)</param>
-		/// <param name="proto_part">part snapshot, this contains the persisted state of the part you're dealing with</param>
-		/// <param name="proto_module">module snapshot, this contains the persisted state of the module you're dealing with</param>
-		/// <param name="pm">proto module, not an actual instance you can work with. values from configuration will be set, persisted values will not be set.</param>
-		/// <param name="p">proto part, in case you need it</param>
-		/// <param name="elapsed_s">time elapsed since the last call. this can be very long depending on the current warp speed</param>
-		public static void BackgroundUpdate(Vessel vessel, ProtoPartSnapshot proto_part, ProtoPartModuleSnapshot proto_module, PartModule pm, Part p, double elapsed_s)
+		/// <param name="v">the vessel (unloaded)</param>
+		/// <param name="part_snapshot">proto part snapshot (contains all non-persistant KSPFields)</param>
+		/// <param name="module_snapshot">proto part module snapshot (contains all non-persistant KSPFields)</param>
+		/// <param name="proto_part_module">proto part module snapshot (contains all non-persistant KSPFields)</param>
+		/// <param name="proto_part">proto part snapshot (contains all non-persistant KSPFields)</param>
+		/// <param name="availableResources">key-value pair containing all available resources and their currently available amount on the vessel. if the resource is not in there, it's not available</param>
+		/// <param name="resourceChangeRequest">key-value pair that contains the resource names and the units per second that you want to produce/consume (produce: positive, consume: negative)</param>
+		/// <param name="elapsed_s">how much time elapsed since the last time. note this can be very long, minutes and hours depending on warp speed</param>
+		/// <returns>the title to be displayed in the resource tooltip</returns>
+		public static string BackgroundUpdate(Vessel v,
+			ProtoPartSnapshot part_snapshot, ProtoPartModuleSnapshot module_snapshot,
+			PartModule proto_part_module, Part proto_part,
+			Dictionary<string, double> availableResources, List<KeyValuePair<string, double>> resourceChangeRequest,
+			double elapsed_s)
 		{
-			KerbalismContractEquipment module = pm as KerbalismContractEquipment;
+			KerbalismContractEquipment module = proto_part_module as KerbalismContractEquipment;
 
-			bool running = Proto.GetBool(proto_module, "running", false);
+			bool running = Proto.GetBool(module_snapshot, "running", false);
 			if (running)
 			{
-				double rate = new KerbalismResourceBroker()
-					.Consume(module.resourceName, module.resourceRate)
-					.Execute(vessel, module.title, elapsed_s);
+				bool isOn = true;
 
-				// rate will be < 1 if the process did not have enough input resources to run for the entire duration
-				EquipmentStateTracker.Update(vessel, module.id, rate > 0.99);
+				if (module.min_bandwidth > 0)
+					isOn &= KERBALISM.API.VesselConnectionRate(v) > module.min_bandwidth;
+
+				double ec = 0;
+				availableResources.TryGetValue("ElectricCharge", out ec);
+				isOn &= ec > 0;
+
+				if (isOn)
+					resourceChangeRequest.Add(new KeyValuePair<string, double>("ElectricCharge", -module.resourceRate));
+
+				EquipmentStateTracker.Update(v, module.id, isOn);
 			}
+
+			return module.title;
+		}
+
+
+		/// <summary>
+		/// We're also always going to call you when you're loaded.  Since you're loaded, this will be your PartModule, just like you'd expect in KSP. Will only be called while in flight, not in the editor
+		/// </summary>
+		/// <param name="availableResources">key-value pair containing all available resources and their currently available amount on the vessel. if the resource is not in there, it's not available</param>
+		/// <param name="resourceChangeRequest">key-value pair that contains the resource names and the units per second that you want to produce/consume (produce: positive, consume: negative)</param>
+		/// <returns></returns>
+		public virtual string ResourceUpdate(Dictionary<string, double> availableResources, List<KeyValuePair<string, double>> resourceChangeRequest)
+		{
+			kerbalismDetected = true;
+
+			if (running)
+			{
+				double ec = 0;
+				availableResources.TryGetValue(resourceName, out ec);
+				if(ec <= 0)
+					state = State.no_ec;
+
+				resourceChangeRequest.Add(new KeyValuePair<string, double>(resourceName, -resourceRate));
+			}
+
+			return title;
 		}
 
 		/// <summary>
@@ -130,12 +223,32 @@ namespace Kerbalism.Contracts
 			running = !running;
 
 			// refresh VAB/SPH ui
-			if (HighLogic.LoadedSceneIsEditor) GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
+			if (HighLogic.LoadedSceneIsEditor)
+			{
+				state = running ? State.nominal : State.off;
+				GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
+			}
 		}
 
 		public List<PartResourceDefinition> GetConsumedResources()
 		{
-			return resourceHandler.GetConsumedResources();
+			return consumedResources;
+		}
+
+		public string GetModuleTitle() { return title; }
+		public Callback<Rect> GetDrawModulePanelCallback() { return null; }
+		public string GetPrimaryField() { return string.Empty; }
+
+		public override string GetInfo()
+		{
+			Specifics specs = new Specifics();
+
+			var res = PartResourceLibrary.Instance.GetDefinition(resourceName);
+
+			if (resourceRate > 0) specs.Add(res.displayName, Lib.HumanReadableRate(resourceRate));
+			if (min_bandwidth > 0) specs.Add("Min. data rate", Lib.HumanReadableDataRate(min_bandwidth));
+
+			return specs.Info();
 		}
 	}
 }
