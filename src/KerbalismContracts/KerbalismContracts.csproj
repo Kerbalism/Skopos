@@ -46,8 +46,7 @@
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <OutputPath>..\..\GameData\KerbalismContracts</OutputPath>
     <WarningLevel>4</WarningLevel>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants>KSP18</DefineConstants>
     <DebugType>none</DebugType>
     <Prefer32Bit>false</Prefer32Bit>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>

@@ -213,10 +213,10 @@ namespace Kerbalism.Contracts
 		}
 
 
-#if KSP15_16
-		[KSPEvent(guiActiveUnfocused = true, guiActive = true, guiActiveEditor = true, guiName = "_", active = true)]
-#else
+#if KSP18
 		[KSPEvent(guiActiveUnfocused = true, guiActive = true, guiActiveEditor = true, guiName = "_", active = true, groupName = "Equipment", groupDisplayName = "Equipment")]
+#else
+		[KSPEvent(guiActiveUnfocused = true, guiActive = true, guiActiveEditor = true, guiName = "_", active = true)]
 #endif
 		public void ToggleEvent()
 		{
