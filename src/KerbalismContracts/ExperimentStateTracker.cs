@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System;
-
-namespace Kerbalism.Contracts
+/*
+namespace KerbalismContracts
 {
 	public static class EquipmentStateTracker
 	{
@@ -60,3 +60,4 @@ namespace Kerbalism.Contracts
 		}
 	}
 }
+*/

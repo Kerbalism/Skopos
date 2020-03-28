@@ -1,13 +1,20 @@
 ﻿using System.Collections.Generic;
 using System;
+using KERBALISM;
 
-namespace Kerbalism.Contracts
+namespace KerbalismContracts
 {
-	public class RadiationFieldState
+	public class VesselRadiationFieldStatus
 	{
-		internal RadiationFieldState() { }
+		internal bool inner_belt;
+		internal bool outer_belt;
+		internal bool magnetosphere;
+		internal int inner_crossings;
+		internal int outer_crossings;
+		internal int magneto_crossings;
+		internal int bodyIndex;
 
-		internal RadiationFieldState(CelestialBody body, bool inner_belt, bool outer_belt, bool magnetosphere)
+		internal VesselRadiationFieldStatus(CelestialBody body, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
 			this.inner_belt = inner_belt;
 			this.outer_belt = outer_belt;
@@ -15,61 +22,70 @@ namespace Kerbalism.Contracts
 			bodyIndex = body.flightGlobalsIndex;
 		}
 
-		internal bool IsValid()
+		internal VesselRadiationFieldStatus(ConfigNode node)
 		{
-			return inner_crossings >= 0 && outer_crossings >= 0 && magneto_crossings >= 0;
+			inner_belt = Lib.ConfigValue(node, "inner_belt", false);
+			outer_belt = Lib.ConfigValue(node, "outer_belt", false);
+			magnetosphere = Lib.ConfigValue(node, "magnetosphere", false);
+			inner_crossings = Lib.ConfigValue(node, "inner_crossings", 0);
+			outer_crossings = Lib.ConfigValue(node, "outer_crossings", 0);
+			magneto_crossings = Lib.ConfigValue(node, "magneto_crossings", 0);
+			bodyIndex = Lib.ConfigValue(node, "bodyIndex", -1);
 		}
 
-		internal void Validate()
+		internal void Save(ConfigNode node)
 		{
-			inner_crossings = 0;
-			outer_crossings = 0;
-			magneto_crossings = 0;
+			node.AddValue("inner_belt", inner_belt);
+			node.AddValue("outer_belt", outer_belt);
+			node.AddValue("magnetosphere", magnetosphere);
+			node.AddValue("inner_crossings", inner_crossings);
+			node.AddValue("outer_crossings", outer_crossings);
+			node.AddValue("magneto_crossings", magneto_crossings);
+			node.AddValue("bodyIndex", bodyIndex);
 		}
-
-		internal bool inner_belt;
-		internal bool outer_belt;
-		internal bool magnetosphere;
-		internal int inner_crossings = -1;
-		internal int outer_crossings = -1;
-		internal int magneto_crossings = -1;
-		internal int bodyIndex = -1;
 	}
 
 	public static class RadiationFieldTracker
 	{
-		private static readonly Dictionary<Guid, List<RadiationFieldState>> states = new Dictionary<Guid, List<RadiationFieldState>>();
+		private static readonly Dictionary<Guid, List<VesselRadiationFieldStatus>> states = new Dictionary<Guid, List<VesselRadiationFieldStatus>>();
 
-		internal static void Update(Vessel v, bool inner_belt, bool outer_belt, bool magnetosphere)
+		internal static void Update(Vessel vessel, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
-			if (!KerbalismContracts.RelevantVessel(v))
+			if (!Utils.RelevantVessel(vessel))
 				return;
 
-			var bd = KerbalismContracts.Instance.BodyData(v.mainBody);
-
-			if (!states.ContainsKey(v.id))
+			if (!states.ContainsKey(vessel.id))
 			{
-				states.Add(v.id, new List<RadiationFieldState>());
+				states.Add(vessel.id, new List<VesselRadiationFieldStatus>());
 			}
 
-			var statesForVessel = states[v.id];
-			var state = statesForVessel.Find(s => s.bodyIndex == v.mainBody.flightGlobalsIndex);
-			if(state == null)
+			// also update the global radiation field status
+			GlobalRadiationFieldStatus bd = KerbalismContracts.Instance.BodyData(vessel.mainBody);
+
+			var statesForVessel = states[vessel.id];
+			VesselRadiationFieldStatus state = statesForVessel.Find(s => s.bodyIndex == vessel.mainBody.flightGlobalsIndex);
+			if (state == null)
 			{
-				statesForVessel.Add(new RadiationFieldState(v.mainBody, inner_belt, outer_belt, magnetosphere));
+				statesForVessel.Add(new VesselRadiationFieldStatus(vessel.mainBody, inner_belt, outer_belt, magnetosphere));
 			}
 			else
 			{
-				if(!state.IsValid())
+				if (state.inner_belt != inner_belt)
 				{
-					// got our first update, set all counters to 0 so we don't count spawning into a field as crossing into it
-					state.Validate();
+					state.inner_crossings++;
+					bd.inner_crossings++;
 				}
-				else
+
+				if (state.outer_belt != outer_belt)
 				{
-					if (state.inner_belt != inner_belt) state.inner_crossings++;
-					if (state.outer_belt != outer_belt) state.outer_crossings++;
-					if (state.magnetosphere != magnetosphere) state.magneto_crossings++;
+					state.outer_crossings++;
+					bd.outer_crossings++;
+				}
+
+				if (state.magnetosphere != magnetosphere)
+				{
+					state.magneto_crossings++;
+					bd.magneto_crossings++;
 				}
 
 				state.inner_belt = inner_belt;
@@ -79,11 +95,14 @@ namespace Kerbalism.Contracts
 
 			for (int i = listeners.Count - 1; i >= 0; i--)
 			{
-				listeners[i](v, state);
+				listeners[i](vessel, state);
 			}
 		}
 
-		internal static List<RadiationFieldState> RadiationFieldStates(Vessel v)
+		/// <summary>
+		/// Return all radiation field states for this vessel
+		/// </summary>
+		internal static List<VesselRadiationFieldStatus> RadiationFieldStates(Vessel v)
 		{
 			if (v == null) return null;
 
@@ -94,7 +113,10 @@ namespace Kerbalism.Contracts
 			return null;
 		}
 
-		internal static RadiationFieldState RadiationFieldState(Vessel v)
+		/// <summary>
+		/// Return the radiation field state of the vessel in its current main body
+		/// </summary>
+		internal static VesselRadiationFieldStatus RadiationFieldState(Vessel v)
 		{
 			if (v == null) return null;
 
@@ -105,14 +127,14 @@ namespace Kerbalism.Contracts
 			return null;
 		}
 
-		private static readonly List<Action<Vessel, RadiationFieldState>> listeners = new List<Action<Vessel, RadiationFieldState>>();
+		private static readonly List<Action<Vessel, VesselRadiationFieldStatus>> listeners = new List<Action<Vessel, VesselRadiationFieldStatus>>();
 
-		internal static void AddListener(Action<Vessel, RadiationFieldState> listener)
+		internal static void AddListener(Action<Vessel, VesselRadiationFieldStatus> listener)
 		{
 			if (!listeners.Contains(listener)) listeners.Add(listener);
 		}
 
-		internal static void RemoveListener(Action<Vessel, RadiationFieldState> listener)
+		internal static void RemoveListener(Action<Vessel, VesselRadiationFieldStatus> listener)
 		{
 			if (listeners.Contains(listener)) listeners.Remove(listener);
 		}
@@ -126,15 +148,7 @@ namespace Kerbalism.Contracts
 
 				var vesselNode = node.AddNode(id.ToString());
 				foreach(var state in states[id])
-				{
-					var stateNode = vesselNode.AddNode(state.bodyIndex.ToString());
-					stateNode.SetValue("inner_belt", state.inner_belt);
-					stateNode.SetValue("outer_belt", state.outer_belt);
-					stateNode.SetValue("magnetosphere", state.magnetosphere);
-					stateNode.SetValue("inner_crossings", state.inner_crossings);
-					stateNode.SetValue("outer_crossings", state.outer_crossings);
-					stateNode.SetValue("magneto_crossings", state.magneto_crossings);
-				}
+					state.Save(vesselNode.AddNode("VesselBodyData"));
 			}
 		}
 
@@ -144,23 +158,12 @@ namespace Kerbalism.Contracts
 
 			foreach(var vesselNode in node.GetNodes())
 			{
-				Guid id = Guid.Parse(vesselNode.name);
-				var statesList = new List<RadiationFieldState>();
+				Guid id = new Guid(vesselNode.name);
+				var statesList = new List<VesselRadiationFieldStatus>();
 				states[id] = statesList;
 
 				foreach(var stateNode in vesselNode.GetNodes())
-				{
-					var state = new RadiationFieldState();
-					statesList.Add(state);
-
-					state.bodyIndex = int.Parse(stateNode.name);
-					state.inner_belt = Lib.ConfigValue(stateNode, "inner_belt", false);
-					state.outer_belt = Lib.ConfigValue(stateNode, "outer_belt", false);
-					state.magnetosphere = Lib.ConfigValue(stateNode, "magnetosphere", false);
-					state.inner_crossings = Lib.ConfigValue(stateNode, "inner_crossings", 0);
-					state.outer_crossings = Lib.ConfigValue(stateNode, "outer_crossings", 0);
-					state.magneto_crossings = Lib.ConfigValue(stateNode, "magneto_crossings", 0);
-				}
+					statesList.Add(new VesselRadiationFieldStatus(stateNode));
 			}
 		}
 	}

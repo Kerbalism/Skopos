@@ -1,0 +1,42 @@
+CONTRACT_TYPE:NEEDS[KerbalismRadiation]
+{
+  name = KerbalismContracts_LeaveSolarSystem
+  agent = Kerbalism
+  group = Kerbalism
+  title = Leave the heliosphere
+  description = We've walked on moons, we visited other planets, now it's time to head for the stars!
+  synopsis = Transmit a radiation scan from interstellar space
+  completedMessage = We received a radiation scan from interstellar space!
+  prestige = Exceptional
+  maxCompletions = 1
+  maxSimultaneous = 1
+  rewardScience = 60
+  rewardReputation = 50
+  advanceFunds = 20000
+  rewardFunds = 325000
+
+  targetBody = AllBodies().Where(cb => cb.IsSun()).First()
+
+  REQUIREMENT
+  {
+    name = OrbitJool
+    type = Orbit
+    targetBody = AllBodies().Where(cb => cb.IsPlanet() && !cb.HasSurface()).First()
+  }
+
+// TODO: this parameter is not currently implemented
+  PARAMETER
+  {
+    name = KerbalismExperiment
+    type = KerbalismExperiment
+    title = Retrieve a radiation scan from outside the heliosphere
+    subject = geigerCounter@*Interstellar
+  }
+
+  BEHAVIOUR
+  {
+    name = ShowBelt
+    type = ShowRadiationField
+    field = MAGNETOPAUSE
+  }
+}

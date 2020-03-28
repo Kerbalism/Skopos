@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using KSP.Localization;
-
-namespace Kerbalism.Contracts
+using KERBALISM;
+/*
+namespace KerbalismContracts
 {
 	public class KerbalismContractEquipment: PartModule, IResourceConsumer, IModuleInfo
 	{	
@@ -16,7 +16,6 @@ namespace Kerbalism.Contracts
 
 		[KSPField(isPersistant = true)] public bool running = false;
 
-		private bool kerbalismDetected = false;
 		private List<PartResourceDefinition> consumedResources;
 		private List<ModuleResource> inputResources;
 
@@ -30,7 +29,6 @@ namespace Kerbalism.Contracts
 		{
 			if (running)
 				EquipmentStateTracker.Update(vessel, id, true);
-
 
 			List<ModuleResource> list = resHandler.inputResources;
 
@@ -101,17 +99,6 @@ namespace Kerbalism.Contracts
 					isOn &= KERBALISM.API.VesselConnectionRate(vessel) > min_bandwidth;
 					if (!isOn) state = State.no_bandwidth;
 				}
-
-				// if Kerbalism is found, resource related updates will happen there
-				if (kerbalismDetected) return;
-
-				if (isOn)
-				{
-					string status = string.Empty;
-					var rate = resHandler.UpdateModuleResourceInputs(ref status, 1.0, 0.99, false, false, true);
-					isOn &= rate >= 0.99;
-					if (!isOn) state = State.no_ec;
-				}
 			}
 		}
 
@@ -135,7 +122,7 @@ namespace Kerbalism.Contracts
 		{
 			KerbalismContractEquipment module = proto_part_module as KerbalismContractEquipment;
 
-			bool running = Proto.GetBool(module_snapshot, "running", false);
+			bool running = Lib.Proto.GetBool(module_snapshot, "running", false);
 			if (running)
 			{
 				bool isOn = true;
@@ -165,8 +152,6 @@ namespace Kerbalism.Contracts
 		/// <returns></returns>
 		public virtual string ResourceUpdate(Dictionary<string, double> availableResources, List<KeyValuePair<string, double>> resourceChangeRequest)
 		{
-			kerbalismDetected = true;
-
 			if (running)
 			{
 				double ec = 0;
@@ -212,12 +197,7 @@ namespace Kerbalism.Contracts
 			return title;
 		}
 
-
-#if KSP18
 		[KSPEvent(guiActiveUnfocused = true, guiActive = true, guiActiveEditor = true, guiName = "_", active = true, groupName = "Equipment", groupDisplayName = "Equipment")]
-#else
-		[KSPEvent(guiActiveUnfocused = true, guiActive = true, guiActiveEditor = true, guiName = "_", active = true)]
-#endif
 		public void ToggleEvent()
 		{
 			running = !running;
@@ -252,3 +232,4 @@ namespace Kerbalism.Contracts
 		}
 	}
 }
+*/

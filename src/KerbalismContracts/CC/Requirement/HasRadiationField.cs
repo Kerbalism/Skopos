@@ -5,8 +5,9 @@ using KSP.Localization;
 using ContractConfigurator;
 using ContractConfigurator.Parameters;
 
-namespace Kerbalism.Contracts
+namespace KerbalismContracts
 {
+	/// <summary> Requirement: test for radiation fields on a body </summary>
 	public class HasRadiationField : ContractRequirement
 	{
 		protected RadiationFieldType field;
@@ -60,7 +61,7 @@ namespace Kerbalism.Contracts
 		{
 			if (f == RadiationFieldType.UNDEFINED)
 			{
-				LoggingUtil.LogError(this, "Missing field. You must specify field = INNER_BELT, OUTER_BELT, MAGNETOPAUSE or ANY.");
+				Utils.Log("Missing field. You must specify field = INNER_BELT, OUTER_BELT, MAGNETOPAUSE or ANY.", LogLevel.Error);
 				return false;
 			}
 			return true;

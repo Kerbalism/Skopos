@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-namespace Kerbalism.Contracts
+namespace KerbalismContracts
 {
 	public sealed class Specifics
 	{

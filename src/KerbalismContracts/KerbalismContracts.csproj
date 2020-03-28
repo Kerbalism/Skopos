@@ -46,7 +46,6 @@
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <OutputPath>..\..\GameData\KerbalismContracts</OutputPath>
     <WarningLevel>4</WarningLevel>
-    <DefineConstants>KSP18</DefineConstants>
     <DebugType>none</DebugType>
     <Prefer32Bit>false</Prefer32Bit>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
@@ -90,32 +89,31 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Lib.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="KerbalismContracts.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="ExperimentStateTracker.cs" />
-    <Compile Include="Parameter\ExperimentRunning.cs" />
-    <Compile Include="Parameter\RadiationField.cs" />
-    <Compile Include="Behavior\ShowRadiationField.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Requirement\HasRadiationField.cs" />
-    <Compile Include="Parameter\ExperimentDone.cs" />
-    <Compile Include="Parameter\ExperimentAboveWaypoint.cs" />
-    <Compile Include="Parameter\BackgroundVesselParameter.cs" />
     <Compile Include="EquipmentStateTracker.cs" />
     <Compile Include="Modules\KerbalismContractEquipment.cs" />
-    <Compile Include="Modules\KerbalismUtils.cs" />
-    <Compile Include="Modules\Specs.cs" />
+    <Compile Include="Util\Specs.cs" />
+    <Compile Include="CC\Behavior\ShowRadiationField.cs" />
+    <Compile Include="CC\Requirement\HasRadiationField.cs" />
+    <Compile Include="Util\RadiationField.cs" />
+    <Compile Include="Util\Utils.cs" />
+    <Compile Include="CC\Parameter\RadiationField.cs" />
+    <Compile Include="CC\Parameter\VesselRadiationField.cs" />
+    <Compile Include="CC\Parameter\RadiationFieldVisible.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <Folder Include="Properties\" />
-    <Folder Include="Parameter\" />
-    <Folder Include="Behavior\" />
-    <Folder Include="Requirement\" />
     <Folder Include="Modules\" />
+    <Folder Include="Util\" />
+    <Folder Include="CC\" />
+    <Folder Include="CC\Behavior\" />
+    <Folder Include="CC\Parameter\" />
+    <Folder Include="CC\Requirement\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">

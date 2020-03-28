@@ -5,7 +5,7 @@ using KSP.Localization;
 using ContractConfigurator;
 using ContractConfigurator.Parameters;
 
-namespace Kerbalism.Contracts
+namespace KerbalismContracts
 {
 	public class ShowRadiationFieldFactory : BehaviourFactory
 	{
