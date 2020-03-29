@@ -92,17 +92,19 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="KerbalismContracts.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
-    <Compile Include="Settings.cs" />
-    <Compile Include="ExperimentStateTracker.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="StateTracker.cs" />
     <Compile Include="Modules\ModuleKsmContractEquipment.cs" />
     <Compile Include="Util\Specs.cs" />
-    <Compile Include="CC\Behavior\ShowRadiationField.cs" />
-    <Compile Include="CC\Requirement\HasRadiationField.cs" />
+    <Compile Include="CC\Behavior\ShowRadiationFieldBehavior.cs" />
+    <Compile Include="CC\Requirement\HasRadiationFieldRequirement.cs" />
     <Compile Include="Util\RadiationField.cs" />
     <Compile Include="Util\Utils.cs" />
-    <Compile Include="CC\Parameter\RadiationField.cs" />
-    <Compile Include="CC\Parameter\VesselRadiationField.cs" />
+    <Compile Include="CC\Parameter\RadiationFieldParameter.cs" />
+    <Compile Include="CC\Parameter\VesselRadiationFieldParameter.cs" />
+    <Compile Include="CC\Parameter\KerbalismContractParameter.cs" />
+    <Compile Include="RequirementTracker.cs" />
+    <Compile Include="KerbalismContractRequirement.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
