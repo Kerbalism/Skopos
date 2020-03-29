@@ -94,8 +94,8 @@
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="ExperimentStateTracker.cs" />
-    <Compile Include="EquipmentStateTracker.cs" />
-    <Compile Include="Modules\KerbalismContractEquipment.cs" />
+    <Compile Include="StateTracker.cs" />
+    <Compile Include="Modules\ModuleKsmContractEquipment.cs" />
     <Compile Include="Util\Specs.cs" />
     <Compile Include="CC\Behavior\ShowRadiationField.cs" />
     <Compile Include="CC\Requirement\HasRadiationField.cs" />
@@ -103,7 +103,6 @@
     <Compile Include="Util\Utils.cs" />
     <Compile Include="CC\Parameter\RadiationField.cs" />
     <Compile Include="CC\Parameter\VesselRadiationField.cs" />
-    <Compile Include="CC\Parameter\RadiationFieldVisible.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

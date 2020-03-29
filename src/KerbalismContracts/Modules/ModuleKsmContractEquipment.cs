@@ -2,53 +2,163 @@
 using System.Collections.Generic;
 using UnityEngine;
 using KERBALISM;
-/*
+using KSP.Localization;
+
 namespace KerbalismContracts
 {
-	public class KerbalismContractEquipment: PartModule, IResourceConsumer, IModuleInfo
-	{	
-		[KSPField] public string id;                    // id of associated experiment definition
-		[KSPField] public string title = string.Empty;  // PAW compatible name
-		[KSPField] public double min_bandwidth;
+	public class EquipmentData: ModuleData<ModuleKsmContractEquipment, EquipmentData>
+	{
+		public bool isRunning;  // true/false, if process controller is turned on or not
+		public bool isBroken;   // true if process controller is broken
+		public string equipmentId;
 
-		[KSPField] public string resourceName = "ElectricCharge";
-		[KSPField] public double resourceRate;
-
-		[KSPField(isPersistant = true)] public bool running = false;
-
-		private List<PartResourceDefinition> consumedResources;
-		private List<ModuleResource> inputResources;
-
-		private enum State
+		public enum State
 		{
 			off, nominal, no_ec, no_bandwidth
 		}
-		private State state = State.nominal;
+		public State state = State.nominal;
+
+		public override void OnFirstInstantiate(ProtoPartModuleSnapshot protoModule, ProtoPartSnapshot protoPart)
+		{
+			isRunning = modulePrefab.running;
+			isBroken = modulePrefab.broken;
+			equipmentId = modulePrefab.id;
+		}
 
 		public override void OnLoad(ConfigNode node)
 		{
-			if (running)
-				EquipmentStateTracker.Update(vessel, id, true);
+			isRunning = Lib.ConfigValue(node, "isRunning", true);
+			isBroken = Lib.ConfigValue(node, "isBroken", false);
+			equipmentId = Lib.ConfigValue(node, "equipmentId", "");
+		}
 
-			List<ModuleResource> list = resHandler.inputResources;
+		public override void OnSave(ConfigNode node)
+		{
+			node.AddValue("isRunning", isRunning);
+			node.AddValue("isBroken", isBroken);
+			node.AddValue("equipmentId", equipmentId);
+		}
 
-			// KSP calls OnLoad twice, so double-check if we added the resource already before we add it a second time.
-			foreach (var resource in list)
+		public override void OnVesselDataUpdate(VesselDataBase vd)
+		{
+			if (moduleIsEnabled && !isBroken)
 			{
-				if (resource.name == resourceName)
-				{
-					resource.rate = resourceRate;
-					return;
-				}
+				Utils.LogDebug($"{equipmentId} enabled {moduleIsEnabled} running {isRunning} broken {isBroken}");
 			}
+		}
+	}
 
-			ModuleResource moduleResource = new ModuleResource();
-			moduleResource.name = resourceName;
-			moduleResource.title = KSPUtil.PrintModuleName(resourceName);
-			moduleResource.id = resourceName.GetHashCode();
-			moduleResource.rate = resourceRate;
+	public class ModuleKsmContractEquipment: KsmPartModule<ModuleKsmContractEquipment, EquipmentData>, IModuleInfo, IBackgroundModule
+	{	
+		[KSPField] public string id;
+		[KSPField] public string title = string.Empty;
+		[KSPField] public double RequiredBandwidth;
+		[KSPField] public double RequiredEC;
+		[KSPField] public string uiGroup;
 
-			list.Add(moduleResource);
+		[KSPField]
+		[UI_Toggle(scene = UI_Scene.All, affectSymCounterparts = UI_Scene.None)]
+		public bool running;
+
+		// internal state
+		internal BaseField runningField;
+		internal bool broken;
+
+		static KERBALISM.ResourceBroker EquipmentBroker = KERBALISM.ResourceBroker.GetOrCreate("ksmEquipment", KERBALISM.ResourceBroker.BrokerCategory.VesselSystem, "Equipment");
+
+		// parsing configs at prefab compilation
+		public override void OnLoad(ConfigNode node)
+		{
+			if (HighLogic.LoadedScene == GameScenes.LOADING)
+			{
+				EquipmentData prefabData = new EquipmentData();
+				prefabData.SetPartModuleReferences(this, this);
+				prefabData.OnFirstInstantiate(null, null);
+				moduleData = prefabData;
+			}
+		}
+
+		public override void OnStart(StartState state)
+		{
+			runningField = Fields["running"];
+			runningField.guiName = title;
+			runningField.guiActive = runningField.guiActiveEditor = true;
+			runningField.OnValueModified += (field) => Toggle(moduleData, true);
+
+			((UI_Toggle)runningField.uiControlFlight).enabledText = Lib.Color(Local.Generic_ENABLED.ToLower(), Lib.Kolor.Green);
+			((UI_Toggle)runningField.uiControlFlight).disabledText = Lib.Color(Local.Generic_DISABLED.ToLower(), Lib.Kolor.Yellow);
+			((UI_Toggle)runningField.uiControlEditor).enabledText = Lib.Color(Local.Generic_ENABLED.ToLower(), Lib.Kolor.Green);
+			((UI_Toggle)runningField.uiControlEditor).disabledText = Lib.Color(Local.Generic_DISABLED.ToLower(), Lib.Kolor.Yellow);
+
+			if (uiGroup != null)
+				runningField.group = new BasePAWGroup(uiGroup, uiGroup, false);
+		}
+
+		public static void Toggle(EquipmentData equipmentData, bool isLoaded)
+		{
+			if (equipmentData.isBroken)
+				return;
+
+			equipmentData.isRunning = !equipmentData.isRunning;
+
+			if (isLoaded)
+			{
+				equipmentData.loadedModule.running = equipmentData.isRunning;
+
+				// refresh VAB/SPH ui
+				if (Lib.IsEditor)
+					GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
+			}
+		}
+
+		public virtual void FixedUpdate()
+		{
+			// basic sanity checks
+			if (Lib.IsEditor)
+				return;
+			if (!vessel.TryGetVesselData(out VesselData vd))
+				return;
+
+			RunningUpdate(vessel, vd, moduleData, this, Kerbalism.elapsed_s);
+		}
+
+		public void BackgroundUpdate(VesselData vd, ProtoPartSnapshot protoPart, ProtoPartModuleSnapshot protoModule, double elapsed_s)
+		{
+			if (!ModuleData.TryGetModuleData<ModuleKsmContractEquipment, EquipmentData>(protoModule, out EquipmentData experimentData))
+				return;
+
+			RunningUpdate(vd.Vessel, vd, experimentData, this, elapsed_s);
+		}
+
+		private static void RunningUpdate(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab, double elapsed_s)
+		{
+			ed.state = GetState(v, vd, ed, prefab);
+
+			bool running = ed.state == EquipmentData.State.nominal;
+			if (running)
+				vd.ResHandler.ElectricCharge.Consume(prefab.RequiredEC * elapsed_s, EquipmentBroker);
+
+			KerbalismContracts.EquipmentStateTracker.Update(v, prefab.id, running);
+		}
+
+		private static EquipmentData.State GetState(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab)
+		{
+			if (!ed.isRunning)
+				return EquipmentData.State.off;
+
+			if (vd.ResHandler.ElectricCharge.AvailabilityFactor == 0.0)
+				return EquipmentData.State.no_ec;
+
+			else if (API.VesselConnectionRate(v) < prefab.RequiredBandwidth)
+				return EquipmentData.State.no_bandwidth;
+
+			return EquipmentData.State.nominal;
+		}
+
+		/*
+		public override void OnLoad(ConfigNode node)
+		{
+			EquipmentStateTracker.Update(vessel, id, running);
 		}
 
 		public virtual void Update()
@@ -56,27 +166,12 @@ namespace KerbalismContracts
 			string statusStr = title + ": ";
 			switch (state)
 			{
-				case State.off: statusStr += "off"; break;
-				case State.nominal: statusStr += "running"; break;
-				case State.no_bandwidth: statusStr += "<color=red>needs " + Lib.HumanReadableDataRate(min_bandwidth) + "</color>"; break;
-				case State.no_ec: statusStr += "<color=red>no EC</color>"; break;
+				case State.off: statusStr += Lib.Color(Local.Generic_OFF, Lib.Kolor.Yellow); break;
+				case State.nominal: statusStr += Lib.Color(Local.Generic_RUNNING, Lib.Kolor.Green); break;
+				case State.no_bandwidth: statusStr += Lib.Color(Localizer.Format("needs <<1>>", Lib.HumanReadableDataRate(RequiredBandwidth)), Lib.Kolor.Red); break;
+				case State.no_ec: statusStr += Lib.Color(Local.ElectricalCharge, Lib.Kolor.Red); break;
 			}
 			Events["ToggleEvent"].guiName = statusStr;
-		}
-
-		public override void OnAwake()
-		{
-			if (consumedResources == null)
-				consumedResources = new List<PartResourceDefinition>();
-			else
-				consumedResources.Clear();
-
-			if (inputResources == null) inputResources = new List<ModuleResource>();
-
-			var inResources = resHandler.inputResources;
-			int i = 0;
-			for (int count = inResources.Count; i < count; i++)
-				consumedResources.Add(PartResourceLibrary.Instance.GetDefinition(inResources[i].name));
 		}
 
 		private double last_state_update = 0;
@@ -94,9 +189,9 @@ namespace KerbalismContracts
 				state = running ? State.nominal : State.off;
 
 				bool isOn = running;
-				if (min_bandwidth > 0 && isOn)
+				if (RequiredBandwidth > 0 && isOn)
 				{
-					isOn &= KERBALISM.API.VesselConnectionRate(vessel) > min_bandwidth;
+					isOn &= API.VesselConnectionRate(vessel) > RequiredBandwidth;
 					if (!isOn) state = State.no_bandwidth;
 				}
 			}
@@ -214,6 +309,7 @@ namespace KerbalismContracts
 		{
 			return consumedResources;
 		}
+		*/
 
 		public string GetModuleTitle() { return title; }
 		public Callback<Rect> GetDrawModulePanelCallback() { return null; }
@@ -223,13 +319,11 @@ namespace KerbalismContracts
 		{
 			Specifics specs = new Specifics();
 
-			var res = PartResourceLibrary.Instance.GetDefinition(resourceName);
-
-			if (resourceRate > 0) specs.Add(res.displayName, Lib.HumanReadableRate(resourceRate));
-			if (min_bandwidth > 0) specs.Add("Min. data rate", Lib.HumanReadableDataRate(min_bandwidth));
+			var res = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
+			if (RequiredEC > 0) specs.Add(res.displayName, Lib.HumanReadableRate(RequiredEC));
+			if (RequiredBandwidth > 0) specs.Add("Min. data rate", Lib.HumanReadableDataRate(RequiredBandwidth));
 
 			return specs.Info();
 		}
 	}
 }
-*/

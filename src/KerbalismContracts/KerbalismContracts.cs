@@ -5,6 +5,7 @@ using System;
 using KSP.UI.Screens;
 using System.Text;
 using KERBALISM;
+using System.Reflection;
 
 namespace KerbalismContracts
 {
@@ -28,6 +29,7 @@ namespace KerbalismContracts
 	{
 		public static KerbalismContracts Instance { get; private set; } = null;
 		private readonly Dictionary<int, GlobalRadiationFieldStatus> bodyData = new Dictionary<int, GlobalRadiationFieldStatus>();
+		public static readonly StateTracker EquipmentStateTracker = new StateTracker("EquipmentState");
 
 		//  constructor
 		public KerbalismContracts()
@@ -122,7 +124,7 @@ namespace KerbalismContracts
 			{
 				var bd = BodyData(body);
 
-				Utils.LogDebug($"Field visibility {body.name}: {bd.inner_visible} / {bd.outer_visible} / {bd.pause_visible}");
+				// Utils.LogDebug($"Field visibility {body.name}: {bd.inner_visible} / {bd.outer_visible} / {bd.pause_visible}");
 				API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
 				API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
 				API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
@@ -137,6 +139,9 @@ namespace KerbalismContracts
 
 		public override void OnLoad(ConfigNode node)
 		{
+			// this needs to be called to initialize all derivates of KsmPartModule in this plugin
+			ModuleData.Init(Assembly.GetExecutingAssembly());
+
 			KerbalismContractsMain.initialized = false;
 			KerbalismContractsMain.KerbalismInitialized = false;
 
@@ -152,10 +157,8 @@ namespace KerbalismContracts
 				}
 			}
 
-			if (node.HasNode("RadiationFieldTracker"))
-			{
-				RadiationFieldTracker.Load(node.GetNode("RadiationFieldTracker"));
-			}
+			RadiationFieldTracker.Load(node);
+			EquipmentStateTracker.Load(node);
 		}
 
 		public override void OnSave(ConfigNode node)
@@ -166,7 +169,8 @@ namespace KerbalismContracts
 				p.Value.Save(bodies_node.AddNode("GlobalBodyData"));
 			}
 
-			RadiationFieldTracker.Save(node.AddNode("RadiationFieldTracker"));
+			RadiationFieldTracker.Save(node);
+			EquipmentStateTracker.Save(node);
 		}
 	}
 

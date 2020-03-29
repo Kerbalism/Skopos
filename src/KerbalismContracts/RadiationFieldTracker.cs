@@ -141,12 +141,14 @@ namespace KerbalismContracts
 
 		internal static void Save(ConfigNode node)
 		{
-			foreach(var id in states.Keys)
+			var myNode = node.AddNode("RadiationFieldTracker");
+
+			foreach (var id in states.Keys)
 			{
 				// test if vessel still exists
 				if(FlightGlobals.FindVessel(id) == null) continue;
 
-				var vesselNode = node.AddNode(id.ToString());
+				var vesselNode = myNode.AddNode(id.ToString());
 				foreach(var state in states[id])
 					state.Save(vesselNode.AddNode("VesselBodyData"));
 			}
@@ -156,7 +158,11 @@ namespace KerbalismContracts
 		{
 			states.Clear();
 
-			foreach(var vesselNode in node.GetNodes())
+			var myNode = node.GetNode("RadiationFieldTracker");
+			if (myNode == null)
+				return;
+
+			foreach (var vesselNode in myNode.GetNodes())
 			{
 				Guid id = new Guid(vesselNode.name);
 				var statesList = new List<VesselRadiationFieldStatus>();
