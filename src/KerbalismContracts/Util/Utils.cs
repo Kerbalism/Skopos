@@ -13,6 +13,15 @@ using KSP.UI;
 using KSP.UI.Screens.Flight;
 using System.Collections;
 using System.Linq.Expressions;
+using Contracts;
+using ContractConfigurator;
+using ContractConfigurator.Parameters;
+using KSP;
+using Contracts.Parameters;
+using FinePrint;
+using FinePrint.Utilities;
+using ContractConfigurator.Behaviour;
+
 
 namespace KerbalismContracts
 {
@@ -25,7 +34,7 @@ namespace KerbalismContracts
 
 	public class Utils
 	{
-		internal static bool RelevantVessel(Vessel vessel)
+		internal static bool IsVessel(Vessel vessel)
 		{
 			if (vessel == null)
 				return false;
@@ -76,10 +85,7 @@ namespace KerbalismContracts
 		{
 			StackTrace stackTrace = new StackTrace();
 			Log(stackTrace.GetFrame(1).GetMethod(), string.Format(message, param), level);
-
-			// KSP will already log the stacktrace if the log level is error
-			if (level != LogLevel.Error)
-				UnityEngine.Debug.Log(stackTrace);
+			UnityEngine.Debug.Log(stackTrace);
 		}
 
 		///<summary>write a message to the log, only on DEBUG and DEVBUILD builds</summary>
@@ -100,6 +106,31 @@ namespace KerbalismContracts
 			// KSP will already log the stacktrace if the log level is error
 			if (level != LogLevel.Error)
 				UnityEngine.Debug.Log(stackTrace);
+		}
+
+		/// <summary>
+		/// Goes and finds the waypoint for our parameter.
+		/// </summary>
+		/// <param name="contract">The contract</param>
+		/// <returns>The waypoint used by our parameter.</returns>
+		public static Waypoint FetchWaypoint(Contract contract, int index = 0)
+		{
+			if (contract == null)
+				return null;
+
+			// Find the WaypointGenerator behaviours
+			IEnumerable<WaypointGenerator> waypointGenerators = ((ConfiguredContract)contract).Behaviours.OfType<WaypointGenerator>();
+
+			if (!waypointGenerators.Any())
+				return null;
+
+			var waypoint = waypointGenerators.SelectMany(wg => wg.Waypoints()).ElementAtOrDefault(index);
+			if (waypoint == null)
+			{
+				Utils.Log($"Couldn't find waypoint index {index} in WaypointGenerator behaviour(s).", LogLevel.Error);
+			}
+
+			return waypoint;
 		}
 	}
 }

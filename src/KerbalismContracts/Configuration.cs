@@ -28,8 +28,8 @@ namespace KerbalismContracts
 			foreach(ConfigNode node in GameDatabase.Instance.GetConfigNodes("KerbalismContractRequirement"))
 			{
 				var requirement = new KerbalismContractRequirement(node);
-				if (!string.IsNullOrEmpty(requirement.Id))
-					Requirements.Add(requirement.Id, requirement);
+				if (!string.IsNullOrEmpty(requirement.name))
+					Requirements.Add(requirement.name, requirement);
 			}
 		}
 	}

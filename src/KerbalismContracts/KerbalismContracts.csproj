@@ -93,7 +93,7 @@
     <Compile Include="KerbalismContracts.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="Configuration.cs" />
-    <Compile Include="StateTracker.cs" />
+    <Compile Include="VesselStateTracker.cs" />
     <Compile Include="Modules\ModuleKsmContractEquipment.cs" />
     <Compile Include="Util\Specs.cs" />
     <Compile Include="CC\Behavior\ShowRadiationFieldBehavior.cs" />
@@ -103,8 +103,13 @@
     <Compile Include="CC\Parameter\RadiationFieldParameter.cs" />
     <Compile Include="CC\Parameter\VesselRadiationFieldParameter.cs" />
     <Compile Include="CC\Parameter\KerbalismContractParameter.cs" />
-    <Compile Include="RequirementTracker.cs" />
     <Compile Include="KerbalismContractRequirement.cs" />
+    <Compile Include="Requirements\AboveWaypoint.cs" />
+    <Compile Include="Requirements\EquipmentRunning.cs" />
+    <Compile Include="CC\Parameter\SubParams\DurationParameter.cs" />
+    <Compile Include="CC\Parameter\SubParams\SubRequirementParameter.cs" />
+    <Compile Include="Requirements\Base\SubRequirement.cs" />
+    <Compile Include="CC\Parameter\SubParams\VesselStatusParameter.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -115,6 +120,9 @@
     <Folder Include="CC\Behavior\" />
     <Folder Include="CC\Parameter\" />
     <Folder Include="CC\Requirement\" />
+    <Folder Include="Requirements\" />
+    <Folder Include="CC\Parameter\SubParams\" />
+    <Folder Include="Requirements\Base\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">

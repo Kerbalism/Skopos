@@ -6,46 +6,58 @@ using KSP.Localization;
 
 namespace KerbalismContracts
 {
+	public enum EquipmentState
+	{
+		off, nominal, no_ec, no_bandwidth
+	}
+
 	public class EquipmentData : ModuleData<ModuleKsmContractEquipment, EquipmentData>
 	{
 		public bool isRunning;  // true/false, if process controller is turned on or not
-		public bool isBroken;   // true if process controller is broken
 		public string equipmentId;
 
-		public enum State
-		{
-			off, nominal, no_ec, no_bandwidth
-		}
-		public State state = State.nominal;
+		
+		public EquipmentState state = EquipmentState.nominal;
 
 		public override void OnFirstInstantiate(ProtoPartModuleSnapshot protoModule, ProtoPartSnapshot protoPart)
 		{
 			isRunning = modulePrefab.running;
-			isBroken = modulePrefab.broken;
 			equipmentId = modulePrefab.id;
 		}
 
 		public override void OnLoad(ConfigNode node)
 		{
 			isRunning = Lib.ConfigValue(node, "isRunning", true);
-			isBroken = Lib.ConfigValue(node, "isBroken", false);
 			equipmentId = Lib.ConfigValue(node, "equipmentId", "");
 		}
 
 		public override void OnSave(ConfigNode node)
 		{
 			node.AddValue("isRunning", isRunning);
-			node.AddValue("isBroken", isBroken);
 			node.AddValue("equipmentId", equipmentId);
 		}
 
+		public static string StatusInfo(EquipmentState status)
+		{
+			switch (status)
+			{
+				case EquipmentState.off: return Lib.Color(Local.Generic_OFF, Lib.Kolor.Yellow);
+				case EquipmentState.nominal: return Lib.Color(Local.Generic_RUNNING, Lib.Kolor.Green);
+				case EquipmentState.no_ec: return Lib.Color("No EC", Lib.Kolor.Red);
+				case EquipmentState.no_bandwidth: return Lib.Color("Low Bandwidth", Lib.Kolor.Red);
+				default: return string.Empty;
+			}
+		}
+
+		/*
 		public override void OnVesselDataUpdate(VesselDataBase vd)
 		{
 			if (moduleIsEnabled && !isBroken)
 			{
-				Utils.LogDebug($"{equipmentId} enabled {moduleIsEnabled} running {isRunning} broken {isBroken}");
+				// Utils.LogDebug($"{equipmentId} enabled {moduleIsEnabled} running {isRunning} broken {isBroken}");
 			}
 		}
+		*/
 	}
 
 	public class ModuleKsmContractEquipment : KsmPartModule<ModuleKsmContractEquipment, EquipmentData>, IModuleInfo, IBackgroundModule, IPlannerModule
@@ -59,10 +71,6 @@ namespace KerbalismContracts
 		[KSPField]
 		[UI_Toggle(scene = UI_Scene.All, affectSymCounterparts = UI_Scene.None)]
 		public bool running;
-
-		// internal state
-		internal BaseField runningField;
-		internal bool broken;
 
 		static KERBALISM.ResourceBroker EquipmentBroker = KERBALISM.ResourceBroker.GetOrCreate("ksmEquipment", KERBALISM.ResourceBroker.BrokerCategory.VesselSystem, "Equipment");
 
@@ -80,25 +88,27 @@ namespace KerbalismContracts
 
 		public override void OnStart(StartState state)
 		{
-			runningField = Fields["running"];
-			runningField.guiName = title;
-			runningField.guiActive = runningField.guiActiveEditor = true;
-			runningField.OnValueModified += (field) => Toggle(moduleData, true);
+			var toggleEvent = Events["ToggleEvent"];
+			toggleEvent.guiActive = toggleEvent.guiActiveEditor = true;
+			toggleEvent.active = toggleEvent.guiActiveUnfocused = true;
+			toggleEvent.guiActiveUncommand = toggleEvent.externalToEVAOnly = true;
+			toggleEvent.requireFullControl = false;
 
-			((UI_Toggle)runningField.uiControlFlight).enabledText = Lib.Color(Local.Generic_ENABLED.ToLower(), Lib.Kolor.Green);
-			((UI_Toggle)runningField.uiControlFlight).disabledText = Lib.Color(Local.Generic_DISABLED.ToLower(), Lib.Kolor.Yellow);
-			((UI_Toggle)runningField.uiControlEditor).enabledText = Lib.Color(Local.Generic_ENABLED.ToLower(), Lib.Kolor.Green);
-			((UI_Toggle)runningField.uiControlEditor).disabledText = Lib.Color(Local.Generic_DISABLED.ToLower(), Lib.Kolor.Yellow);
+
+			running = moduleData.isRunning;
 
 			if (uiGroup != null)
-				runningField.group = new BasePAWGroup(uiGroup, uiGroup, false);
+				Events["ToggleEvent"].group = new BasePAWGroup(uiGroup, uiGroup, false);
+		}
+
+		[KSPEvent]
+		public void ToggleEvent()
+		{
+			Toggle(moduleData, true);
 		}
 
 		public static void Toggle(EquipmentData equipmentData, bool isLoaded)
 		{
-			if (equipmentData.isBroken)
-				return;
-
 			equipmentData.isRunning = !equipmentData.isRunning;
 
 			if (isLoaded)
@@ -109,6 +119,11 @@ namespace KerbalismContracts
 				if (Lib.IsEditor)
 					GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
 			}
+		}
+
+		public virtual void Update()
+		{
+			Events["ToggleEvent"].guiName = Lib.StatusToggle(Lib.Ellipsis(title, 25), EquipmentData.StatusInfo(moduleData.state));
 		}
 
 		public virtual void FixedUpdate()
@@ -134,25 +149,25 @@ namespace KerbalismContracts
 		{
 			ed.state = GetState(v, vd, ed, prefab);
 
-			bool running = ed.state == EquipmentData.State.nominal;
+			bool running = ed.state == EquipmentState.nominal;
 			if (running)
 				vd.ResHandler.ElectricCharge.Consume(prefab.RequiredEC * elapsed_s, EquipmentBroker);
 
-			KerbalismContracts.EquipmentState.Update(v, prefab.id, running);
+			KerbalismContracts.EquipmentState.Update(v, prefab.id, ed.state);
 		}
 
-		private static EquipmentData.State GetState(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab)
+		private static EquipmentState GetState(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab)
 		{
 			if (!ed.isRunning)
-				return EquipmentData.State.off;
+				return EquipmentState.off;
 
 			if (vd.ResHandler.ElectricCharge.AvailabilityFactor == 0.0)
-				return EquipmentData.State.no_ec;
+				return EquipmentState.no_ec;
 
 			else if (API.VesselConnectionRate(v) < prefab.RequiredBandwidth)
-				return EquipmentData.State.no_bandwidth;
+				return EquipmentState.no_bandwidth;
 
-			return EquipmentData.State.nominal;
+			return EquipmentState.nominal;
 		}
 
 		public string GetModuleTitle() { return title; }

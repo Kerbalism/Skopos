@@ -51,7 +51,7 @@ namespace KerbalismContracts
 
 		internal static void Update(Vessel vessel, bool inner_belt, bool outer_belt, bool magnetosphere)
 		{
-			if (!Utils.RelevantVessel(vessel))
+			if (!Utils.IsVessel(vessel))
 				return;
 
 			if (!states.ContainsKey(vessel.id))
@@ -146,10 +146,10 @@ namespace KerbalismContracts
 			foreach (var id in states.Keys)
 			{
 				// test if vessel still exists
-				if(FlightGlobals.FindVessel(id) == null) continue;
+				if (FlightGlobals.FindVessel(id) == null) continue;
 
 				var vesselNode = myNode.AddNode(id.ToString());
-				foreach(var state in states[id])
+				foreach (var state in states[id])
 					state.Save(vesselNode.AddNode("VesselBodyData"));
 			}
 		}
@@ -168,7 +168,7 @@ namespace KerbalismContracts
 				var statesList = new List<VesselRadiationFieldStatus>();
 				states[id] = statesList;
 
-				foreach(var stateNode in vesselNode.GetNodes())
+				foreach (var stateNode in vesselNode.GetNodes())
 					statesList.Add(new VesselRadiationFieldStatus(stateNode));
 			}
 		}

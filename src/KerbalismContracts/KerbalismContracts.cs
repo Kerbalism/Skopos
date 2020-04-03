@@ -17,6 +17,9 @@ namespace KerbalismContracts
 
 		public void Start()
 		{
+			// this needs to be called to initialize all derivates of KsmPartModule in this plugin
+			ModuleData.Init(Assembly.GetExecutingAssembly());
+
 			Configuration.Load();
 
 			API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
@@ -29,8 +32,7 @@ namespace KerbalismContracts
 	{
 		public static KerbalismContracts Instance { get; private set; } = null;
 		private readonly Dictionary<int, GlobalRadiationFieldStatus> bodyData = new Dictionary<int, GlobalRadiationFieldStatus>();
-		public static readonly StateTracker EquipmentState = new StateTracker("EquipmentState");
-		public static readonly RequirementTracker Requirements = new RequirementTracker();
+		public static readonly VesselStateTracker EquipmentState = new VesselStateTracker();
 
 		//  constructor
 		public KerbalismContracts()
@@ -51,8 +53,6 @@ namespace KerbalismContracts
 				StartCoroutine(InitFieldVisibilityDeferred());
 				KerbalismContractsMain.initialized = true;
 			}
-
-			Requirements.Update();
 		}
 
 		private IEnumerator InitFieldVisibilityDeferred()
@@ -142,9 +142,6 @@ namespace KerbalismContracts
 
 		public override void OnLoad(ConfigNode node)
 		{
-			// this needs to be called to initialize all derivates of KsmPartModule in this plugin
-			ModuleData.Init(Assembly.GetExecutingAssembly());
-
 			KerbalismContractsMain.initialized = false;
 			KerbalismContractsMain.KerbalismInitialized = false;
 
