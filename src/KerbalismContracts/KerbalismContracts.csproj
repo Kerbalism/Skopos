@@ -110,6 +110,7 @@
     <Compile Include="CC\Parameter\SubParams\SubRequirementParameter.cs" />
     <Compile Include="Requirements\Base\SubRequirement.cs" />
     <Compile Include="CC\Parameter\SubParams\VesselStatusParameter.cs" />
+    <Compile Include="Requirements\Altitude.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

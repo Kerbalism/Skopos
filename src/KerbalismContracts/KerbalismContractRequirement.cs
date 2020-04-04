@@ -23,23 +23,19 @@ namespace KerbalismContracts
 
 			SubRequirements = new List<SubRequirement>();
 
-			foreach(var requirementNode in node.GetNodes("Requirement"))
+			foreach (var requirementNode in node.GetNodes("Requirement"))
 			{
 				SubRequirement sr = SubRequirement.Load(this, requirementNode);
 
 				if (sr == null)
+					continue;
+
+				if (SubRequirements.Find(s => s.type == sr.type) != null)
 				{
-					Utils.Log($"Unknown requirement type '{Lib.ConfigValue(requirementNode, "name", "")}'", LogLevel.Error);
+					Utils.Log($"Requirement '{name}' contains more than one instances of sub requirement type {sr.type}. This is not supported, discarding second instance!", LogLevel.Error);
+					continue;
 				}
-				else
-				{
-					if(SubRequirements.Find(s => s.type == sr.type) != null)
-					{
-						Utils.Log($"Requirement '{name}' contains more than one instances of sub requirement type {sr.type}. This is not supported, discarding second instance!", LogLevel.Error);
-						continue;
-					}
-					SubRequirements.Add(sr);
-				}
+				SubRequirements.Add(sr);
 			}
 
 			if(SubRequirements.Count == 0)

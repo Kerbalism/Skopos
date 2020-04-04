@@ -10,9 +10,8 @@ namespace KerbalismContracts
 		private string description;
 		private string shortDescription;
 
-		public EquipmentRunning(KerbalismContractRequirement requirement, ConfigNode node) : base(requirement)
+		public EquipmentRunning(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
-			type = "EquipmentRunning";
 			equipment = Lib.ConfigValue(node, "equipment", "");
 			description = Lib.ConfigValue<string>(node, "description", null);
 			shortDescription = Lib.ConfigValue<string>(node, "shortDescription", null);

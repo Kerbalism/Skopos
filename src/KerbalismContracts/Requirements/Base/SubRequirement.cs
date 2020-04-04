@@ -1,18 +1,27 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
+using System;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
 using KERBALISM;
 
 namespace KerbalismContracts
 {
 	public abstract class SubRequirement
 	{
-		public string type { get; protected set; }
+		public string type { get; private set; }
 		public KerbalismContractRequirement parent { get; private set; }
 
 		public abstract string GetTitle(Contracts.Contract contract);
 
-		protected SubRequirement(KerbalismContractRequirement requirement)
+		private static Dictionary<string, ConstructorInfo> subRequirementActivators = new Dictionary<string, ConstructorInfo>();
+
+		protected SubRequirement(string type, KerbalismContractRequirement parent)
 		{
-			this.parent = requirement;
+			this.type = type;
+			this.parent = parent;
 		}
 
 		/// <summary>
@@ -46,25 +55,49 @@ namespace KerbalismContracts
 			return timesConditionMet > 0;
 		}
 
+		private static void InitSubRequirementActivators()
+		{
+			Type[] constructorTypes = new Type[] { typeof(string), typeof(KerbalismContractRequirement), typeof(ConfigNode) };
+			Type subRequirementType = typeof(SubRequirement);
+			foreach (var a in AssemblyLoader.loadedAssemblies)
+			{
+				AssemblyName nameObject = new AssemblyName(a.assembly.FullName);
+				string assemblyName = nameObject.Name;
+
+				foreach (Type t in a.assembly.GetTypes())
+				{
+					if (t.IsAbstract || !t.IsClass || !subRequirementType.IsAssignableFrom(t))
+						continue;
+
+					ConstructorInfo ctor = t.GetConstructor(constructorTypes);
+					if (ctor == null)
+					{
+						Utils.Log($"No valid constructor found for sub requirement {t.Name} in {assemblyName}", LogLevel.Error);
+						continue;
+					}
+
+					Utils.Log($"Registering sub requirement {t.Name} from {assemblyName}");
+					subRequirementActivators.Add(t.Name, ctor);
+				}
+			}
+		}
+
 		public static SubRequirement Load(KerbalismContractRequirement requirement, ConfigNode node)
 		{
+			if(subRequirementActivators.Count == 0)
+				InitSubRequirementActivators();
+
 			string type = Lib.ConfigValue(node, "name", "");
+
+			if (!subRequirementActivators.ContainsKey(type))
+			{
+				Utils.Log($"Will ignore unknown sub requirement type {type} in {requirement.name}", LogLevel.Error);
+				return null;
+			}
 
 			Utils.LogDebug($"Loading sub requirement {type}");
 
-			// TODO doing it like this makes it impossible to dynamically add additional sub reqs
-			// in other mods. browse all loaded assemblies for classes that extend SubRequirement
-			// and keep them in a static map at runtime...
-
-			switch (type)
-			{
-				case "AboveWaypoint":
-					return new AboveWaypoint(requirement, node);
-				case "EquipmentRunning":
-					return new EquipmentRunning(requirement, node);
-				default:
-					return null;
-			}
+			return (SubRequirement)subRequirementActivators[type].Invoke(new object[] { type, requirement, node });
 		}
 
 		internal virtual bool NeedsWaypoint()

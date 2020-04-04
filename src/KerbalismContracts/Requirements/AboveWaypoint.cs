@@ -9,9 +9,8 @@ namespace KerbalismContracts
 	{
 		private double min_elevation;
 
-		public AboveWaypoint(KerbalismContractRequirement requirement, ConfigNode node) : base(requirement)
+		public AboveWaypoint(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
-			type = "AboveWaypoint";
 			min_elevation = Lib.ConfigValue(node, "min_elevation", 0.0);
 		}
 
