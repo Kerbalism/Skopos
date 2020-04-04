@@ -13,6 +13,7 @@ namespace KerbalismContracts
 	{
 		protected string requirementId;
 		protected ContractConfigurator.Duration duration;
+		protected ContractConfigurator.Duration allowed_downtime;
 		protected int min_vessels;
 
 		public override bool Load(ConfigNode configNode)
@@ -20,6 +21,7 @@ namespace KerbalismContracts
 			bool valid = base.Load(configNode);
 
 			valid &= ConfigNodeUtil.ParseValue<ContractConfigurator.Duration>(configNode, "duration", x => duration = x, this, new ContractConfigurator.Duration(0.0));
+			valid &= ConfigNodeUtil.ParseValue<ContractConfigurator.Duration>(configNode, "allowed_downtime", x => allowed_downtime = x, this, new ContractConfigurator.Duration(0.0));
 			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "id", x => requirementId = x, this, "");
 			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "min_vessels", x => min_vessels = x, this, 1);
 
@@ -35,7 +37,7 @@ namespace KerbalismContracts
 				return null;
 			}
 
-			var result = new KerbalismContractParameter(requirementId, duration.Value, min_vessels);
+			var result = new KerbalismContractParameter(requirementId, duration.Value, allowed_downtime.Value, min_vessels);
 
 			if (requirement.NeedsWaypoint())
 			{
@@ -54,6 +56,7 @@ namespace KerbalismContracts
 	{
 		protected string requirementId;
 		protected double duration;
+		protected double allowed_downtime;
 		protected int min_vessels;
 
 		protected DurationParameter durationParameter;
@@ -69,11 +72,13 @@ namespace KerbalismContracts
 
 		public KerbalismContractParameter() { }
 
-		public KerbalismContractParameter(string requirementId, double duration, int min_vessels)
+		public KerbalismContractParameter(string requirementId, double duration, double allowed_downtime, int min_vessels)
 		{
 			this.requirementId = requirementId;
 			this.duration = duration;
+			this.allowed_downtime = allowed_downtime;
 			this.min_vessels = min_vessels;
+
 			this.requirement = Configuration.Requirement(requirementId);
 
 			CreateSubParameters();
@@ -111,7 +116,7 @@ namespace KerbalismContracts
 
 			if (duration > 0 && durationParameter == null)
 			{
-				durationParameter = new DurationParameter(duration);
+				durationParameter = new DurationParameter(duration, allowed_downtime);
 				AddParameter(durationParameter);
 			}
 
@@ -156,6 +161,7 @@ namespace KerbalismContracts
 		{
 			node.AddValue("requirementId", requirementId);
 			node.AddValue("duration", duration);
+			node.AddValue("allowed_downtime", allowed_downtime);
 			node.AddValue("min_vessels", min_vessels);
 		}
 
@@ -163,6 +169,7 @@ namespace KerbalismContracts
 		{
 			requirementId = ConfigNodeUtil.ParseValue<string>(node, "requirementId", "");
 			duration = ConfigNodeUtil.ParseValue<double>(node, "duration", 0);
+			allowed_downtime = ConfigNodeUtil.ParseValue<double>(node, "allowed_downtime", 0);
 			min_vessels = ConfigNodeUtil.ParseValue<int>(node, "min_vessels", 1);
 			requirement = Configuration.Requirement(requirementId);
 		}
@@ -292,15 +299,7 @@ namespace KerbalismContracts
 			}
 			else
 			{
-				if (!allConditionsMet)
-				{
-					durationParameter.ResetTime();
-				}
-				else
-				{
-					durationParameter.UpdateWhileConditionMet();
-				}
-
+				durationParameter.Update(allConditionsMet);
 				SetState(durationParameter.State);
 			}
 

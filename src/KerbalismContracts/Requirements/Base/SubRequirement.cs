@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using System;
-using System.Linq;
+using Contracts;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,12 +11,12 @@ namespace KerbalismContracts
 {
 	public abstract class SubRequirement
 	{
+		private static Dictionary<string, ConstructorInfo> subRequirementActivators = new Dictionary<string, ConstructorInfo>();
+
 		public string type { get; private set; }
 		public KerbalismContractRequirement parent { get; private set; }
 
-		public abstract string GetTitle(Contracts.Contract contract);
-
-		private static Dictionary<string, ConstructorInfo> subRequirementActivators = new Dictionary<string, ConstructorInfo>();
+		public abstract string GetTitle(Contract contract);
 
 		protected SubRequirement(string type, KerbalismContractRequirement parent)
 		{
@@ -29,7 +29,7 @@ namespace KerbalismContracts
 		/// not guaranteed to be called on all vessels (the first failing test will remove the vessel from the
 		/// list of candidates)
 		/// </summary>
-		internal virtual bool CouldBeCandiate(Vessel vessel, Contracts.Contract contract)
+		internal virtual bool CouldBeCandiate(Vessel vessel, Contract contract)
 		{
 			return true;
 		}
@@ -39,7 +39,7 @@ namespace KerbalismContracts
 		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
 		/// </summary>
 		/// <param name="label">label to add to this vessel in the status display</param>
-		internal virtual bool VesselMeetsCondition(Vessel vessel, Contracts.Contract contract, out string label)
+		internal virtual bool VesselMeetsCondition(Vessel vessel, Contract contract, out string label)
 		{
 			label = string.Empty;
 			return true;
@@ -49,7 +49,7 @@ namespace KerbalismContracts
 		/// final filter: looks at the collection of all vessels that passed the hard and soft filters,
 		/// use this to check constellations, count vessels etc.
 		/// </summary>
-		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, Contracts.Contract contract, out string label)
+		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, Contract contract, out string label)
 		{
 			label = string.Empty;
 			return timesConditionMet > 0;

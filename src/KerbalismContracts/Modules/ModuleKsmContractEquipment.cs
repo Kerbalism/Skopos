@@ -15,7 +15,6 @@ namespace KerbalismContracts
 	{
 		public bool isRunning;  // true/false, if process controller is turned on or not
 		public string equipmentId;
-
 		
 		public EquipmentState state = EquipmentState.nominal;
 
