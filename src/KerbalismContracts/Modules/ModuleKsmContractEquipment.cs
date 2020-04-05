@@ -41,22 +41,12 @@ namespace KerbalismContracts
 			switch (status)
 			{
 				case EquipmentState.off: return Lib.Color(Local.Generic_OFF, Lib.Kolor.Yellow);
-				case EquipmentState.nominal: return Lib.Color(Local.Generic_RUNNING, Lib.Kolor.Green);
+				case EquipmentState.nominal: return Lib.Color(Local.Generic_ON, Lib.Kolor.Green);
 				case EquipmentState.no_ec: return Lib.Color("No EC", Lib.Kolor.Red);
 				case EquipmentState.no_bandwidth: return Lib.Color("Low Bandwidth", Lib.Kolor.Red);
 				default: return string.Empty;
 			}
 		}
-
-		/*
-		public override void OnVesselDataUpdate(VesselDataBase vd)
-		{
-			if (moduleIsEnabled && !isBroken)
-			{
-				// Utils.LogDebug($"{equipmentId} enabled {moduleIsEnabled} running {isRunning} broken {isBroken}");
-			}
-		}
-		*/
 	}
 
 	public class ModuleKsmContractEquipment : KsmPartModule<ModuleKsmContractEquipment, EquipmentData>, IModuleInfo, IBackgroundModule, IPlannerModule

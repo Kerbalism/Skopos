@@ -2,22 +2,20 @@
 using System.Reflection;
 using System;
 using Contracts;
-using System.Linq.Expressions;
+using FinePrint;
 using System.Text;
 using System.Threading.Tasks;
 using KERBALISM;
 
 namespace KerbalismContracts
 {
-	public class RequirementContext
+	public class EvaluationContext
 	{
-		public readonly Contract contract;
-		public readonly int waypoint_index;
+		public readonly Waypoint waypoint;
 
-		public RequirementContext(Contract contract, int waypoint_index = 0)
+		public EvaluationContext(Waypoint waypoint = null)
 		{
-			this.contract = contract;
-			this.waypoint_index = waypoint_index;
+			this.waypoint = waypoint;
 		}
 	}
 
@@ -28,7 +26,7 @@ namespace KerbalismContracts
 		public string type { get; private set; }
 		public KerbalismContractRequirement parent { get; private set; }
 
-		public abstract string GetTitle(RequirementContext parameters);
+		public abstract string GetTitle(EvaluationContext context);
 
 		protected SubRequirement(string type, KerbalismContractRequirement parent)
 		{
@@ -41,7 +39,7 @@ namespace KerbalismContracts
 		/// not guaranteed to be called on all vessels (the first failing test will remove the vessel from the
 		/// list of candidates)
 		/// </summary>
-		internal virtual bool CouldBeCandiate(Vessel vessel, RequirementContext context)
+		internal virtual bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
 			return true;
 		}
@@ -51,7 +49,7 @@ namespace KerbalismContracts
 		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
 		/// </summary>
 		/// <param name="label">label to add to this vessel in the status display</param>
-		internal virtual bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
+		internal virtual bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
 		{
 			label = string.Empty;
 			return true;
@@ -61,7 +59,7 @@ namespace KerbalismContracts
 		/// final filter: looks at the collection of all vessels that passed the hard and soft filters,
 		/// use this to check constellations, count vessels etc.
 		/// </summary>
-		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, RequirementContext context, out string label)
+		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, EvaluationContext context, out string label)
 		{
 			label = string.Empty;
 			return timesConditionMet > 0;

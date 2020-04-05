@@ -13,7 +13,7 @@ namespace KerbalismContracts
 
 		// internal state
 		internal double doneAfter;
-		internal double downAfter;
+		internal double resetAfter;
 
 		public DurationParameter() { }
 
@@ -21,11 +21,13 @@ namespace KerbalismContracts
 		{
 			this.duration = duration;
 			this.allowed_downtime = allowed_downtime;
+			ResetTimer();
 		}
 
 		private void ResetTimer()
 		{
-			doneAfter = downAfter = 0;
+			doneAfter = resetAfter = 0;
+			SetIncomplete();
 		}
 
 		internal void Update(bool allConditionsMet)
@@ -38,21 +40,23 @@ namespace KerbalismContracts
 		{
 			double now = Planetarium.GetUniversalTime();
 
-			if(now > downAfter)
-			{
-				SetIncomplete();
+			if(resetAfter == 0)
+				resetAfter = now + allowed_downtime;
+
+			if(now > resetAfter)
 				ResetTimer();
-			}
 		}
 
 		private void UpdateGood()
 		{
 			double now = Planetarium.GetUniversalTime();
 
-			if (doneAfter == 0) doneAfter = now + duration;
+			resetAfter = 0;
+			if (doneAfter == 0)
+				doneAfter = now + duration;
 
-			downAfter = now + allowed_downtime;
-			if (now > doneAfter) SetComplete();
+			if (now > doneAfter)
+				SetComplete();
 		}
 
 		protected override string GetHashString()
@@ -72,14 +76,14 @@ namespace KerbalismContracts
 			}
 
 			double now = Planetarium.GetUniversalTime();
-			if(doneAfter > now)
+			if(now > doneAfter)
 				return "Done!";
 
 			double remaining = doneAfter - now;
 
-			if(allowed_downtime > 0)
+			if(resetAfter > 0)
 			{
-				double ttf = downAfter - now;
+				double ttf = Math.Max(0, resetAfter - now);
 				return Localizer.Format("Remaining: <<1>> (interrupted, stops in: <<2>>)",
 					DurationUtil.StringValue(remaining), Lib.Color(DurationUtil.StringValue(ttf), Lib.Kolor.Yellow));
 			}
@@ -95,7 +99,7 @@ namespace KerbalismContracts
 			node.AddValue("allowed_downtime", allowed_downtime);
 
 			node.AddValue("doneAfter", doneAfter);
-			node.AddValue("downAfter", downAfter);
+			node.AddValue("resetAfter", resetAfter);
 		}
 
 		protected override void OnLoad(ConfigNode node)
@@ -106,7 +110,7 @@ namespace KerbalismContracts
 			allowed_downtime = ConfigNodeUtil.ParseValue<double>(node, "allowed_downtime", 0);
 
 			doneAfter = ConfigNodeUtil.ParseValue<double>(node, "doneAfter", 0);
-			downAfter = ConfigNodeUtil.ParseValue<double>(node, "downAfter", 0);
+			resetAfter = ConfigNodeUtil.ParseValue<double>(node, "resetAfter", 0);
 		}
 	}
 }

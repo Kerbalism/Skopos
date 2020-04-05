@@ -16,7 +16,7 @@ namespace KerbalismContracts
 			min_bandwidth = Lib.ConfigValue(node, "min_bandwidth", 0.0);
 		}
 
-		public override string GetTitle(RequirementContext context)
+		public override string GetTitle(EvaluationContext context)
 		{
 			if (!string.IsNullOrEmpty(description))
 				return description;
@@ -28,12 +28,12 @@ namespace KerbalismContracts
 			return description;
 		}
 
-		internal override bool CouldBeCandiate(Vessel vessel, RequirementContext context)
+		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
 			return API.VesselConnectionLinked(vessel);
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
+		internal override bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
 		{
 			if (min_bandwidth > 0)
 			{

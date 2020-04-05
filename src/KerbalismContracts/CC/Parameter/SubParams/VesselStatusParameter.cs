@@ -33,9 +33,9 @@ namespace KerbalismContracts
 		protected override string GetTitle()
 		{
 			if (string.IsNullOrEmpty(statusLabel))
-				return KERBALISM.Lib.Ellipsis(vessel.GetDisplayName(), 25);
+				return KERBALISM.Lib.Ellipsis(vessel.GetDisplayName(), 35);
 
-			return KERBALISM.Lib.Ellipsis(vessel.GetDisplayName(), 25) + ": " + statusLabel;
+			return KERBALISM.Lib.Ellipsis(vessel.GetDisplayName(), 35) + "\n" + statusLabel;
 		}
 	}
 }

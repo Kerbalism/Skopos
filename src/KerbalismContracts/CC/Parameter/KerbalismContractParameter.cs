@@ -39,11 +39,11 @@ namespace KerbalismContracts
 				return null;
 			}
 
-			var result = new KerbalismContractParameter(title, requirementId, duration.Value, allowed_downtime.Value, min_vessels, waypoint_index);
+			var result = new KerbalismContractParameter(requirementId, duration.Value, allowed_downtime.Value, min_vessels, waypoint_index);
 
 			if (requirement.NeedsWaypoint())
 			{
-				if(Utils.FetchWaypoint(new RequirementContext(contract, waypoint_index)) == null)
+				if(Utils.FetchWaypoint(contract, waypoint_index) == null)
 				{
 					Utils.Log($"There is no waypoint (index {waypoint_index}) in the contract, but requirement '{requirementId}' needs one.", LogLevel.Error);
 					return null;
@@ -57,7 +57,6 @@ namespace KerbalismContracts
 	public class KerbalismContractParameter : ContractConfiguratorParameter
 	{
 		protected string requirementId;
-		protected string title;
 		protected double duration;
 		protected double allowed_downtime;
 		protected int min_vessels;
@@ -72,13 +71,12 @@ namespace KerbalismContracts
 		private readonly List<Vessel> vessels = new List<Vessel>();
 		private KerbalismContractRequirement requirement;
 		private string statusLabel = string.Empty;
-		internal RequirementContext context;
+		internal EvaluationContext context;
 
 		public KerbalismContractParameter() { }
 
-		public KerbalismContractParameter(string title, string requirementId, double duration, double allowed_downtime, int min_vessels, int waypoint_index)
+		public KerbalismContractParameter(string requirementId, double duration, double allowed_downtime, int min_vessels, int waypoint_index)
 		{
-			this.title = title;
 			this.requirementId = requirementId;
 			this.duration = duration;
 			this.allowed_downtime = allowed_downtime;
@@ -88,14 +86,6 @@ namespace KerbalismContracts
 			this.requirement = Configuration.Requirement(requirementId);
 
 			CreateSubParameters();
-		}
-
-		public RequirementContext GetContext()
-		{
-			if (context == null)
-				context = new RequirementContext(Root, waypoint_index);
-
-			return context;
 		}
 
 		protected void OnContractLoaded(ConfiguredContract contract)
@@ -108,18 +98,26 @@ namespace KerbalismContracts
 
 		protected void CreateSubParameters()
 		{
-			if (ParameterCount > 0)
+			if (subRequirementParameters.Count > 0)
 				return;
 
-			if (requirement.NeedsWaypoint() && Utils.FetchWaypoint(GetContext()) == null)
+			for(int i = 0; i < ParameterCount; i++)
 			{
-				Utils.Log($"There is no waypoint in the contract, but requirement '{requirementId}' needs one.", LogLevel.Warning);
+				var p = GetParameter(i);
+				if(p is SubRequirementParameter srp)
+					subRequirementParameters.Add(srp);
+
+				if (p is DurationParameter dp)
+					durationParameter = dp;
 			}
+
+			if (subRequirementParameters.Count > 0)
+				return;
 
 			foreach (var req in Configuration.Requirement(requirementId).SubRequirements)
 			{
 				Utils.LogDebug($"Creating sub requirement for {requirementId}.{req.type}...");
-				var sub = new SubRequirementParameter(req, waypoint_index);
+				var sub = new SubRequirementParameter(req);
 				subRequirementParameters.Add(sub);
 				AddParameter(sub);
 			}
@@ -136,7 +134,7 @@ namespace KerbalismContracts
 
 		protected override string GetParameterTitle()
 		{
-			string result = title ?? Configuration.Requirement(requirementId).title;
+			string result = !string.IsNullOrEmpty(title) ? title : Configuration.Requirement(requirementId).title;
 			if (!string.IsNullOrEmpty(statusLabel))
 				result += ": " + statusLabel;
 			return result;
@@ -157,6 +155,7 @@ namespace KerbalismContracts
 			node.AddValue("duration", duration);
 			node.AddValue("allowed_downtime", allowed_downtime);
 			node.AddValue("min_vessels", min_vessels);
+			node.AddValue("waypoint_index", waypoint_index);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -165,6 +164,7 @@ namespace KerbalismContracts
 			duration = ConfigNodeUtil.ParseValue<double>(node, "duration", 0);
 			allowed_downtime = ConfigNodeUtil.ParseValue<double>(node, "allowed_downtime", 0);
 			min_vessels = ConfigNodeUtil.ParseValue<int>(node, "min_vessels", 1);
+			waypoint_index = ConfigNodeUtil.ParseValue<int>(node, "waypoint_index", 0);
 			requirement = Configuration.Requirement(requirementId);
 		}
 
@@ -175,7 +175,7 @@ namespace KerbalismContracts
 		{
 			foreach(var sr in requirement.SubRequirements)
 			{
-				if (!sr.CouldBeCandiate(vessel, GetContext()))
+				if (!sr.CouldBeCandiate(vessel, context))
 					return false;
 			}
 			return true;
@@ -190,10 +190,12 @@ namespace KerbalismContracts
 		{
 			label = string.Empty;
 			bool result = true;
+
 			foreach(var sp in subRequirementParameters)
 			{
 				string vesselLabel;
-				bool meetsCondition = sp.subRequirement.VesselMeetsCondition(vessel, GetContext(), out vesselLabel);
+				bool meetsCondition = sp.subRequirement.VesselMeetsCondition(vessel, context, out vesselLabel);
+
 				if (meetsCondition)
 					sp.matchCounter++;
 
@@ -202,9 +204,9 @@ namespace KerbalismContracts
 				if (!string.IsNullOrEmpty(vesselLabel))
 				{
 					if (string.IsNullOrEmpty(label))
-						label = vesselLabel;
+						label = " - " + vesselLabel;
 					else
-						label += ", " + vesselLabel;
+						label += "\n - " + vesselLabel;
 				}
 			}
 
@@ -223,22 +225,21 @@ namespace KerbalismContracts
 			foreach(var subParameter in subRequirementParameters)
 			{
 				string label;
-
-				int count = subParameter.matchCounter;
-				result &= subParameter.subRequirement.VesselsMeetCondition(vessels, count, GetContext(), out label);
+				result &= subParameter.VesselsMeetCondition(vessels, out label);
 
 				if (!string.IsNullOrEmpty(label))
 				{
 					if (string.IsNullOrEmpty(statusLabel))
 						statusLabel = label;
 					else
-						statusLabel += ", " + label;
+						statusLabel += " " + label;
 				}
 			}
 
 			if (string.IsNullOrEmpty(statusLabel))
 			{
-				statusLabel = Lib.Color($"{vesselsMeetingAllConditions}/{min_vessels}", vesselsMeetingAllConditions > min_vessels ? Lib.Kolor.Green : Lib.Kolor.Red);
+				statusLabel = Lib.Color($"{vesselsMeetingAllConditions}/{min_vessels}",
+					vesselsMeetingAllConditions >= min_vessels ? Lib.Kolor.Green : Lib.Kolor.Red);
 			}
 
 			SetStatusLabel(statusLabel);
@@ -246,10 +247,14 @@ namespace KerbalismContracts
 			return result;
 		}
 
+		protected EvaluationContext CreateContext()
+		{
+			return new EvaluationContext(Utils.FetchWaypoint(Root, waypoint_index));
+		}
+
 		protected override void OnUpdate()
 		{
 			base.OnUpdate();
-
 			if (ParameterCount == 0) return;
 			if (state != ParameterState.Incomplete) return;
 			if (Time.fixedTime - lastUpdate < UPDATE_FREQUENCY) return;
@@ -257,8 +262,14 @@ namespace KerbalismContracts
 
 			RemoveParameter(typeof(VesselStatusParameter));
 			vessels.Clear();
+
+			if (subRequirementParameters.Count == 0)
+				CreateSubParameters();
+
+			context = CreateContext();
+
 			foreach (var sp in subRequirementParameters)
-				sp.matchCounter = 0;
+				sp.ResetContext(context);
 
 			foreach (Vessel vessel in FlightGlobals.Vessels)
 			{
@@ -286,12 +297,11 @@ namespace KerbalismContracts
 			allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
 
 			if (durationParameter == null)
-			{
 				SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
-			}
 			else
 			{
 				durationParameter.Update(allConditionsMet);
+				Utils.LogDebug($"duration parameter state {durationParameter.State}");
 				SetState(durationParameter.State);
 			}
 

@@ -16,6 +16,8 @@ namespace KerbalismContracts
 		// min distance change will be ORed with radial velocity change requirements.
 		// so you either need a minimal distance change, OR a minimal radial velocity.
 		private double min_relative_speed;
+
+		// radial velocities are in degrees per minute
 		private double min_radial_velocity;
 		private double max_radial_velocity;
 
@@ -29,20 +31,19 @@ namespace KerbalismContracts
 			min_relative_speed = Lib.ConfigValue(node, "min_relative_speed", 0.0);
 		}
 
-		public override string GetTitle(RequirementContext context)
+		public override string GetTitle(EvaluationContext context)
 		{
 			string waypointName = "waypoint";
-			var waypoint = Utils.FetchWaypoint(context);
-			if (waypoint != null)
-				waypointName = waypoint.name;
+			if (context?.waypoint != null)
+				waypointName = context.waypoint.name;
 
 			string result = Localizer.Format("Min. <<1>>° above <<2>>", min_elevation.ToString("F1"), waypointName);
 
 			if (min_radial_velocity > 0)
-				result += ", " + Localizer.Format("min. radial vel. <<1>> °/s", min_radial_velocity.ToString("F1"));
+				result += ", " + Localizer.Format("min. radial vel. <<1>> °/m", min_radial_velocity.ToString("F1"));
 
 			if (max_radial_velocity > 0)
-				result += ", " + Localizer.Format("max. radial vel. <<1>> °/s", max_radial_velocity.ToString("F1"));
+				result += ", " + Localizer.Format("max. radial vel. <<1>> °/m", max_radial_velocity.ToString("F1"));
 
 			if (min_distance > 0)
 				result += ", " + Localizer.Format("min. distance <<1>>", Lib.HumanReadableDistance(min_distance));
@@ -61,12 +62,11 @@ namespace KerbalismContracts
 			return true;
 		}
 
-		internal override bool CouldBeCandiate(Vessel vessel, RequirementContext context)
+		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
-			var waypoint = Utils.FetchWaypoint(context);
-			if (waypoint == null)
+			if (context.waypoint == null)
 				return false;
-			if (waypoint.celestialBody != vessel.mainBody)
+			if (context.waypoint.celestialBody != vessel.mainBody)
 				return false;
 
 			var orbit = vessel.orbit;
@@ -76,22 +76,24 @@ namespace KerbalismContracts
 			return true;
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
+		internal override bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
 		{
-			Waypoint waypoint = Utils.FetchWaypoint(context);
 			Vector3d vesselPosition = Lib.VesselPosition(vessel);
-			double elevation = GetElevation(waypoint, vesselPosition);
-			double distance = GetDistance(waypoint, vesselPosition);
+			double elevation = GetElevation(context.waypoint, vesselPosition);
+			double distance = GetDistance(context.waypoint, vesselPosition);
 
 			// TODO determine line of sight obstruction (there may be an occluding body)
 
-			string elevationString = Lib.BuildString(elevation.ToString("F1"), "°");
+			string elevationString = Lib.BuildString(elevation.ToString("F1"), " °");
 			if (elevation < min_elevation)
-				label = Localizer.Format("elev. <<1>>", Lib.Color(elevationString, Lib.Kolor.Red));
+				label = Localizer.Format("elevation above <<1>>: <<2>>",
+					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Red));
 			else if (elevation - (90 - min_elevation) / 3 < min_elevation)
-				label = Localizer.Format("elev. <<1>>", Lib.Color(elevationString, Lib.Kolor.Yellow));
+				label = Localizer.Format("elevation above <<1>>: <<2>>",
+					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Yellow));
 			else
-				label = Localizer.Format("elev. <<1>>", Lib.Color(elevationString, Lib.Kolor.Green));
+				label = Localizer.Format("elevation above <<1>>: <<2>>",
+					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Green));
 
 			bool meetsCondition = elevation >= min_elevation;
 
@@ -103,7 +105,7 @@ namespace KerbalismContracts
 				if (max_distance > 0)
 					distanceMet &= max_distance >= distance;
 
-				label += " " + Localizer.Format("d <<1>>", Lib.Color(Lib.HumanReadableDistance(distance),
+				label += "\n\t" + Localizer.Format("distance: <<1>>", Lib.Color(Lib.HumanReadableDistance(distance),
 					distanceMet ? Lib.Kolor.Green : Lib.Kolor.Red));
 
 				meetsCondition &= distanceMet;
@@ -120,10 +122,10 @@ namespace KerbalismContracts
 
 			if (min_relative_speed > 0)
 			{
-				double distanceIn10s = GetDistance(waypoint, positionIn10s);
+				double distanceIn10s = GetDistance(context.waypoint, positionIn10s);
 				var distanceChange = Math.Abs((distance - distanceIn10s) / 10.0);
 
-				label += " " + Localizer.Format("rel. velocity <<1>>", Lib.Color(Lib.HumanReadableSpeed(distanceChange),
+				label += "\n\t" + Localizer.Format("relative velocity: <<1>>", Lib.Color(Lib.HumanReadableSpeed(distanceChange),
 					distanceChange >= min_relative_speed ? Lib.Kolor.Green : Lib.Kolor.Red));
 
 				changeRequirementsMet |= distanceChange >= min_relative_speed;
@@ -131,8 +133,8 @@ namespace KerbalismContracts
 
 			if (min_radial_velocity > 0 || max_radial_velocity > 0)
 			{
-				double elevationIn10s = GetElevation(waypoint, positionIn10s);
-				var radialVelocity = Math.Abs((elevation - elevationIn10s) / 10.0);
+				double elevationIn10s = GetElevation(context.waypoint, positionIn10s);
+				var radialVelocity = Math.Abs((elevation - elevationIn10s) * 6.0); // radial velocity is in degrees/minute
 
 				bool radialVelocityRequirementMet = true;
 				if(min_radial_velocity > 0)
@@ -140,7 +142,8 @@ namespace KerbalismContracts
 				if(max_radial_velocity > 0)
 					radialVelocityRequirementMet &= radialVelocity <= max_radial_velocity;
 
-				label += " " + Lib.Color(radialVelocity.ToString("F1") + " °/s", radialVelocityRequirementMet ? Lib.Kolor.Green : Lib.Kolor.Red);
+				label += "\n\t" + Localizer.Format("angular velocity: <<1>>", Lib.Color(radialVelocity.ToString("F1") + " °/m",
+					radialVelocityRequirementMet ? Lib.Kolor.Green : Lib.Kolor.Red));
 
 				changeRequirementsMet |= radialVelocityRequirementMet;
 			}

@@ -14,7 +14,7 @@ namespace KerbalismContracts
 			description = Lib.ConfigValue<string>(node, "description", null);
 		}
 
-		public override string GetTitle(RequirementContext context)
+		public override string GetTitle(EvaluationContext context)
 		{
 			if (!string.IsNullOrEmpty(description))
 				return description;
@@ -22,7 +22,7 @@ namespace KerbalismContracts
 			return "Has electricity";
 		}
 
-		internal override bool CouldBeCandiate(Vessel vessel, RequirementContext context)
+		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
 			return API.ResourceAmount(vessel, "ElectricCharge") > 0;
 		}

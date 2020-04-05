@@ -113,21 +113,21 @@ namespace KerbalismContracts
 		/// </summary>
 		/// <param name="contract">The contract</param>
 		/// <returns>The waypoint used by our parameter.</returns>
-		public static Waypoint FetchWaypoint(RequirementContext context)
+		public static Waypoint FetchWaypoint(Contract contract, int waypoint_index)
 		{
-			if (context.contract == null)
+			if (contract == null)
 				return null;
 
 			// Find the WaypointGenerator behaviours
-			IEnumerable<WaypointGenerator> waypointGenerators = ((ConfiguredContract)context.contract).Behaviours.OfType<WaypointGenerator>();
+			IEnumerable<WaypointGenerator> waypointGenerators = ((ConfiguredContract)contract).Behaviours.OfType<WaypointGenerator>();
 
 			if (!waypointGenerators.Any())
 				return null;
 
-			var waypoint = waypointGenerators.SelectMany(wg => wg.Waypoints()).ElementAtOrDefault(context.waypoint_index);
+			var waypoint = waypointGenerators.SelectMany(wg => wg.Waypoints()).ElementAtOrDefault(waypoint_index);
 			if (waypoint == null)
 			{
-				Utils.Log($"Couldn't find waypoint index {context.waypoint_index} in WaypointGenerator behaviour(s).", LogLevel.Error);
+				Utils.Log($"Couldn't find waypoint index {waypoint_index} in WaypointGenerator behaviour(s).", LogLevel.Error);
 			}
 
 			return waypoint;

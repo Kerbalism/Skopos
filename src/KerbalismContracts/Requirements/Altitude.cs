@@ -21,7 +21,7 @@ namespace KerbalismContracts
 				Utils.Log($"Invalid altitude restriction in {requirement.name}: must at least set min or max");
 		}
 
-		public override string GetTitle(RequirementContext parameters)
+		public override string GetTitle(EvaluationContext parameters)
 		{
 			if (!string.IsNullOrEmpty(description))
 				return description;
@@ -38,7 +38,7 @@ namespace KerbalismContracts
 			return description;
 		}
 
-		internal override bool CouldBeCandiate(Vessel vessel, RequirementContext context)
+		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
 			var orbit = vessel.orbit;
 			if (orbit == null)
@@ -52,7 +52,7 @@ namespace KerbalismContracts
 			return true;
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
+		internal override bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
 		{
 			var alt = vessel.altitude;
 
