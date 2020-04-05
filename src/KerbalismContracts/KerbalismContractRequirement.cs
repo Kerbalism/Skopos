@@ -30,11 +30,6 @@ namespace KerbalismContracts
 				if (sr == null)
 					continue;
 
-				if (SubRequirements.Find(s => s.type == sr.type) != null)
-				{
-					Utils.Log($"Requirement '{name}' contains more than one instances of sub requirement type {sr.type}. This is not supported, discarding second instance!", LogLevel.Error);
-					continue;
-				}
 				SubRequirements.Add(sr);
 			}
 

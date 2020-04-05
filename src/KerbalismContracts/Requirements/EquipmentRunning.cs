@@ -17,17 +17,19 @@ namespace KerbalismContracts
 			shortDescription = Lib.ConfigValue<string>(node, "shortDescription", null);
 		}
 
-		public override string GetTitle(Contracts.Contract contract)
+		public override string GetTitle(RequirementContext context)
 		{
 			return description ?? shortDescription ?? equipment;
 		}
 
-		internal override bool CouldBeCandiate(Vessel vessel, Contracts.Contract contract)
+		internal override bool CouldBeCandiate(Vessel vessel, RequirementContext context)
 		{
-			return KerbalismContracts.EquipmentState.HasValue(vessel, equipment);
+			bool result = KerbalismContracts.EquipmentState.HasValue(vessel, equipment);
+			Utils.LogDebug($"{vessel.name} is candidate for {equipment}: {result}");
+			return result;
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, Contract contract, out string label)
+		internal override bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
 		{
 			var state = KerbalismContracts.EquipmentState.GetValue(vessel, equipment);
 

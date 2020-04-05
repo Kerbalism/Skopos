@@ -9,6 +9,18 @@ using KERBALISM;
 
 namespace KerbalismContracts
 {
+	public class RequirementContext
+	{
+		public readonly Contract contract;
+		public readonly int waypoint_index;
+
+		public RequirementContext(Contract contract, int waypoint_index = 0)
+		{
+			this.contract = contract;
+			this.waypoint_index = waypoint_index;
+		}
+	}
+
 	public abstract class SubRequirement
 	{
 		private static Dictionary<string, ConstructorInfo> subRequirementActivators = new Dictionary<string, ConstructorInfo>();
@@ -16,7 +28,7 @@ namespace KerbalismContracts
 		public string type { get; private set; }
 		public KerbalismContractRequirement parent { get; private set; }
 
-		public abstract string GetTitle(Contract contract);
+		public abstract string GetTitle(RequirementContext parameters);
 
 		protected SubRequirement(string type, KerbalismContractRequirement parent)
 		{
@@ -29,7 +41,7 @@ namespace KerbalismContracts
 		/// not guaranteed to be called on all vessels (the first failing test will remove the vessel from the
 		/// list of candidates)
 		/// </summary>
-		internal virtual bool CouldBeCandiate(Vessel vessel, Contract contract)
+		internal virtual bool CouldBeCandiate(Vessel vessel, RequirementContext context)
 		{
 			return true;
 		}
@@ -39,7 +51,7 @@ namespace KerbalismContracts
 		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
 		/// </summary>
 		/// <param name="label">label to add to this vessel in the status display</param>
-		internal virtual bool VesselMeetsCondition(Vessel vessel, Contract contract, out string label)
+		internal virtual bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
 		{
 			label = string.Empty;
 			return true;
@@ -49,7 +61,7 @@ namespace KerbalismContracts
 		/// final filter: looks at the collection of all vessels that passed the hard and soft filters,
 		/// use this to check constellations, count vessels etc.
 		/// </summary>
-		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, Contract contract, out string label)
+		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, RequirementContext context, out string label)
 		{
 			label = string.Empty;
 			return timesConditionMet > 0;
@@ -57,6 +69,8 @@ namespace KerbalismContracts
 
 		private static void InitSubRequirementActivators()
 		{
+			Utils.LogDebug("Initializing sub requirement types...");
+
 			Type[] constructorTypes = new Type[] { typeof(string), typeof(KerbalismContractRequirement), typeof(ConfigNode) };
 			Type subRequirementType = typeof(SubRequirement);
 			foreach (var a in AssemblyLoader.loadedAssemblies)
@@ -72,14 +86,16 @@ namespace KerbalismContracts
 					ConstructorInfo ctor = t.GetConstructor(constructorTypes);
 					if (ctor == null)
 					{
-						Utils.Log($"No valid constructor found for sub requirement {t.Name} in {assemblyName}", LogLevel.Error);
+						Utils.Log($"No valid constructor found for sub requirement type '{t.Name}' in {assemblyName}", LogLevel.Error);
 						continue;
 					}
 
-					Utils.Log($"Registering sub requirement {t.Name} from {assemblyName}");
+					Utils.Log($"Registering sub requirement type '{t.Name}' from {assemblyName}");
 					subRequirementActivators.Add(t.Name, ctor);
 				}
 			}
+
+			Utils.LogDebug($"Found {subRequirementActivators.Count} sub requirement types.");
 		}
 
 		public static SubRequirement Load(KerbalismContractRequirement requirement, ConfigNode node)

@@ -15,6 +15,7 @@ namespace KerbalismContracts
 		protected ContractConfigurator.Duration duration;
 		protected ContractConfigurator.Duration allowed_downtime;
 		protected int min_vessels;
+		protected int waypoint_index;
 
 		public override bool Load(ConfigNode configNode)
 		{
@@ -24,6 +25,7 @@ namespace KerbalismContracts
 			valid &= ConfigNodeUtil.ParseValue<ContractConfigurator.Duration>(configNode, "allowed_downtime", x => allowed_downtime = x, this, new ContractConfigurator.Duration(0.0));
 			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "id", x => requirementId = x, this, "");
 			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "min_vessels", x => min_vessels = x, this, 1);
+			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "waypoint_index", x => waypoint_index = x, this, 0);
 
 			return valid;
 		}
@@ -37,13 +39,13 @@ namespace KerbalismContracts
 				return null;
 			}
 
-			var result = new KerbalismContractParameter(requirementId, duration.Value, allowed_downtime.Value, min_vessels);
+			var result = new KerbalismContractParameter(title, requirementId, duration.Value, allowed_downtime.Value, min_vessels, waypoint_index);
 
 			if (requirement.NeedsWaypoint())
 			{
-				if(Utils.FetchWaypoint(contract) == null)
+				if(Utils.FetchWaypoint(new RequirementContext(contract, waypoint_index)) == null)
 				{
-					Utils.Log($"There is no waypoint in the contract, but requirement '{requirementId}' needs one.", LogLevel.Error);
+					Utils.Log($"There is no waypoint (index {waypoint_index}) in the contract, but requirement '{requirementId}' needs one.", LogLevel.Error);
 					return null;
 				}
 			}
@@ -55,33 +57,45 @@ namespace KerbalismContracts
 	public class KerbalismContractParameter : ContractConfiguratorParameter
 	{
 		protected string requirementId;
+		protected string title;
 		protected double duration;
 		protected double allowed_downtime;
 		protected int min_vessels;
+		protected int waypoint_index;
 
 		protected DurationParameter durationParameter;
-		protected Dictionary<string, SubRequirementParameter> subParameters = new Dictionary<string, SubRequirementParameter>();
+		protected List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
 
 		private float lastUpdate = 0.0f;
 		private const float UPDATE_FREQUENCY = 1f;
 
 		private readonly List<Vessel> vessels = new List<Vessel>();
-		private readonly List<string> conditionCounter = new List<string>();
 		private KerbalismContractRequirement requirement;
 		private string statusLabel = string.Empty;
+		internal RequirementContext context;
 
 		public KerbalismContractParameter() { }
 
-		public KerbalismContractParameter(string requirementId, double duration, double allowed_downtime, int min_vessels)
+		public KerbalismContractParameter(string title, string requirementId, double duration, double allowed_downtime, int min_vessels, int waypoint_index)
 		{
+			this.title = title;
 			this.requirementId = requirementId;
 			this.duration = duration;
 			this.allowed_downtime = allowed_downtime;
 			this.min_vessels = min_vessels;
+			this.waypoint_index = waypoint_index;
 
 			this.requirement = Configuration.Requirement(requirementId);
 
 			CreateSubParameters();
+		}
+
+		public RequirementContext GetContext()
+		{
+			if (context == null)
+				context = new RequirementContext(Root, waypoint_index);
+
+			return context;
 		}
 
 		protected void OnContractLoaded(ConfiguredContract contract)
@@ -97,55 +111,35 @@ namespace KerbalismContracts
 			if (ParameterCount > 0)
 				return;
 
-			if (requirement.NeedsWaypoint())
+			if (requirement.NeedsWaypoint() && Utils.FetchWaypoint(GetContext()) == null)
 			{
-				if (Utils.FetchWaypoint(Root) == null)
-				{
-					Utils.Log($"There is no waypoint in the contract, but requirement '{requirementId}' needs one.", LogLevel.Error);
-				}
+				Utils.Log($"There is no waypoint in the contract, but requirement '{requirementId}' needs one.", LogLevel.Warning);
 			}
 
 			foreach (var req in Configuration.Requirement(requirementId).SubRequirements)
 			{
-				if(!subParameters.ContainsKey(req.type))
-				{
-					subParameters[req.type] = new SubRequirementParameter(req);
-					AddParameter(subParameters[req.type]);
-				}
+				Utils.LogDebug($"Creating sub requirement for {requirementId}.{req.type}...");
+				var sub = new SubRequirementParameter(req, waypoint_index);
+				subRequirementParameters.Add(sub);
+				AddParameter(sub);
 			}
 
 			if (duration > 0 && durationParameter == null)
 			{
+				Utils.LogDebug($"Duration {duration} allowed downtime {allowed_downtime}");
 				durationParameter = new DurationParameter(duration, allowed_downtime);
 				AddParameter(durationParameter);
 			}
 
-			Utils.LogDebug($"Created {ParameterCount} subs");
-		}
-
-		protected SubRequirementParameter SubParameter(string type)
-		{
-			if (subParameters.Count == 0)
-			{
-				for (int i = 0; i < ParameterCount; i++)
-				{
-					var param = GetParameter(i);
-
-					if (param is DurationParameter dp)
-						durationParameter = dp;
-
-					if (param is SubRequirementParameter sp)
-						subParameters[sp.subRequirement.type] = sp;
-				}
-			}
-			return subParameters[type];
+			Utils.LogDebug($"Created {ParameterCount} sub parameters");
 		}
 
 		protected override string GetParameterTitle()
 		{
-			if(string.IsNullOrEmpty(statusLabel))
-				return Configuration.Requirement(requirementId).title;
-			return Configuration.Requirement(requirementId).title + ": " + statusLabel;
+			string result = title ?? Configuration.Requirement(requirementId).title;
+			if (!string.IsNullOrEmpty(statusLabel))
+				result += ": " + statusLabel;
+			return result;
 		}
 
 		protected void SetStatusLabel(string newLabel)
@@ -181,7 +175,7 @@ namespace KerbalismContracts
 		{
 			foreach(var sr in requirement.SubRequirements)
 			{
-				if (!sr.CouldBeCandiate(vessel, Root))
+				if (!sr.CouldBeCandiate(vessel, GetContext()))
 					return false;
 			}
 			return true;
@@ -196,12 +190,13 @@ namespace KerbalismContracts
 		{
 			label = string.Empty;
 			bool result = true;
-			foreach (var sr in requirement.SubRequirements)
+			foreach(var sp in subRequirementParameters)
 			{
 				string vesselLabel;
-				bool meetsCondition = sr.VesselMeetsCondition(vessel, Root, out vesselLabel);
+				bool meetsCondition = sp.subRequirement.VesselMeetsCondition(vessel, GetContext(), out vesselLabel);
 				if (meetsCondition)
-					conditionCounter.Add(sr.type);
+					sp.matchCounter++;
+
 				result &= meetsCondition;
 
 				if (!string.IsNullOrEmpty(vesselLabel))
@@ -225,16 +220,12 @@ namespace KerbalismContracts
 			string statusLabel = string.Empty;
 
 			bool result = true;
-			foreach (var sr in requirement.SubRequirements)
+			foreach(var subParameter in subRequirementParameters)
 			{
-				Utils.LogDebug($"testing sub requirement {sr.type}");
-
-				int count = 0;
-				foreach (var type in conditionCounter)
-					if (type == sr.type) count++;
-
 				string label;
-				result &= SubParameter(sr.type).VesselsMeetCondition(vessels, count, out label);
+
+				int count = subParameter.matchCounter;
+				result &= subParameter.subRequirement.VesselsMeetCondition(vessels, count, GetContext(), out label);
 
 				if (!string.IsNullOrEmpty(label))
 				{
@@ -264,9 +255,10 @@ namespace KerbalismContracts
 			if (Time.fixedTime - lastUpdate < UPDATE_FREQUENCY) return;
 			lastUpdate = Time.fixedTime;
 
-			vessels.Clear();
-			conditionCounter.Clear();
 			RemoveParameter(typeof(VesselStatusParameter));
+			vessels.Clear();
+			foreach (var sp in subRequirementParameters)
+				sp.matchCounter = 0;
 
 			foreach (Vessel vessel in FlightGlobals.Vessels)
 			{
@@ -279,7 +271,7 @@ namespace KerbalismContracts
 				vessels.Add(vessel);
 			}
 
-			bool allConditionsMet = true;
+			bool allConditionsMet = vessels.Count > 0;
 			int vesselsMeetingAllConditions = 0;
 
 			foreach (Vessel vessel in vessels)

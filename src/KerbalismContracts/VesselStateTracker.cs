@@ -79,9 +79,10 @@ namespace KerbalismContracts
 
 		internal bool HasValue(Vessel vessel, string id)
 		{
-			var list = states[vessel.id];
-			var entry = list.Find(e => e.id == id);
-			return entry != null;
+			List<StateEntry> list;
+			if (states.TryGetValue(vessel.id, out list))
+				return list.Find(e => e.id == id) != null;
+			return false;
 		}
 
 		internal void Load(ConfigNode node)

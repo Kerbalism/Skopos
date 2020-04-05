@@ -9,12 +9,15 @@ namespace KerbalismContracts
 	public class AboveWaypoint : SubRequirement
 	{
 		private double min_elevation;
-		private double min_radial_velocity;
-		private double max_radial_velocity;
+
 		private double min_distance;
 		private double max_distance;
-		private double min_distance_change;
-		private int waypoint_index;
+
+		// min distance change will be ORed with radial velocity change requirements.
+		// so you either need a minimal distance change, OR a minimal radial velocity.
+		private double min_relative_speed;
+		private double min_radial_velocity;
+		private double max_radial_velocity;
 
 		public AboveWaypoint(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
@@ -23,24 +26,23 @@ namespace KerbalismContracts
 			max_radial_velocity = Lib.ConfigValue(node, "max_radial_velocity", 0.0);
 			min_distance = Lib.ConfigValue(node, "min_distance", 0.0);
 			max_distance = Lib.ConfigValue(node, "max_distance", 0.0);
-			min_distance_change = Lib.ConfigValue(node, "min_distance_change", 0.0);
-			waypoint_index = Lib.ConfigValue(node, "waypoint_index", 0);
+			min_relative_speed = Lib.ConfigValue(node, "min_relative_speed", 0.0);
 		}
 
-		public override string GetTitle(Contracts.Contract contract)
+		public override string GetTitle(RequirementContext context)
 		{
 			string waypointName = "waypoint";
-			var waypoint = Utils.FetchWaypoint(contract, waypoint_index);
+			var waypoint = Utils.FetchWaypoint(context);
 			if (waypoint != null)
 				waypointName = waypoint.name;
 
 			string result = Localizer.Format("Min. <<1>>° above <<2>>", min_elevation.ToString("F1"), waypointName);
 
 			if (min_radial_velocity > 0)
-				result += ", " + Localizer.Format("min. radial velocity <<1>>°/s", min_radial_velocity.ToString("F1"));
+				result += ", " + Localizer.Format("min. radial vel. <<1>> °/s", min_radial_velocity.ToString("F1"));
 
 			if (max_radial_velocity > 0)
-				result += ", " + Localizer.Format("max. radial velocity <<1>>°/s", max_radial_velocity.ToString("F1"));
+				result += ", " + Localizer.Format("max. radial vel. <<1>> °/s", max_radial_velocity.ToString("F1"));
 
 			if (min_distance > 0)
 				result += ", " + Localizer.Format("min. distance <<1>>", Lib.HumanReadableDistance(min_distance));
@@ -48,8 +50,8 @@ namespace KerbalismContracts
 			if (max_distance > 0)
 				result += ", " + Localizer.Format("max. distance <<1>>", Lib.HumanReadableDistance(max_distance));
 
-			if (min_distance_change > 0)
-				result += ", " + Localizer.Format("min. ∆ distance <<1>>", Lib.HumanReadableSpeed(min_distance_change));
+			if (min_relative_speed > 0)
+				result += ", " + Localizer.Format("min. relative vel. <<1>>", Lib.HumanReadableSpeed(min_relative_speed));
 
 			return result;
 		}
@@ -59,9 +61,9 @@ namespace KerbalismContracts
 			return true;
 		}
 
-		internal override bool CouldBeCandiate(Vessel vessel, Contract contract)
+		internal override bool CouldBeCandiate(Vessel vessel, RequirementContext context)
 		{
-			var waypoint = Utils.FetchWaypoint(contract, waypoint_index);
+			var waypoint = Utils.FetchWaypoint(context);
 			if (waypoint == null)
 				return false;
 			if (waypoint.celestialBody != vessel.mainBody)
@@ -71,17 +73,12 @@ namespace KerbalismContracts
 			if (orbit == null)
 				return false;
 
-			// this will not work correctly with contracts that have multiple waypoints
-			// var minInclination = Math.Max(0, Math.Abs(waypoint.latitude) - (90 - min_elevation));
-			// if (orbit.inclination < minInclination)
-			// 	return false;
-
 			return true;
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, Contract contract, out string label)
+		internal override bool VesselMeetsCondition(Vessel vessel, RequirementContext context, out string label)
 		{
-			Waypoint waypoint = Utils.FetchWaypoint(contract, waypoint_index);
+			Waypoint waypoint = Utils.FetchWaypoint(context);
 			Vector3d vesselPosition = Lib.VesselPosition(vessel);
 			double elevation = GetElevation(waypoint, vesselPosition);
 			double distance = GetDistance(waypoint, vesselPosition);
@@ -112,51 +109,43 @@ namespace KerbalismContracts
 				meetsCondition &= distanceMet;
 			}
 
-			if(min_distance_change > 0)
-			{
-				Vector3d positionIn10s = vessel.orbit.getPositionAtUT(Planetarium.GetUniversalTime() + 10);
-				double distanceIn10s = GetDistance(waypoint, positionIn10s);
+			Vector3d positionIn10s = vesselPosition;
+			bool changeRequirementsMet = true;
 
+			if(min_relative_speed > 0 || min_radial_velocity > 0 || max_radial_velocity > 0)
+			{
+				changeRequirementsMet = false;
+				positionIn10s = vessel.orbit.getPositionAtUT(Planetarium.GetUniversalTime() + 10);
+			}
+
+			if (min_relative_speed > 0)
+			{
+				double distanceIn10s = GetDistance(waypoint, positionIn10s);
 				var distanceChange = Math.Abs((distance - distanceIn10s) / 10.0);
 
-				label += " " + Localizer.Format("∆d <<1>>", Lib.Color(Lib.HumanReadableSpeed(distanceChange),
-					distanceChange >= min_distance_change ? Lib.Kolor.Green : Lib.Kolor.Red));
+				label += " " + Localizer.Format("rel. velocity <<1>>", Lib.Color(Lib.HumanReadableSpeed(distanceChange),
+					distanceChange >= min_relative_speed ? Lib.Kolor.Green : Lib.Kolor.Red));
 
-				meetsCondition &= distanceChange >= min_distance_change;
+				changeRequirementsMet |= distanceChange >= min_relative_speed;
 			}
 
-			if (meetsCondition && (min_radial_velocity > 0 || max_radial_velocity > 0))
+			if (min_radial_velocity > 0 || max_radial_velocity > 0)
 			{
-				Vector3d positionIn10s = vessel.orbit.getPositionAtUT(Planetarium.GetUniversalTime() + 10);
 				double elevationIn10s = GetElevation(waypoint, positionIn10s);
-
 				var radialVelocity = Math.Abs((elevation - elevationIn10s) / 10.0);
 
+				bool radialVelocityRequirementMet = true;
 				if(min_radial_velocity > 0)
-					meetsCondition &= radialVelocity >= min_radial_velocity;
-
+					radialVelocityRequirementMet &= radialVelocity >= min_radial_velocity;
 				if(max_radial_velocity > 0)
-					meetsCondition &= radialVelocity <= max_radial_velocity;
+					radialVelocityRequirementMet &= radialVelocity <= max_radial_velocity;
 
-				label += " " + Lib.Color(radialVelocity.ToString("F1") + "°/s", meetsCondition ? Lib.Kolor.Green : Lib.Kolor.Red);
+				label += " " + Lib.Color(radialVelocity.ToString("F1") + " °/s", radialVelocityRequirementMet ? Lib.Kolor.Green : Lib.Kolor.Red);
+
+				changeRequirementsMet |= radialVelocityRequirementMet;
 			}
 
-			if (meetsCondition && min_distance_change > 0)
-			{
-				Vector3d positionIn10s = vessel.orbit.getPositionAtUT(Planetarium.GetUniversalTime() + 10);
-
-				double elevationIn10s = GetElevation(waypoint, positionIn10s);
-
-				var radialVelocity = Math.Abs((elevation - elevationIn10s) / 10.0);
-
-				if (min_radial_velocity > 0)
-					meetsCondition &= radialVelocity >= min_radial_velocity;
-
-				if (max_radial_velocity > 0)
-					meetsCondition &= radialVelocity <= max_radial_velocity;
-
-				label += " " + Lib.Color(radialVelocity.ToString("F1") + "°/s", meetsCondition ? Lib.Kolor.Green : Lib.Kolor.Red);
-			}
+			meetsCondition &= changeRequirementsMet;
 
 			return meetsCondition;
 		}
