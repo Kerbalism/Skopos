@@ -186,7 +186,7 @@ namespace KerbalismContracts
 		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
 		/// </summary>
 		/// <param name="label">label to add to this vessel in the status display</param>
-		private bool VesselMeetsCondition(Vessel vessel, out string label)
+		private bool VesselMeetsCondition(Vessel vessel, bool updateLabel, out string label)
 		{
 			label = string.Empty;
 			bool result = true;
@@ -200,13 +200,16 @@ namespace KerbalismContracts
 
 				result &= state.requirementMet;
 
-				var vesselLabel = sp.subRequirement.GetLabel(vessel, context, state);
-				if (!string.IsNullOrEmpty(vesselLabel))
+				if (updateLabel)
 				{
-					if (string.IsNullOrEmpty(label))
-						label = " - " + vesselLabel;
-					else
-						label += "\n - " + vesselLabel;
+					var vesselLabel = sp.subRequirement.GetLabel(vessel, context, state);
+					if (!string.IsNullOrEmpty(vesselLabel))
+					{
+						if (string.IsNullOrEmpty(label))
+							label = " - " + vesselLabel;
+						else
+							label += "\n - " + vesselLabel;
+					}
 				}
 			}
 
@@ -291,10 +294,12 @@ namespace KerbalismContracts
 				foreach (Vessel vessel in vessels)
 				{
 					string statusLabel;
-					bool conditionMet = VesselMeetsCondition(vessel, out statusLabel);
+					bool updateLabel = i + 1 == stepCount;
+
+					bool conditionMet = VesselMeetsCondition(vessel, updateLabel, out statusLabel);
 					if (conditionMet) vesselsMeetingAllConditions++;
 
-					if (i + 1 == stepCount)
+					if (updateLabel)
 						AddParameter(new VesselStatusParameter(vessel, statusLabel, conditionMet));
 				}
 
@@ -305,7 +310,7 @@ namespace KerbalismContracts
 					SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
 				else
 				{
-					durationParameter.Update(allConditionsMet);
+					durationParameter.Update(allConditionsMet, step);
 					SetState(durationParameter.State);
 				}
 

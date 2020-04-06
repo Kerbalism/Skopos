@@ -8,7 +8,6 @@ namespace KerbalismContracts
 {
 	public class AboveWaypointState: SubRequirementState
 	{
-		public Vector3d vesselPosition;
 		public double elevation;
 		public double distance;
 		public bool distanceMet;
@@ -16,6 +15,8 @@ namespace KerbalismContracts
 		public double distanceChange;
 		public double radialVelocity;
 		internal bool radialVelocityRequirementMet;
+		internal double distance10sago;
+		internal double elev10sago;
 	}
 
 	public class AboveWaypoint : SubRequirement
@@ -92,9 +93,8 @@ namespace KerbalismContracts
 		{
 			AboveWaypointState state = new AboveWaypointState();
 
-			state.vesselPosition = context.VesselPosition(vessel);
-			state.elevation = GetElevation(context, state.vesselPosition);
-			state.distance = GetDistance(context, state.vesselPosition);
+			state.elevation = GetElevation(vessel, context);
+			state.distance = GetDistance(vessel, context);
 
 			// TODO determine line of sight obstruction (there may be an occluding body)
 
@@ -118,15 +118,15 @@ namespace KerbalismContracts
 			
 			if (min_relative_speed > 0)
 			{
-				double distanceIn10s = GetDistance(context, context.VesselPosition(vessel, 10));
-				state.distanceChange = Math.Abs((state.distance - distanceIn10s) / 10.0);
+				state.distance10sago = GetDistance(vessel, context, 10);
+				state.distanceChange = Math.Abs((state.distance10sago - state.distance) / 10.0);
 				state.changeRequirementsMet |= state.distanceChange >= min_relative_speed;
 			}
 
 			if (min_radial_velocity > 0 || max_radial_velocity > 0)
 			{
-				double elevationIn10s = GetElevation(context, context.VesselPosition(vessel, 10));
-				state.radialVelocity = Math.Abs((state.elevation - elevationIn10s) * 6.0); // radial velocity is in degrees/minute
+				state.elev10sago = GetElevation(vessel, context, 10);
+				state.radialVelocity = Math.Abs((state.elev10sago - state.elevation) * 6.0); // radial velocity is in degrees/minute
 
 				state.radialVelocityRequirementMet = true;
 				if (min_radial_velocity > 0)
@@ -181,10 +181,11 @@ namespace KerbalismContracts
 			return label;
 		}
 
-		private double GetElevation(EvaluationContext context, Vector3d vesselPosition)
+		private double GetElevation(Vessel vessel, EvaluationContext context, int secondsAgo = 0)
 		{
-			Vector3d waypointPosition = context.WaypointSurfacePosition();
-			Vector3d bodyPosition = context.BodyPosition();
+			Vector3d waypointPosition = context.WaypointSurfacePosition(secondsAgo);
+			Vector3d bodyPosition = context.BodyPosition(context.waypoint.celestialBody, secondsAgo);
+			Vector3d vesselPosition = context.VesselPosition(vessel, secondsAgo);
 
 			var a = Vector3d.Angle(vesselPosition - bodyPosition, waypointPosition - bodyPosition);
 			var b = Vector3d.Angle(waypointPosition - vesselPosition, bodyPosition - vesselPosition);
@@ -193,9 +194,10 @@ namespace KerbalismContracts
 			return 90.0 - a - b;
 		}
 
-		private double GetDistance(EvaluationContext context, Vector3d vesselPosition)
+		private double GetDistance(Vessel vessel, EvaluationContext context, int secondsAgo = 0)
 		{
-			var waypointPosition = context.WaypointSurfacePosition();
+			var waypointPosition = context.WaypointSurfacePosition(secondsAgo);
+			Vector3d vesselPosition = context.VesselPosition(vessel, secondsAgo);
 			var v = vesselPosition - waypointPosition;
 			return v.magnitude;
 		}

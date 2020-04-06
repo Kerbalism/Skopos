@@ -30,16 +30,14 @@ namespace KerbalismContracts
 			SetIncomplete();
 		}
 
-		internal void Update(bool allConditionsMet)
+		internal void Update(bool allConditionsMet, double now)
 		{
-			if (allConditionsMet) UpdateGood();
-			else UpdateBad();
+			if (allConditionsMet) UpdateGood(now);
+			else UpdateBad(now);
 		}
 
-		private void UpdateBad()
+		private void UpdateBad(double now)
 		{
-			double now = Planetarium.GetUniversalTime();
-
 			if (resetAfter == 0)
 				resetAfter = now + allowed_downtime;
 
@@ -47,10 +45,8 @@ namespace KerbalismContracts
 				ResetTimer();
 		}
 
-		private void UpdateGood()
+		private void UpdateGood(double now)
 		{
-			double now = Planetarium.GetUniversalTime();
-
 			resetAfter = 0;
 			if (doneAfter == 0)
 				doneAfter = now + duration;
