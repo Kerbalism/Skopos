@@ -4,6 +4,11 @@ using Contracts;
 
 namespace KerbalismContracts
 {
+	public class EquipmentRunningState : SubRequirementState
+	{
+		internal EquipmentState equipmentState;
+	}
+
 	public class EquipmentRunning : SubRequirement
 	{
 		private string equipment;
@@ -27,15 +32,21 @@ namespace KerbalismContracts
 			return KerbalismContracts.EquipmentState.HasValue(vessel, equipment);
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
+		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
-			var state = KerbalismContracts.EquipmentState.GetValue(vessel, equipment);
+			EquipmentRunningState state = new EquipmentRunningState();
+			state.equipmentState = KerbalismContracts.EquipmentState.GetValue(vessel, equipment);
+			state.requirementMet = state.equipmentState == EquipmentState.nominal;
+			return state;
+		}
 
-			label = EquipmentData.StatusInfo(state);
+		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
+		{
+			EquipmentRunningState equipmentRunningState = (EquipmentRunningState)state;
+			string label = EquipmentData.StatusInfo(equipmentRunningState.equipmentState);
 			if (!string.IsNullOrEmpty(shortDescription))
 				label = shortDescription + ": " + label;
-
-			return state == EquipmentState.nominal;
+			return label;
 		}
 	}
 }

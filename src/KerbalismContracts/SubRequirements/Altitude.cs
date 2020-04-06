@@ -5,6 +5,11 @@ using KSP.Localization;
 
 namespace KerbalismContracts
 {
+	public class AltitudeState : SubRequirementState
+	{
+		internal double alt;
+	}
+
 	public class Altitude : SubRequirement
 	{
 		private int min;
@@ -52,24 +57,38 @@ namespace KerbalismContracts
 			return true;
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
+		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
-			var alt = vessel.altitude;
+			AltitudeState state = new AltitudeState();
+			state.alt = vessel.altitude;
 
-			if(min != 0 && alt < min)
+			if (min != 0 && state.alt < min)
 			{
-				label = Lib.Color("too low", Lib.Kolor.Red);
-				return false;
+				state.requirementMet = false;
+				return state;
 			}
 
-			if(max != 0 && alt > max)
+			if (max != 0 && state.alt > max)
 			{
-				label = Lib.Color("too high", Lib.Kolor.Red);
-				return false;
+				state.requirementMet = false;
+				return state;
 			}
 
-			label = Lib.Color("alt OK", Lib.Kolor.Green);
-			return true;
+			state.requirementMet = true;
+			return state;
+		}
+
+		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
+		{
+			AltitudeState altitudeState = (AltitudeState)state;
+
+			if (min != 0 && altitudeState.alt < min)
+				return Lib.Color("too low", Lib.Kolor.Red);
+
+			if (max != 0 && altitudeState.alt > max)
+				return Lib.Color("too high", Lib.Kolor.Red);
+
+			return Lib.Color("alt OK", Lib.Kolor.Green);
 		}
 	}
 }

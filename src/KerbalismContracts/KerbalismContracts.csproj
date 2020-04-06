@@ -104,15 +104,17 @@
     <Compile Include="CC\Parameter\VesselRadiationFieldParameter.cs" />
     <Compile Include="CC\Parameter\KerbalismContractParameter.cs" />
     <Compile Include="KerbalismContractRequirement.cs" />
-    <Compile Include="Requirements\AboveWaypoint.cs" />
-    <Compile Include="Requirements\EquipmentRunning.cs" />
+    <Compile Include="SubRequirements\AboveWaypoint.cs" />
+    <Compile Include="SubRequirements\EquipmentRunning.cs" />
     <Compile Include="CC\Parameter\SubParams\DurationParameter.cs" />
     <Compile Include="CC\Parameter\SubParams\SubRequirementParameter.cs" />
-    <Compile Include="Requirements\Base\SubRequirement.cs" />
+    <Compile Include="SubRequirements\Base\SubRequirement.cs" />
     <Compile Include="CC\Parameter\SubParams\VesselStatusParameter.cs" />
-    <Compile Include="Requirements\Altitude.cs" />
-    <Compile Include="Requirements\CommLink.cs" />
-    <Compile Include="Requirements\Powered.cs" />
+    <Compile Include="SubRequirements\Altitude.cs" />
+    <Compile Include="SubRequirements\CommLink.cs" />
+    <Compile Include="SubRequirements\Powered.cs" />
+    <Compile Include="SubRequirements\Base\SubRequirementState.cs" />
+    <Compile Include="SubRequirements\Base\EvaluationContext.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -123,9 +125,9 @@
     <Folder Include="CC\Behavior\" />
     <Folder Include="CC\Parameter\" />
     <Folder Include="CC\Requirement\" />
-    <Folder Include="Requirements\" />
+    <Folder Include="SubRequirements\" />
     <Folder Include="CC\Parameter\SubParams\" />
-    <Folder Include="Requirements\Base\" />
+    <Folder Include="SubRequirements\Base\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">

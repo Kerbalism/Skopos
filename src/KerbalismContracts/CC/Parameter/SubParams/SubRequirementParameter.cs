@@ -55,9 +55,9 @@ namespace KerbalismContracts
 			return subRequirement.GetTitle(context);
 		}
 
-		internal bool VesselsMeetCondition(List<Vessel> vessels, out string label)
+		internal bool VesselsMeetCondition(List<Vessel> vessels)
 		{
-			completed = subRequirement.VesselsMeetCondition(vessels, matchCounter, context, out label);
+			completed = subRequirement.VesselsMeetCondition(vessels, matchCounter, context);
 
 			if (completed)
 				SetComplete();

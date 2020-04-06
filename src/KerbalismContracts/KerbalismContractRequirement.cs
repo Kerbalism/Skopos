@@ -11,6 +11,7 @@ namespace KerbalismContracts
 		public string name { get; private set; }
 		public string title { get; private set; }
 		public string notes { get; private set; }
+		public int max_step { get; private set; }
 		public List<SubRequirement> SubRequirements { get; private set; }
 
 		public KerbalismContractRequirement(ConfigNode node)
@@ -18,6 +19,7 @@ namespace KerbalismContracts
 			name = Lib.ConfigValue(node, "name", "");
 			title = Lib.ConfigValue(node, "title", "");
 			notes = Lib.ConfigValue(node, "notes", "");
+			max_step = Lib.ConfigValue(node, "max_step", int.MaxValue);
 
 			Utils.LogDebug($"Loading requirement '{name}'");
 

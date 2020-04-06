@@ -5,6 +5,11 @@ using KSP.Localization;
 
 namespace KerbalismContracts
 {
+	public class CommLinkState : SubRequirementState
+	{
+		internal double bw;
+	}
+
 	public class CommLink : SubRequirement
 	{
 		private string description;
@@ -33,31 +38,40 @@ namespace KerbalismContracts
 			return API.VesselConnectionLinked(vessel);
 		}
 
-		internal override bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
+		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
+			CommLinkState state = new CommLinkState();
+
 			if (min_bandwidth > 0)
 			{
-				double bw = API.VesselConnectionRate(vessel);
+				state.bw = API.VesselConnectionRate(vessel);
+				state.requirementMet = state.bw >= min_bandwidth;
+			}
+			else
+			{
+				state.requirementMet = API.VesselConnectionLinked(vessel);
+			}
 
+			return state;
+		}
+
+		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
+		{
+			CommLinkState commLinkState = (CommLinkState)state;
+			if (min_bandwidth > 0)
+			{
 				var color = Lib.Kolor.Orange;
-				if (bw > min_bandwidth * 1.2)
+				if (commLinkState.bw > min_bandwidth * 1.2)
 					color = Lib.Kolor.Green;
-				if (bw < min_bandwidth)
+				if (commLinkState.bw < min_bandwidth)
 					color = Lib.Kolor.Red;
 
-				label = Lib.Color(Lib.HumanReadableDataRate(bw), color);
-
-				return bw >= min_bandwidth;
+				return Lib.Color(Lib.HumanReadableDataRate(commLinkState.bw), color);
 			}
 
-			if(API.VesselConnectionLinked(vessel))
-			{
-				label = Lib.Color("online", Lib.Kolor.Green);
-				return true;
-			}
-
-			label = Lib.Color("offline", Lib.Kolor.Red);
-			return false;
+			if(state.requirementMet)
+				return Lib.Color("online", Lib.Kolor.Green);
+			return Lib.Color("offline", Lib.Kolor.Red);
 		}
 	}
 }

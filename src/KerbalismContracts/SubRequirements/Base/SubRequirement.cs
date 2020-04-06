@@ -9,16 +9,6 @@ using KERBALISM;
 
 namespace KerbalismContracts
 {
-	public class EvaluationContext
-	{
-		public readonly Waypoint waypoint;
-
-		public EvaluationContext(Waypoint waypoint = null)
-		{
-			this.waypoint = waypoint;
-		}
-	}
-
 	public abstract class SubRequirement
 	{
 		private static Dictionary<string, ConstructorInfo> subRequirementActivators = new Dictionary<string, ConstructorInfo>();
@@ -48,20 +38,23 @@ namespace KerbalismContracts
 		/// soft filter: runs on ALL vessels that pass the hard filter (CouldBeCandidate),
 		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
 		/// </summary>
-		/// <param name="label">label to add to this vessel in the status display</param>
-		internal virtual bool VesselMeetsCondition(Vessel vessel, EvaluationContext context, out string label)
+		internal virtual SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
-			label = string.Empty;
-			return true;
+			return new Stateless();
+		}
+
+		/// <summary> return the text to display in the contract UI as part of the individual vessel state </summary>
+		internal virtual string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
+		{
+			return string.Empty;
 		}
 
 		/// <summary>
 		/// final filter: looks at the collection of all vessels that passed the hard and soft filters,
 		/// use this to check constellations, count vessels etc.
 		/// </summary>
-		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, EvaluationContext context, out string label)
+		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, EvaluationContext context)
 		{
-			label = string.Empty;
 			return timesConditionMet > 0;
 		}
 

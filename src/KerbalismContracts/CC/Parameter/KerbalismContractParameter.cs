@@ -193,14 +193,14 @@ namespace KerbalismContracts
 
 			foreach(var sp in subRequirementParameters)
 			{
-				string vesselLabel;
-				bool meetsCondition = sp.subRequirement.VesselMeetsCondition(vessel, context, out vesselLabel);
+				var state = sp.subRequirement.VesselMeetsCondition(vessel, context);
 
-				if (meetsCondition)
+				if (state.requirementMet)
 					sp.matchCounter++;
 
-				result &= meetsCondition;
+				result &= state.requirementMet;
 
+				var vesselLabel = sp.subRequirement.GetLabel(vessel, context, state);
 				if (!string.IsNullOrEmpty(vesselLabel))
 				{
 					if (string.IsNullOrEmpty(label))
@@ -219,35 +219,19 @@ namespace KerbalismContracts
 		/// </summary>
 		private bool VesselsMeetCondition(List<Vessel> vessels, int vesselsMeetingAllConditions)
 		{
-			string statusLabel = string.Empty;
-
 			bool result = true;
 			foreach(var subParameter in subRequirementParameters)
-			{
-				string label;
-				result &= subParameter.VesselsMeetCondition(vessels, out label);
+				result &= subParameter.VesselsMeetCondition(vessels);
 
-				if (!string.IsNullOrEmpty(label))
-				{
-					if (string.IsNullOrEmpty(statusLabel))
-						statusLabel = label;
-					else
-						statusLabel += " " + label;
-				}
-			}
-
-			if (string.IsNullOrEmpty(statusLabel))
-			{
-				statusLabel = Lib.Color($"{vesselsMeetingAllConditions}/{min_vessels}",
+			string statusLabel = Lib.Color($"{vesselsMeetingAllConditions}/{min_vessels}",
 					vesselsMeetingAllConditions >= min_vessels ? Lib.Kolor.Green : Lib.Kolor.Red);
-			}
 
 			SetStatusLabel(statusLabel);
-
+			
 			return result;
 		}
 
-		protected EvaluationContext CreateContext()
+		protected EvaluationContext CreateContext(double secondsSinceLastUpdate)
 		{
 			return new EvaluationContext(Utils.FetchWaypoint(Root, waypoint_index));
 		}
@@ -263,17 +247,11 @@ namespace KerbalismContracts
 
 			var lastUpdateAge = Planetarium.GetUniversalTime() - lastUpdate;
 			if (lastUpdateAge < 1.0) return;
-
-			if(lastUpdateAge > 30)
-			{
-				Utils.LogDebug($"last update age: {lastUpdateAge.ToString("F0")}");
-			}
-
 			lastUpdate = Planetarium.GetUniversalTime();
 
 			RemoveAllParameters(typeof(VesselStatusParameter));
 			vessels.Clear();
-			context = CreateContext();
+			context = CreateContext(lastUpdateAge);
 
 			foreach (var sp in subRequirementParameters)
 				sp.ResetContext(context);
