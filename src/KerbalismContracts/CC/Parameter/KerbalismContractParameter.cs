@@ -236,12 +236,12 @@ namespace KerbalismContracts
 			double now = Planetarium.GetUniversalTime();
 			List<double> steps = new List<double>();
 
-			int stepsNeeded = (int)Math.Ceiling(secondsSinceLastUpdate / requirement.max_step);
-			double stepLength = secondsSinceLastUpdate / (double)stepsNeeded;
+			double stepsNeeded = secondsSinceLastUpdate / requirement.max_step;
+			double stepLength = secondsSinceLastUpdate / Math.Ceiling(stepsNeeded);
 
-			Utils.LogDebug($"Steps: last was {secondsSinceLastUpdate} need {stepsNeeded} step, length {stepLength} (max is {requirement.max_step})");
+			Utils.LogDebug($"Steps: step duration {secondsSinceLastUpdate} need {stepsNeeded} steps at {stepLength} each (max is {requirement.max_step})");
 
-			for(int s = stepsNeeded - 1; s > 1; s--)
+			for(int s = (int)Math.Floor(stepsNeeded); s > 1; s--)
 				steps.Add(now - s * stepLength);
 			steps.Add(now);
 

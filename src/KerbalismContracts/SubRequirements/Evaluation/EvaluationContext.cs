@@ -73,5 +73,5 @@ namespace KerbalismContracts
         {
 			this.now = step;
         }
-   	}
+	}
 }
