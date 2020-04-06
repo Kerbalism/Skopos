@@ -5,6 +5,7 @@ using ContractConfigurator;
 using ContractConfigurator.Parameters;
 using UnityEngine;
 using KERBALISM;
+using System;
 
 namespace KerbalismContracts
 {
@@ -65,8 +66,7 @@ namespace KerbalismContracts
 		protected DurationParameter durationParameter;
 		protected List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
 
-		private float lastUpdate = 0.0f;
-		private const float UPDATE_FREQUENCY = 1f;
+		private double lastUpdate = 0.0f;
 
 		private readonly List<Vessel> vessels = new List<Vessel>();
 		private KerbalismContractRequirement requirement;
@@ -251,21 +251,28 @@ namespace KerbalismContracts
 		{
 			return new EvaluationContext(Utils.FetchWaypoint(Root, waypoint_index));
 		}
-
+		
 		protected override void OnUpdate()
 		{
 			base.OnUpdate();
 			if (ParameterCount == 0) return;
 			if (state != ParameterState.Incomplete) return;
-			if (Time.fixedTime - lastUpdate < UPDATE_FREQUENCY) return;
-			lastUpdate = Time.fixedTime;
-
-			RemoveParameter(typeof(VesselStatusParameter));
-			vessels.Clear();
 
 			if (subRequirementParameters.Count == 0)
 				CreateSubParameters();
 
+			var lastUpdateAge = Planetarium.GetUniversalTime() - lastUpdate;
+			if (lastUpdateAge < 1.0) return;
+
+			if(lastUpdateAge > 30)
+			{
+				Utils.LogDebug($"last update age: {lastUpdateAge.ToString("F0")}");
+			}
+
+			lastUpdate = Planetarium.GetUniversalTime();
+
+			RemoveAllParameters(typeof(VesselStatusParameter));
+			vessels.Clear();
 			context = CreateContext();
 
 			foreach (var sp in subRequirementParameters)
@@ -291,21 +298,29 @@ namespace KerbalismContracts
 				bool conditionMet = VesselMeetsCondition(vessel, out statusLabel);
 				if (conditionMet) vesselsMeetingAllConditions++;
 				AddParameter(new VesselStatusParameter(vessel, statusLabel, conditionMet));
-				allConditionsMet &= conditionMet;
 			}
 
+			allConditionsMet &= vesselsMeetingAllConditions >= min_vessels;
 			allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
-
 			if (durationParameter == null)
 				SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
 			else
 			{
 				durationParameter.Update(allConditionsMet);
-				Utils.LogDebug($"duration parameter state {durationParameter.State}");
 				SetState(durationParameter.State);
 			}
 
 			ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+		}
+
+		private void RemoveAllParameters(Type type)
+		{
+			int c;
+			do
+			{
+				c = ParameterCount;
+				RemoveParameter(type);
+			} while (c > ParameterCount);
 		}
 	}
 }

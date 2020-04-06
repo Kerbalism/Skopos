@@ -40,7 +40,7 @@ namespace KerbalismContracts
 		{
 			double now = Planetarium.GetUniversalTime();
 
-			if(resetAfter == 0)
+			if (resetAfter == 0)
 				resetAfter = now + allowed_downtime;
 
 			if(now > resetAfter)
@@ -84,11 +84,13 @@ namespace KerbalismContracts
 			if(resetAfter > 0)
 			{
 				double ttf = Math.Max(0, resetAfter - now);
-				return Localizer.Format("Remaining: <<1>> (interrupted, stops in: <<2>>)",
-					DurationUtil.StringValue(remaining), Lib.Color(DurationUtil.StringValue(ttf), Lib.Kolor.Yellow));
+				return Localizer.Format("Remaining: <<1>> (stop in: <<2>>)",
+					Lib.Color(DurationUtil.StringValue(remaining), Lib.Kolor.Green),
+					Lib.Color(DurationUtil.StringValue(ttf), Lib.Kolor.Yellow));
 			}
 
-			return Localizer.Format("Remaining: <<1>>", DurationUtil.StringValue(remaining));
+			return Localizer.Format("Remaining: <<1>>",
+				Lib.Color(DurationUtil.StringValue(remaining), Lib.Kolor.Green));
 		}
 
 		protected override void OnSave(ConfigNode node)

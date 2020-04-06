@@ -60,15 +60,9 @@ namespace KerbalismContracts
 			completed = subRequirement.VesselsMeetCondition(vessels, matchCounter, context, out label);
 
 			if (completed)
-			{
-				Utils.LogDebug($"{subRequirement.parent.name}.{subRequirement.type} set complete");
 				SetComplete();
-			}
 			else
-			{
-				Utils.LogDebug($"{subRequirement.parent.name}.{subRequirement.type} Set incomplete");
 				SetIncomplete();
-			}
 
 			return completed;
 		}

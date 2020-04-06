@@ -23,19 +23,25 @@ namespace KerbalismContracts
 		{
 			base.OnUpdate();
 
-			if (conditionMet)
+			if (vessel != null && conditionMet)
 			{
-				Utils.LogDebug($"set complete");
 				SetComplete();
 			}
 		}
 
 		protected override string GetTitle()
 		{
-			if (string.IsNullOrEmpty(statusLabel))
-				return KERBALISM.Lib.Ellipsis(vessel.GetDisplayName(), 35);
+			if (vessel == null)
+				return "";
 
-			return KERBALISM.Lib.Ellipsis(vessel.GetDisplayName(), 35) + "\n" + statusLabel;
+			string vesselName = vessel.GetDisplayName();
+			if (vesselName == null)
+				vesselName = vessel.name;
+
+			if (string.IsNullOrEmpty(statusLabel))
+				return KERBALISM.Lib.Ellipsis(vesselName, 35);
+
+			return KERBALISM.Lib.Ellipsis(vesselName, 35) + "\n" + statusLabel;
 		}
 	}
 }

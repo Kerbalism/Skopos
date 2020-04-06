@@ -118,5 +118,11 @@ namespace KerbalismContracts
 		{
 			return false;
 		}
+
+		/// <summary> The minimum required frequency needed for reliable simulation </summary>
+		internal double MinUpdateFrequency()
+		{
+			return double.MaxValue;
+		}
 	}
 }
