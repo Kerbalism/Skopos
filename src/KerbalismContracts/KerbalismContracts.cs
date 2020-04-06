@@ -146,6 +146,7 @@ namespace KerbalismContracts
 			KerbalismContractsMain.KerbalismInitialized = false;
 
 			bodyData.Clear();
+			EvaluationContext.Clear();
 			
 			if (node.HasNode("BodyData"))
 			{

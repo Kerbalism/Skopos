@@ -233,7 +233,19 @@ namespace KerbalismContracts
 
 		protected EvaluationContext CreateContext(double secondsSinceLastUpdate)
 		{
-			return new EvaluationContext(Utils.FetchWaypoint(Root, waypoint_index));
+			double now = Planetarium.GetUniversalTime();
+			List<double> steps = new List<double>();
+
+			int stepsNeeded = (int)Math.Ceiling(secondsSinceLastUpdate / requirement.max_step);
+			double stepLength = secondsSinceLastUpdate / (double)stepsNeeded;
+
+			Utils.LogDebug($"Steps: last was {secondsSinceLastUpdate} need {stepsNeeded} step, length {stepLength} (max is {requirement.max_step})");
+
+			for(int s = stepsNeeded - 1; s > 1; s--)
+				steps.Add(now - s * stepLength);
+			steps.Add(now);
+
+			return new EvaluationContext(steps, Utils.FetchWaypoint(Root, waypoint_index));
 		}
 		
 		protected override void OnUpdate()
@@ -267,25 +279,38 @@ namespace KerbalismContracts
 				vessels.Add(vessel);
 			}
 
-			bool allConditionsMet = vessels.Count > 0;
-			int vesselsMeetingAllConditions = 0;
-
-			foreach (Vessel vessel in vessels)
+			int stepCount = context.steps.Count;
+			for(int i = 0; i < stepCount; i++)
 			{
-				string statusLabel;
-				bool conditionMet = VesselMeetsCondition(vessel, out statusLabel);
-				if (conditionMet) vesselsMeetingAllConditions++;
-				AddParameter(new VesselStatusParameter(vessel, statusLabel, conditionMet));
-			}
+				var step = context.steps[i];
+				context.SetStep(step);
 
-			allConditionsMet &= vesselsMeetingAllConditions >= min_vessels;
-			allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
-			if (durationParameter == null)
-				SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
-			else
-			{
-				durationParameter.Update(allConditionsMet);
-				SetState(durationParameter.State);
+				bool allConditionsMet = vessels.Count > 0;
+				int vesselsMeetingAllConditions = 0;
+
+				foreach (Vessel vessel in vessels)
+				{
+					string statusLabel;
+					bool conditionMet = VesselMeetsCondition(vessel, out statusLabel);
+					if (conditionMet) vesselsMeetingAllConditions++;
+
+					if (i + 1 == stepCount)
+						AddParameter(new VesselStatusParameter(vessel, statusLabel, conditionMet));
+				}
+
+				allConditionsMet &= vesselsMeetingAllConditions >= min_vessels;
+				allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
+
+				if (durationParameter == null)
+					SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
+				else
+				{
+					durationParameter.Update(allConditionsMet);
+					SetState(durationParameter.State);
+				}
+
+				if (state == ParameterState.Complete)
+					break;
 			}
 
 			ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);

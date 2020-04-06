@@ -92,9 +92,9 @@ namespace KerbalismContracts
 		{
 			AboveWaypointState state = new AboveWaypointState();
 
-			state.vesselPosition = context.VesselPosition(vessel, 0);
-			state.elevation = GetElevation(context.waypoint, state.vesselPosition);
-			state.distance = GetDistance(context.waypoint, state.vesselPosition);
+			state.vesselPosition = context.VesselPosition(vessel);
+			state.elevation = GetElevation(context, state.vesselPosition);
+			state.distance = GetDistance(context, state.vesselPosition);
 
 			// TODO determine line of sight obstruction (there may be an occluding body)
 
@@ -118,14 +118,14 @@ namespace KerbalismContracts
 			
 			if (min_relative_speed > 0)
 			{
-				double distanceIn10s = GetDistance(context.waypoint, context.VesselPosition(vessel, 10));
+				double distanceIn10s = GetDistance(context, context.VesselPosition(vessel, 10));
 				state.distanceChange = Math.Abs((state.distance - distanceIn10s) / 10.0);
 				state.changeRequirementsMet |= state.distanceChange >= min_relative_speed;
 			}
 
 			if (min_radial_velocity > 0 || max_radial_velocity > 0)
 			{
-				double elevationIn10s = GetElevation(context.waypoint, context.VesselPosition(vessel, 10));
+				double elevationIn10s = GetElevation(context, context.VesselPosition(vessel, 10));
 				state.radialVelocity = Math.Abs((state.elevation - elevationIn10s) * 6.0); // radial velocity is in degrees/minute
 
 				state.radialVelocityRequirementMet = true;
@@ -181,10 +181,10 @@ namespace KerbalismContracts
 			return label;
 		}
 
-		private double GetElevation(Waypoint waypoint, Vector3d vesselPosition)
+		private double GetElevation(EvaluationContext context, Vector3d vesselPosition)
 		{
-			var waypointPosition = waypoint.celestialBody.GetWorldSurfacePosition(waypoint.latitude, waypoint.longitude, 0);
-			var bodyPosition = waypoint.celestialBody.position;
+			Vector3d waypointPosition = context.WaypointSurfacePosition();
+			Vector3d bodyPosition = context.BodyPosition();
 
 			var a = Vector3d.Angle(vesselPosition - bodyPosition, waypointPosition - bodyPosition);
 			var b = Vector3d.Angle(waypointPosition - vesselPosition, bodyPosition - vesselPosition);
@@ -193,9 +193,9 @@ namespace KerbalismContracts
 			return 90.0 - a - b;
 		}
 
-		private double GetDistance(Waypoint waypoint, Vector3d vesselPosition)
+		private double GetDistance(EvaluationContext context, Vector3d vesselPosition)
 		{
-			var waypointPosition = waypoint.celestialBody.GetWorldSurfacePosition(waypoint.latitude, waypoint.longitude, 0);
+			var waypointPosition = context.WaypointSurfacePosition();
 			var v = vesselPosition - waypointPosition;
 			return v.magnitude;
 		}

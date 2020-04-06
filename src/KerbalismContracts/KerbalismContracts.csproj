@@ -114,7 +114,7 @@
     <Compile Include="SubRequirements\CommLink.cs" />
     <Compile Include="SubRequirements\Powered.cs" />
     <Compile Include="SubRequirements\Base\SubRequirementState.cs" />
-    <Compile Include="SubRequirements\Base\EvaluationContext.cs" />
+    <Compile Include="SubRequirements\Evaluation\EvaluationContext.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
@@ -128,6 +128,7 @@
     <Folder Include="SubRequirements\" />
     <Folder Include="CC\Parameter\SubParams\" />
     <Folder Include="SubRequirements\Base\" />
+    <Folder Include="SubRequirements\Evaluation\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
