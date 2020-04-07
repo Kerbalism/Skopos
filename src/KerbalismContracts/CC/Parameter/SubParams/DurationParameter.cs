@@ -42,12 +42,10 @@ namespace KerbalismContracts
 			if (resetAfter == 0)
 			{
 				resetAfter = now + allowed_downtime;
-				Utils.LogDebug($"BAD: will fail at {resetAfter}");
 			}
 
 			if (now > resetAfter)
 			{
-				Utils.LogDebug($"reset at {now} - resetting timer");
 				ResetTimer();
 			}
 		}
@@ -57,17 +55,14 @@ namespace KerbalismContracts
 			if (doneAfter == 0)
 			{
 				doneAfter = now + duration;
-				Utils.LogDebug($"GOOD: done after {doneAfter}");
 			}
 			if (resetAfter != 0)
 			{
 				resetAfter = 0;
-				Utils.LogDebug($"GOOD at {now}, reset allowed downtime");
 			}
 
 			if (now > doneAfter)
 			{
-				Utils.LogDebug($"done at {now}");
 				SetComplete();
 			}
 		}

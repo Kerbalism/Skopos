@@ -18,14 +18,16 @@ namespace KerbalismContracts
 			internal Vector3d position;
 			internal double time;
 
-			public VesselPositionEntry(Vessel vessel, double time)
+			public VesselPositionEntry(Vessel vessel, Vector3d bodyPosition, double time)
 			{
 				this.vessel = vessel;
 				this.time = time;
-				this.position = vessel.orbit.getPositionAtUT(time);
+				this.position = bodyPosition + vessel.orbit.getRelativePositionAtUT(time).xzy;
 			}
 		}
-		private static readonly Dictionary<Guid, LinkedList<VesselPositionEntry>> vesselPositions = new Dictionary<Guid, LinkedList<VesselPositionEntry>>();
+
+		// TODO evaluate the quickest caching method here. maybe sorted list doesn't have an advantage on performance, could be that a plain flat list is quicker
+		private static readonly Dictionary<Guid, SortedList<double, VesselPositionEntry>> vesselPositions = new Dictionary<Guid, SortedList<double, VesselPositionEntry>>();
 
 		private class BodyPositionEntry
 		{
@@ -40,10 +42,10 @@ namespace KerbalismContracts
 				if (body.orbit == null) // suns?
 					position = body.position;
 				else
-					position = body.orbit.getPositionAtUT(time);
+					position = body.orbit.getTruePositionAtUT(time);
 			}
 		}
-		private static readonly Dictionary<int, LinkedList<BodyPositionEntry>> bodyPositions = new Dictionary<int, LinkedList<BodyPositionEntry>>();
+		private static readonly Dictionary<int, SortedList<double, BodyPositionEntry>> bodyPositions = new Dictionary<int, SortedList<double, BodyPositionEntry>>();
 
 		private class WaypointPositionEntry
 		{
@@ -69,7 +71,7 @@ namespace KerbalismContracts
 				position = BodyFrame.LocalToWorld(body.GetRelSurfacePosition(waypoint.latitude, waypoint.longitude, 0).xzy).xzy + bodyPosition;
 			}
 		}
-		private static readonly Dictionary<Guid, LinkedList<WaypointPositionEntry>> waypointPositions = new Dictionary<Guid, LinkedList<WaypointPositionEntry>>();
+		private static readonly Dictionary<Guid, SortedList<double, WaypointPositionEntry>> waypointPositions = new Dictionary<Guid, SortedList<double, WaypointPositionEntry>>();
 
 		public static void Clear()
 		{
@@ -87,21 +89,21 @@ namespace KerbalismContracts
 		internal Vector3d VesselPosition(Vessel vessel, int secondsAgo = 0)
 		{
 			if (!vesselPositions.ContainsKey(vessel.id))
-				vesselPositions.Add(vessel.id, new LinkedList<VesselPositionEntry>());
+				vesselPositions.Add(vessel.id, new SortedList<double, VesselPositionEntry>());
 
 			var positionList = vesselPositions[vessel.id];
+
 			double t = now - secondsAgo;
-			foreach(VesselPositionEntry entry in positionList)
-			{
-				if (entry.time == t)
-					return entry.position;
-			}
+			VesselPositionEntry entry;
+			if(positionList.TryGetValue(t, out entry))
+				return entry.position;
 
-			while(positionList.Count > 150)
-				positionList.RemoveLast();
+			while (positionList.Count > 150)
+				positionList.RemoveAt(0);
 
-			var newEntry = new VesselPositionEntry(vessel, t);
-			positionList.AddFirst(newEntry);
+			var vesselBodyPosition = BodyPosition(vessel.mainBody, secondsAgo);
+			var newEntry = new VesselPositionEntry(vessel, vesselBodyPosition, t);
+			positionList.Add(t, newEntry);
 			return newEntry.position;
 		}
 
@@ -111,40 +113,36 @@ namespace KerbalismContracts
 				return body.position;
 
 			if (!bodyPositions.ContainsKey(body.flightGlobalsIndex))
-				bodyPositions.Add(body.flightGlobalsIndex, new LinkedList<BodyPositionEntry>());
+				bodyPositions.Add(body.flightGlobalsIndex, new SortedList<double, BodyPositionEntry>());
 
 			var positionList = bodyPositions[body.flightGlobalsIndex];
-			foreach (BodyPositionEntry entry in positionList)
-			{
-				if (entry.time == now - secondsAgo)
-					return entry.position;
-			}
+			BodyPositionEntry entry;
+			if(positionList.TryGetValue(now - secondsAgo, out entry))
+				return entry.position;
 
 			while (positionList.Count > 150)
-				positionList.RemoveLast();
+				positionList.RemoveAt(0);
 
 			var newEntry = new BodyPositionEntry(body, now - secondsAgo);
-			positionList.AddFirst(newEntry);
+			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}
 
 		internal Vector3d WaypointSurfacePosition(int secondsAgo = 0)
 		{
 			if (!waypointPositions.ContainsKey(waypoint.navigationId))
-				waypointPositions.Add(waypoint.navigationId, new LinkedList<WaypointPositionEntry>());
+				waypointPositions.Add(waypoint.navigationId, new SortedList<double, WaypointPositionEntry>());
 
 			var positionList = waypointPositions[waypoint.navigationId];
-			foreach(WaypointPositionEntry entry in positionList)
-			{
-				if (entry.time == now - secondsAgo)
-					return entry.position;
-			}
+			WaypointPositionEntry entry;
+			if(positionList.TryGetValue(now - secondsAgo, out entry))
+				return entry.position;
 
 			while (positionList.Count > 150)
-				positionList.RemoveLast();
+				positionList.RemoveAt(0);
 
 			var newEntry = new WaypointPositionEntry(waypoint, now - secondsAgo, BodyPosition(waypoint.celestialBody));
-			positionList.AddFirst(newEntry);
+			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}
 
