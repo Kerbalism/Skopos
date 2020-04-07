@@ -27,6 +27,8 @@ namespace KerbalismContracts
 			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "id", x => requirementId = x, this, "");
 			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "min_vessels", x => min_vessels = x, this, 1);
 			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "waypoint_index", x => waypoint_index = x, this, 0);
+			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "hideChildren", x => hideChildren = x, this, false);
+			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "title", x => title = x, this, "");
 
 			return valid;
 		}
@@ -40,7 +42,7 @@ namespace KerbalismContracts
 				return null;
 			}
 
-			var result = new KerbalismContractParameter(requirementId, duration.Value, allowed_downtime.Value, min_vessels, waypoint_index);
+			var result = new KerbalismContractParameter(title, requirementId, duration.Value, allowed_downtime.Value, min_vessels, waypoint_index, hideChildren);
 
 			if (requirement.NeedsWaypoint())
 			{
@@ -75,13 +77,15 @@ namespace KerbalismContracts
 
 		public KerbalismContractParameter() { }
 
-		public KerbalismContractParameter(string requirementId, double duration, double allowed_downtime, int min_vessels, int waypoint_index)
+		public KerbalismContractParameter(string title, string requirementId, double duration, double allowed_downtime, int min_vessels, int waypoint_index, bool hideChildren)
 		{
 			this.requirementId = requirementId;
 			this.duration = duration;
 			this.allowed_downtime = allowed_downtime;
 			this.min_vessels = min_vessels;
 			this.waypoint_index = waypoint_index;
+			this.title = title;
+			this.hideChildren = hideChildren;
 
 			this.requirement = Configuration.Requirement(requirementId);
 
@@ -249,8 +253,6 @@ namespace KerbalismContracts
 			return new EvaluationContext(steps, Utils.FetchWaypoint(Root, waypoint_index));
 		}
 
-		private static double _lastTs = 0;
-
 		protected override void OnUpdate()
 		{
 			base.OnUpdate();
@@ -289,11 +291,11 @@ namespace KerbalismContracts
 				context.SetTime(now);
 
 				int vesselsMeetingAllConditions = 0;
+				bool doLabelUpdate = !hideChildren && i + 1 == stepCount;
 
 				foreach (Vessel vessel in vessels)
 				{
 					string statusLabel;
-					bool doLabelUpdate = i + 1 == stepCount;
 
 					bool conditionMet = VesselMeetsCondition(vessel, doLabelUpdate, out statusLabel);
 					if (conditionMet) vesselsMeetingAllConditions++;
@@ -304,8 +306,6 @@ namespace KerbalismContracts
 
 				bool allConditionsMet = vesselsMeetingAllConditions >= min_vessels;
 				allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
-
-				_lastTs = now;
 
 				if (durationParameter == null)
 					SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
