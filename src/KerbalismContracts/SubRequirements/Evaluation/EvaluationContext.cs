@@ -148,9 +148,9 @@ namespace KerbalismContracts
 			return newEntry.position;
 		}
 
-		internal void SetStep(double step)
+		internal void SetTime(double now)
         {
-			this.now = Math.Floor(step); // we're not interested in sub-second precision
+			this.now = Math.Floor(now); // we're not interested in sub-second precision
         }
 	}
 }

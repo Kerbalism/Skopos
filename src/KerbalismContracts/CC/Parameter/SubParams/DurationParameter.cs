@@ -26,7 +26,8 @@ namespace KerbalismContracts
 
 		private void ResetTimer()
 		{
-			doneAfter = resetAfter = 0;
+			doneAfter = 0;
+			resetAfter = double.MaxValue;
 			SetIncomplete();
 		}
 
@@ -39,20 +40,36 @@ namespace KerbalismContracts
 		private void UpdateBad(double now)
 		{
 			if (resetAfter == 0)
+			{
 				resetAfter = now + allowed_downtime;
+				Utils.LogDebug($"BAD: will fail at {resetAfter}");
+			}
 
-			if(now > resetAfter)
+			if (now > resetAfter)
+			{
+				Utils.LogDebug($"reset at {now} - resetting timer");
 				ResetTimer();
+			}
 		}
 
 		private void UpdateGood(double now)
 		{
-			resetAfter = 0;
 			if (doneAfter == 0)
+			{
 				doneAfter = now + duration;
+				Utils.LogDebug($"GOOD: done after {doneAfter}");
+			}
+			if (resetAfter != 0)
+			{
+				resetAfter = 0;
+				Utils.LogDebug($"GOOD at {now}, reset allowed downtime");
+			}
 
 			if (now > doneAfter)
+			{
+				Utils.LogDebug($"done at {now}");
 				SetComplete();
+			}
 		}
 
 		protected override string GetHashString()

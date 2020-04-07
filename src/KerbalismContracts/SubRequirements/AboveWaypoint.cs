@@ -140,6 +140,9 @@ namespace KerbalismContracts
 			meetsCondition &= state.changeRequirementsMet;
 
 			state.requirementMet = meetsCondition;
+
+			Utils.LogDebug($"{context.now.ToString("F1")} {meetsCondition}: el {state.elevation.ToString("F1")}° ∆el {state.radialVelocity.ToString("F1")}°/m ∆d {state.distanceChange.ToString("F1")}m/s ");
+
 			return state;
 		}
 

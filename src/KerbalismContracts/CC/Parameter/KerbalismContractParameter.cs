@@ -186,7 +186,7 @@ namespace KerbalismContracts
 		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
 		/// </summary>
 		/// <param name="label">label to add to this vessel in the status display</param>
-		private bool VesselMeetsCondition(Vessel vessel, bool updateLabel, out string label)
+		private bool VesselMeetsCondition(Vessel vessel, bool doUpdateLabel, out string label)
 		{
 			label = string.Empty;
 			bool result = true;
@@ -200,7 +200,7 @@ namespace KerbalismContracts
 
 				result &= state.requirementMet;
 
-				if (updateLabel)
+				if (doUpdateLabel)
 				{
 					var vesselLabel = sp.subRequirement.GetLabel(vessel, context, state);
 					if (!string.IsNullOrEmpty(vesselLabel))
@@ -242,15 +242,15 @@ namespace KerbalismContracts
 			double stepsNeeded = secondsSinceLastUpdate / requirement.max_step;
 			double stepLength = secondsSinceLastUpdate / Math.Ceiling(stepsNeeded);
 
-			Utils.LogDebug($"Steps: step duration {secondsSinceLastUpdate} need {stepsNeeded} steps at {stepLength} each (max is {requirement.max_step})");
-
-			for(int s = (int)Math.Floor(stepsNeeded); s > 1; s--)
+			for (int s = (int)stepsNeeded - 1; s > 1; s--)
 				steps.Add(now - s * stepLength);
 			steps.Add(now);
 
 			return new EvaluationContext(steps, Utils.FetchWaypoint(Root, waypoint_index));
 		}
-		
+
+		private static double _lastTs = 0;
+
 		protected override void OnUpdate()
 		{
 			base.OnUpdate();
@@ -285,32 +285,33 @@ namespace KerbalismContracts
 			int stepCount = context.steps.Count;
 			for(int i = 0; i < stepCount; i++)
 			{
-				var step = context.steps[i];
-				context.SetStep(step);
+				var now = context.steps[i];
+				context.SetTime(now);
 
-				bool allConditionsMet = vessels.Count > 0;
 				int vesselsMeetingAllConditions = 0;
 
 				foreach (Vessel vessel in vessels)
 				{
 					string statusLabel;
-					bool updateLabel = i + 1 == stepCount;
+					bool doLabelUpdate = i + 1 == stepCount;
 
-					bool conditionMet = VesselMeetsCondition(vessel, updateLabel, out statusLabel);
+					bool conditionMet = VesselMeetsCondition(vessel, doLabelUpdate, out statusLabel);
 					if (conditionMet) vesselsMeetingAllConditions++;
 
-					if (updateLabel)
+					if (doLabelUpdate)
 						AddParameter(new VesselStatusParameter(vessel, statusLabel, conditionMet));
 				}
 
-				allConditionsMet &= vesselsMeetingAllConditions >= min_vessels;
+				bool allConditionsMet = vesselsMeetingAllConditions >= min_vessels;
 				allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
+
+				_lastTs = now;
 
 				if (durationParameter == null)
 					SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
 				else
 				{
-					durationParameter.Update(allConditionsMet, step);
+					durationParameter.Update(allConditionsMet, now);
 					SetState(durationParameter.State);
 				}
 
