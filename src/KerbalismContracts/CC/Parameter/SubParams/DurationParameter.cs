@@ -9,7 +9,7 @@ namespace KerbalismContracts
 	public class DurationParameter : ContractParameter
 	{
 		internal double duration;
-		internal double allowed_downtime;
+		internal double allowedDowntime;
 
 		// internal state
 		internal double doneAfter;
@@ -17,10 +17,10 @@ namespace KerbalismContracts
 
 		public DurationParameter() { }
 
-		public DurationParameter(double duration, double allowed_downtime)
+		public DurationParameter(double duration, double allowedDowntime)
 		{
 			this.duration = duration;
-			this.allowed_downtime = allowed_downtime;
+			this.allowedDowntime = allowedDowntime;
 			ResetTimer();
 		}
 
@@ -41,7 +41,7 @@ namespace KerbalismContracts
 		{
 			if (resetAfter == 0)
 			{
-				resetAfter = now + allowed_downtime;
+				resetAfter = now + allowedDowntime;
 			}
 
 			if (now > resetAfter)
@@ -76,9 +76,9 @@ namespace KerbalismContracts
 		{
 			if (doneAfter == 0)
 			{
-				if (allowed_downtime > 0)
+				if (allowedDowntime > 0)
 					return Localizer.Format("Duration: <<1>> (allows interruptions up to <<2>>)",
-						DurationUtil.StringValue(duration), DurationUtil.StringValue(allowed_downtime));
+						DurationUtil.StringValue(duration), DurationUtil.StringValue(allowedDowntime));
 
 				return Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
 			}
@@ -106,7 +106,7 @@ namespace KerbalismContracts
 			base.OnSave(node);
 
 			node.AddValue("duration", duration);
-			node.AddValue("allowed_downtime", allowed_downtime);
+			node.AddValue("allowedDowntime", allowedDowntime);
 
 			node.AddValue("doneAfter", doneAfter);
 			node.AddValue("resetAfter", resetAfter);
@@ -117,7 +117,7 @@ namespace KerbalismContracts
 			base.OnLoad(node);
 
 			duration = ConfigNodeUtil.ParseValue<double>(node, "duration", 0);
-			allowed_downtime = ConfigNodeUtil.ParseValue<double>(node, "allowed_downtime", 0);
+			allowedDowntime = ConfigNodeUtil.ParseValue<double>(node, "allowedDowntime", 0);
 
 			doneAfter = ConfigNodeUtil.ParseValue<double>(node, "doneAfter", 0);
 			resetAfter = ConfigNodeUtil.ParseValue<double>(node, "resetAfter", 0);

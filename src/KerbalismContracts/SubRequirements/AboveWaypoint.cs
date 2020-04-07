@@ -21,27 +21,27 @@ namespace KerbalismContracts
 
 	public class AboveWaypoint : SubRequirement
 	{
-		private double min_elevation;
+		private double minElevation;
 
-		private double min_distance;
-		private double max_distance;
+		private double minDistance;
+		private double maxDistance;
 
 		// min distance change will be ORed with radial velocity change requirements.
 		// so you either need a minimal distance change, OR a minimal radial velocity.
-		private double min_relative_speed;
+		private double minRelativeSpeed;
 
 		// radial velocities are in degrees per minute
-		private double min_radial_velocity;
-		private double max_radial_velocity;
+		private double minRadialVelocity;
+		private double maxRadialVelocity;
 
 		public AboveWaypoint(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
-			min_elevation = Lib.ConfigValue(node, "min_elevation", 0.0);
-			min_radial_velocity = Lib.ConfigValue(node, "min_radial_velocity", 0.0);
-			max_radial_velocity = Lib.ConfigValue(node, "max_radial_velocity", 0.0);
-			min_distance = Lib.ConfigValue(node, "min_distance", 0.0);
-			max_distance = Lib.ConfigValue(node, "max_distance", 0.0);
-			min_relative_speed = Lib.ConfigValue(node, "min_relative_speed", 0.0);
+			minElevation = Lib.ConfigValue(node, "minElevation", 0.0);
+			minRadialVelocity = Lib.ConfigValue(node, "minRadialVelocity", 0.0);
+			maxRadialVelocity = Lib.ConfigValue(node, "maxRadialVelocity", 0.0);
+			minDistance = Lib.ConfigValue(node, "minDistance", 0.0);
+			maxDistance = Lib.ConfigValue(node, "maxDistance", 0.0);
+			minRelativeSpeed = Lib.ConfigValue(node, "minRelativeSpeed", 0.0);
 		}
 
 		public override string GetTitle(EvaluationContext context)
@@ -50,22 +50,22 @@ namespace KerbalismContracts
 			if (context?.waypoint != null)
 				waypointName = context.waypoint.name;
 
-			string result = Localizer.Format("Min. <<1>>° above <<2>>", min_elevation.ToString("F1"), waypointName);
+			string result = Localizer.Format("Min. <<1>>° above <<2>>", minElevation.ToString("F1"), waypointName);
 
-			if (min_radial_velocity > 0)
-				result += ", " + Localizer.Format("min. radial vel. <<1>> °/m", min_radial_velocity.ToString("F1"));
+			if (minRadialVelocity > 0)
+				result += ", " + Localizer.Format("min. radial vel. <<1>> °/m", minRadialVelocity.ToString("F1"));
 
-			if (max_radial_velocity > 0)
-				result += ", " + Localizer.Format("max. radial vel. <<1>> °/m", max_radial_velocity.ToString("F1"));
+			if (maxRadialVelocity > 0)
+				result += ", " + Localizer.Format("max. radial vel. <<1>> °/m", maxRadialVelocity.ToString("F1"));
 
-			if (min_distance > 0)
-				result += ", " + Localizer.Format("min. distance <<1>>", Lib.HumanReadableDistance(min_distance));
+			if (minDistance > 0)
+				result += ", " + Localizer.Format("min. distance <<1>>", Lib.HumanReadableDistance(minDistance));
 
-			if (max_distance > 0)
-				result += ", " + Localizer.Format("max. distance <<1>>", Lib.HumanReadableDistance(max_distance));
+			if (maxDistance > 0)
+				result += ", " + Localizer.Format("max. distance <<1>>", Lib.HumanReadableDistance(maxDistance));
 
-			if (min_relative_speed > 0)
-				result += ", " + Localizer.Format("min. relative vel. <<1>>", Lib.HumanReadableSpeed(min_relative_speed));
+			if (minRelativeSpeed > 0)
+				result += ", " + Localizer.Format("min. relative vel. <<1>>", Lib.HumanReadableSpeed(minRelativeSpeed));
 
 			return result;
 		}
@@ -98,41 +98,41 @@ namespace KerbalismContracts
 
 			// TODO determine line of sight obstruction (there may be an occluding body)
 
-			bool meetsCondition = state.elevation >= min_elevation;
+			bool meetsCondition = state.elevation >= minElevation;
 
-			if (min_distance > 0 || max_distance > 0)
+			if (minDistance > 0 || maxDistance > 0)
 			{
 				state.distanceMet = true;
-				if (min_distance > 0)
-					state.distanceMet &= min_distance <= state.distance;
-				if (max_distance > 0)
-					state.distanceMet &= max_distance >= state.distance;
+				if (minDistance > 0)
+					state.distanceMet &= minDistance <= state.distance;
+				if (maxDistance > 0)
+					state.distanceMet &= maxDistance >= state.distance;
 
 				meetsCondition &= state.distanceMet;
 			}
 
 			state.changeRequirementsMet = true;
 
-			if (min_relative_speed > 0 || min_radial_velocity > 0 || max_radial_velocity > 0)
+			if (minRelativeSpeed > 0 || minRadialVelocity > 0 || maxRadialVelocity > 0)
 				state.changeRequirementsMet = false;
 			
-			if (min_relative_speed > 0)
+			if (minRelativeSpeed > 0)
 			{
 				state.distance10sago = GetDistance(vessel, context, 10);
 				state.distanceChange = Math.Abs((state.distance10sago - state.distance) / 10.0);
-				state.changeRequirementsMet |= state.distanceChange >= min_relative_speed;
+				state.changeRequirementsMet |= state.distanceChange >= minRelativeSpeed;
 			}
 
-			if (min_radial_velocity > 0 || max_radial_velocity > 0)
+			if (minRadialVelocity > 0 || maxRadialVelocity > 0)
 			{
 				state.elev10sago = GetElevation(vessel, context, 10);
 				state.radialVelocity = Math.Abs((state.elev10sago - state.elevation) * 6.0); // radial velocity is in degrees/minute
 
 				state.radialVelocityRequirementMet = true;
-				if (min_radial_velocity > 0)
-					state.radialVelocityRequirementMet &= state.radialVelocity >= min_radial_velocity;
-				if (max_radial_velocity > 0)
-					state.radialVelocityRequirementMet &= state.radialVelocity <= max_radial_velocity;
+				if (minRadialVelocity > 0)
+					state.radialVelocityRequirementMet &= state.radialVelocity >= minRadialVelocity;
+				if (maxRadialVelocity > 0)
+					state.radialVelocityRequirementMet &= state.radialVelocity <= maxRadialVelocity;
 
 				state.changeRequirementsMet |= state.radialVelocityRequirementMet;
 			}
@@ -151,29 +151,29 @@ namespace KerbalismContracts
 			AboveWaypointState wpState = (AboveWaypointState)state;
 
 			string elevationString = Lib.BuildString(wpState.elevation.ToString("F1"), " °");
-			if (wpState.elevation < min_elevation)
+			if (wpState.elevation < minElevation)
 				label = Localizer.Format("elevation above <<1>>: <<2>>",
 					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Red));
-			else if (wpState.elevation - (90 - min_elevation) / 3 < min_elevation)
+			else if (wpState.elevation - (90 - minElevation) / 3 < minElevation)
 				label = Localizer.Format("elevation above <<1>>: <<2>>",
 					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Yellow));
 			else
 				label = Localizer.Format("elevation above <<1>>: <<2>>",
 					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Green));
 
-			if (min_distance > 0 || max_distance > 0)
+			if (minDistance > 0 || maxDistance > 0)
 			{
 				label += "\n\t" + Localizer.Format("distance: <<1>>", Lib.Color(Lib.HumanReadableDistance(wpState.distance),
 					wpState.distanceMet ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 
-			if (min_relative_speed > 0)
+			if (minRelativeSpeed > 0)
 			{
 				label += "\n\t" + Localizer.Format("relative velocity: <<1>>", Lib.Color(Lib.HumanReadableSpeed(wpState.distanceChange),
-					wpState.distanceChange >= min_relative_speed ? Lib.Kolor.Green : Lib.Kolor.Red));
+					wpState.distanceChange >= minRelativeSpeed ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 
-			if (min_radial_velocity > 0 || max_radial_velocity > 0)
+			if (minRadialVelocity > 0 || maxRadialVelocity > 0)
 			{
 				label += "\n\t" + Localizer.Format("angular velocity: <<1>>", Lib.Color(wpState.radialVelocity.ToString("F1") + " °/m",
 					wpState.radialVelocityRequirementMet ? Lib.Kolor.Green : Lib.Kolor.Red));

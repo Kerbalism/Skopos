@@ -13,12 +13,12 @@ namespace KerbalismContracts
 	public class CommLink : SubRequirement
 	{
 		private string description;
-		private double min_bandwidth;
+		private double minBandwidth;
 
 		public CommLink(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
 			description = Lib.ConfigValue<string>(node, "description", null);
-			min_bandwidth = Lib.ConfigValue(node, "min_bandwidth", 0.0);
+			minBandwidth = Lib.ConfigValue(node, "minBandwidth", 0.0);
 		}
 
 		public override string GetTitle(EvaluationContext context)
@@ -26,8 +26,8 @@ namespace KerbalismContracts
 			if (!string.IsNullOrEmpty(description))
 				return description;
 
-			description = min_bandwidth > 0
-				? Localizer.Format("Min. Bandwidth <<1>>", Lib.HumanReadableDataRate(min_bandwidth))
+			description = minBandwidth > 0
+				? Localizer.Format("Min. Bandwidth <<1>>", Lib.HumanReadableDataRate(minBandwidth))
 				: "Online";
 
 			return description;
@@ -42,10 +42,10 @@ namespace KerbalismContracts
 		{
 			CommLinkState state = new CommLinkState();
 
-			if (min_bandwidth > 0)
+			if (minBandwidth > 0)
 			{
 				state.bw = API.VesselConnectionRate(vessel);
-				state.requirementMet = state.bw >= min_bandwidth;
+				state.requirementMet = state.bw >= minBandwidth;
 			}
 			else
 			{
@@ -58,12 +58,12 @@ namespace KerbalismContracts
 		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
 		{
 			CommLinkState commLinkState = (CommLinkState)state;
-			if (min_bandwidth > 0)
+			if (minBandwidth > 0)
 			{
 				var color = Lib.Kolor.Orange;
-				if (commLinkState.bw > min_bandwidth * 1.2)
+				if (commLinkState.bw > minBandwidth * 1.2)
 					color = Lib.Kolor.Green;
-				if (commLinkState.bw < min_bandwidth)
+				if (commLinkState.bw < minBandwidth)
 					color = Lib.Kolor.Red;
 
 				return Lib.Color(Lib.HumanReadableDataRate(commLinkState.bw), color);
