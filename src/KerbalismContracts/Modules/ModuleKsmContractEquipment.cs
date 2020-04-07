@@ -16,11 +16,10 @@ namespace KerbalismContracts
 		public bool isRunning;  // true/false, if process controller is turned on or not
 		public string equipmentId;
 		
-		public EquipmentState state = EquipmentState.nominal;
+		public EquipmentState state = EquipmentState.off;
 
 		public override void OnFirstInstantiate(ProtoPartModuleSnapshot protoModule, ProtoPartSnapshot protoPart)
 		{
-			isRunning = modulePrefab.running;
 			equipmentId = modulePrefab.id;
 		}
 
@@ -56,10 +55,11 @@ namespace KerbalismContracts
 		[KSPField] public double RequiredBandwidth;
 		[KSPField] public double RequiredEC;
 		[KSPField] public string uiGroup;
+		[KSPField] public string uiGroupName;
+		[KSPField] public string animationName = string.Empty;
+		[KSPField] public bool animReverse = false;
 
-		[KSPField]
-		[UI_Toggle(scene = UI_Scene.All, affectSymCounterparts = UI_Scene.None)]
-		public bool running;
+		public Animator deployAnimator;
 
 		static KERBALISM.ResourceBroker EquipmentBroker = KERBALISM.ResourceBroker.GetOrCreate("ksmEquipment", KERBALISM.ResourceBroker.BrokerCategory.VesselSystem, "Equipment");
 
@@ -77,20 +77,16 @@ namespace KerbalismContracts
 
 		public override void OnStart(StartState state)
 		{
-			var toggleEvent = Events["ToggleEvent"];
-			toggleEvent.guiActive = toggleEvent.guiActiveEditor = true;
-			toggleEvent.active = toggleEvent.guiActiveUnfocused = true;
-			toggleEvent.guiActiveUncommand = toggleEvent.externalToEVAOnly = true;
-			toggleEvent.requireFullControl = false;
-
-
-			running = moduleData.isRunning;
+			deployAnimator = new Animator(part, animationName, animReverse);
+			deployAnimator.Still(moduleData.isRunning ? 1f : 0f);
 
 			if (uiGroup != null)
-				Events["ToggleEvent"].group = new BasePAWGroup(uiGroup, uiGroup, false);
+			{
+				Events["ToggleEvent"].group = new BasePAWGroup(uiGroupName ?? uiGroup, uiGroup, false);
+			}
 		}
 
-		[KSPEvent]
+		[KSPEvent(active = true, guiActive = true, guiActiveEditor = true, requireFullControl = true, guiName = "_")]
 		public void ToggleEvent()
 		{
 			Toggle(moduleData, true);
@@ -102,11 +98,14 @@ namespace KerbalismContracts
 
 			if (isLoaded)
 			{
-				equipmentData.loadedModule.running = equipmentData.isRunning;
+				equipmentData.loadedModule.deployAnimator.Play(!equipmentData.isRunning, false, speed: Lib.IsEditor ? 5f : 1f);
 
 				// refresh VAB/SPH ui
 				if (Lib.IsEditor)
+				{
+					equipmentData.state = equipmentData.isRunning ? EquipmentState.nominal : EquipmentState.off;
 					GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
+				}
 			}
 		}
 
@@ -176,7 +175,7 @@ namespace KerbalismContracts
 
 		public void PlannerUpdate(VesselResHandler resHandler, VesselDataShip vesselData)
 		{
-			if(running)
+			if(moduleData.isRunning)
 			{
 				resHandler.ElectricCharge.Consume(RequiredEC, EquipmentBroker);
 			}
