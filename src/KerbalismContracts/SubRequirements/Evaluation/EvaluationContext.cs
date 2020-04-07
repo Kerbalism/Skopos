@@ -71,6 +71,14 @@ namespace KerbalismContracts
 				position = BodyFrame.LocalToWorld(body.GetRelSurfacePosition(waypoint.latitude, waypoint.longitude, 0).xzy).xzy + bodyPosition;
 			}
 		}
+
+		internal double Altitude(Vessel vessel)
+		{
+			Vector3d vesselPosition = VesselPosition(vessel);
+			Vector3d bodyPosition = BodyPosition(vessel.mainBody);
+			return (vesselPosition - bodyPosition).magnitude - vessel.mainBody.Radius;
+		}
+
 		private static readonly Dictionary<Guid, SortedList<double, WaypointPositionEntry>> waypointPositions = new Dictionary<Guid, SortedList<double, WaypointPositionEntry>>();
 
 		public static void Clear()

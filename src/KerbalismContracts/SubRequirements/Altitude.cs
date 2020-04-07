@@ -60,7 +60,7 @@ namespace KerbalismContracts
 		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
 			AltitudeState state = new AltitudeState();
-			state.alt = vessel.altitude;
+			state.alt = context.Altitude(vessel);
 
 			if (min != 0 && state.alt < min)
 			{
