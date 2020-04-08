@@ -14,31 +14,46 @@ namespace KerbalismContracts
 	{
 		private int min;
 		private int max;
+		private double minR;
+		private double maxR;
 		private string description;
 
 		public Altitude(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
 			min = Lib.ConfigValue(node, "min", 0);
 			max = Lib.ConfigValue(node, "max", 0);
+			minR = Lib.ConfigValue(node, "minR", 0.0);
+			maxR = Lib.ConfigValue(node, "maxR", 0.0);
+
 			description = Lib.ConfigValue<string>(node, "description", null);
 
-			if (min == 0 && max == 0)
-				Utils.Log($"Invalid altitude restriction in {requirement.name}: must at least set min or max");
+			if (min == 0 && max == 0 && minR == 0 && maxR == 0)
+				Utils.Log($"Invalid altitude restriction in {requirement.name}: must set a min/minR or max/maxR");
 		}
 
-		public override string GetTitle(EvaluationContext parameters)
+		public override string GetTitle(EvaluationContext context)
 		{
 			if (!string.IsNullOrEmpty(description))
 				return description;
-			
-			if (min != 0 && max != 0)
-				description = Localizer.Format("Altitude between <<1>> and <<2>>", Lib.HumanReadableDistance(min), Lib.HumanReadableDistance(max));
-			else if (min != 0)
-				description = Localizer.Format("Altitude above <<1>>", Lib.HumanReadableDistance(min));
-			else if (max != 0)
-				description = Localizer.Format("Altitude below <<1>>", Lib.HumanReadableDistance(max));
-			else
-				description = "Invalid altitude restriction";
+
+			double minAlt = min;
+			double maxAlt = max;
+
+			if (min == 0 && max == 0 && context?.targetBody != null)
+			{
+				minAlt = minR * context.targetBody.Radius;
+				maxAlt = maxR * context.targetBody.Radius;
+			}
+
+			if (minAlt == 0 && maxAlt == 0)
+				return string.Empty;
+
+			if (minAlt != 0 && maxAlt != 0)
+				description = Localizer.Format("Altitude between <<1>> and <<2>>", Lib.HumanReadableDistance(minAlt), Lib.HumanReadableDistance(maxAlt));
+			else if (minAlt != 0)
+				description = Localizer.Format("Altitude above <<1>>", Lib.HumanReadableDistance(minAlt));
+			else if (maxAlt != 0)
+				description = Localizer.Format("Altitude below <<1>>", Lib.HumanReadableDistance(maxAlt));
 
 			return description;
 		}
@@ -49,9 +64,12 @@ namespace KerbalismContracts
 			if (orbit == null)
 				return false;
 
-			if (min != 0 && orbit.ApA < min) // ap too low for min alt
+			double minAlt = min != 0 ? min : minR * context.targetBody.Radius;
+			double maxAlt = max != 0 ? max : maxR * context.targetBody.Radius;
+
+			if (minAlt != 0 && orbit.ApA < minAlt) // ap too low for min alt
 				return false;
-			if (max != 0 && orbit.PeA > max) // pe too high for max alt
+			if (maxAlt != 0 && orbit.PeA > maxAlt) // pe too high for max alt
 				return false;
 
 			return true;
@@ -62,19 +80,16 @@ namespace KerbalismContracts
 			AltitudeState state = new AltitudeState();
 			state.alt = context.Altitude(vessel);
 
-			if (min != 0 && state.alt < min)
-			{
-				state.requirementMet = false;
-				return state;
-			}
-
-			if (max != 0 && state.alt > max)
-			{
-				state.requirementMet = false;
-				return state;
-			}
+			double minAlt = min != 0 ? min : minR * context.targetBody.Radius;
+			double maxAlt = max != 0 ? max : maxR * context.targetBody.Radius;
 
 			state.requirementMet = true;
+
+			if (minAlt != 0 && state.alt < minAlt)
+				state.requirementMet = false;
+			if (maxAlt != 0 && state.alt > maxAlt)
+				state.requirementMet = false;
+
 			return state;
 		}
 

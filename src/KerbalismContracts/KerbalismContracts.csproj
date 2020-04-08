@@ -93,7 +93,7 @@
     <Compile Include="KerbalismContracts.cs" />
     <Compile Include="RadiationFieldTracker.cs" />
     <Compile Include="Configuration.cs" />
-    <Compile Include="VesselStateTracker.cs" />
+    <Compile Include="EquipmentStateTracker.cs" />
     <Compile Include="Modules\ModuleKsmContractEquipment.cs" />
     <Compile Include="Util\Specs.cs" />
     <Compile Include="CC\Behavior\ShowRadiationFieldBehavior.cs" />

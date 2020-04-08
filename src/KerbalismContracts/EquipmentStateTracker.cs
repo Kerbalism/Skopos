@@ -3,7 +3,7 @@ using System;
 
 namespace KerbalismContracts
 {
-	public class VesselStateTracker
+	public class EquipmentStateTracker
 	{
 		internal class StateEntry
 		{
@@ -32,7 +32,7 @@ namespace KerbalismContracts
 		internal readonly Dictionary<Guid, List<StateEntry>> states = new Dictionary<Guid, List<StateEntry>>();
 		internal readonly List<Action<Vessel, string, EquipmentState>> listeners = new List<Action<Vessel, string, EquipmentState>>();
 
-		public VesselStateTracker()
+		public EquipmentStateTracker()
 		{
 			GameEvents.onVesselChange.Add((vessel) => { states.Remove(vessel.id); });
 		}

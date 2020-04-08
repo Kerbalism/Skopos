@@ -9,46 +9,60 @@ using System;
 
 namespace KerbalismContracts
 {
+	public class Arguments
+	{
+		public ContractConfigurator.Duration duration;
+		public ContractConfigurator.Duration allowedDowntime;
+		public ContractConfigurator.Duration waitDuration;
+		public string requirementId;
+		public int minVessels;
+		public int waypointIndex;
+		public bool allowReset;
+		public string title;
+		public bool hideChildren;
+
+		public Arguments(ConfigNode configNode)
+		{
+			duration = ConfigNodeUtil.ParseValue(configNode, "duration", new ContractConfigurator.Duration(0.0));
+			allowedDowntime = ConfigNodeUtil.ParseValue(configNode, "allowedDowntime", new ContractConfigurator.Duration(0.0));
+			waitDuration = ConfigNodeUtil.ParseValue(configNode, "waitDuration", new ContractConfigurator.Duration(0.0));
+			requirementId = ConfigNodeUtil.ParseValue(configNode, "id", "");
+			minVessels = ConfigNodeUtil.ParseValue(configNode, "minVessels", 1);
+			waypointIndex = ConfigNodeUtil.ParseValue(configNode, "waypointIndex", 0);
+			allowReset = ConfigNodeUtil.ParseValue(configNode, "allowReset", true);
+			title = ConfigNodeUtil.ParseValue(configNode, "title", "");
+			hideChildren = ConfigNodeUtil.ParseValue(configNode, "hideChildren", false);
+		}
+	}
+
 	/// <summary> Parameter for global radiation field status: how often has a radiation field been penetrated </summary>
 	public class KerbalismContractFactory : ParameterFactory
 	{
-		protected string requirementId;
-		protected ContractConfigurator.Duration duration;
-		protected ContractConfigurator.Duration allowedDowntime;
-		protected int minVessels;
-		protected int waypointIndex;
+		protected Arguments arguments;
 
 		public override bool Load(ConfigNode configNode)
 		{
 			bool valid = base.Load(configNode);
-
-			valid &= ConfigNodeUtil.ParseValue<ContractConfigurator.Duration>(configNode, "duration", x => duration = x, this, new ContractConfigurator.Duration(0.0));
-			valid &= ConfigNodeUtil.ParseValue<ContractConfigurator.Duration>(configNode, "allowedDowntime", x => allowedDowntime = x, this, new ContractConfigurator.Duration(0.0));
-			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "id", x => requirementId = x, this, "");
-			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "minVessels", x => minVessels = x, this, 1);
-			valid &= ConfigNodeUtil.ParseValue<int>(configNode, "waypointIndex", x => waypointIndex = x, this, 0);
-			valid &= ConfigNodeUtil.ParseValue<bool>(configNode, "hideChildren", x => hideChildren = x, this, false);
-			valid &= ConfigNodeUtil.ParseValue<string>(configNode, "title", x => title = x, this, "");
-
+			arguments = new Arguments(configNode);
 			return valid;
 		}
 
 		public override ContractParameter Generate(Contract contract)
 		{
-			var requirement = Configuration.Requirement(requirementId);
+			var requirement = Configuration.Requirement(arguments.requirementId);
 			if (requirement == null)
 			{
-				Utils.Log($"There is no KerbalismContractRequirement with name '{requirementId}'.", LogLevel.Error);
+				Utils.Log($"There is no KerbalismContractRequirement with name '{arguments.requirementId}'.", LogLevel.Error);
 				return null;
 			}
 
-			var result = new KerbalismContractParameter(title, requirementId, duration.Value, allowedDowntime.Value, minVessels, waypointIndex, hideChildren);
+			var result = new KerbalismContractParameter(arguments);
 
 			if (requirement.NeedsWaypoint())
 			{
-				if(Utils.FetchWaypoint(contract, waypointIndex) == null)
+				if(Utils.FetchWaypoint(contract, arguments.waypointIndex) == null)
 				{
-					Utils.Log($"There is no waypoint (index {waypointIndex}) in the contract, but requirement '{requirementId}' needs one.", LogLevel.Error);
+					Utils.Log($"There is no waypoint (index {arguments.waypointIndex}) in the contract, but requirement '{arguments.requirementId}' needs one.", LogLevel.Error);
 					return null;
 				}
 			}
@@ -62,8 +76,10 @@ namespace KerbalismContracts
 		protected string requirementId;
 		protected double duration;
 		protected double allowedDowntime;
+		protected double waitDuration;
 		protected int minVessels;
 		protected int waypointIndex;
+		protected bool allowReset;
 
 		protected DurationParameter durationParameter;
 		protected List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
@@ -77,15 +93,17 @@ namespace KerbalismContracts
 
 		public KerbalismContractParameter() { }
 
-		public KerbalismContractParameter(string title, string requirementId, double duration, double allowedDowntime, int minVessels, int waypointIndex, bool hideChildren)
+		public KerbalismContractParameter(Arguments arguments)
 		{
-			this.requirementId = requirementId;
-			this.duration = duration;
-			this.allowedDowntime = allowedDowntime;
-			this.minVessels = minVessels;
-			this.waypointIndex = waypointIndex;
-			this.title = title;
-			this.hideChildren = hideChildren;
+			this.requirementId = arguments.requirementId;
+			this.duration = arguments.duration.Value;
+			this.allowedDowntime = arguments.allowedDowntime.Value;
+			this.waitDuration = arguments.waitDuration.Value;
+			this.allowReset = arguments.allowReset;
+			this.minVessels = arguments.minVessels;
+			this.waypointIndex = arguments.waypointIndex;
+			this.title = arguments.title;
+			this.hideChildren = arguments.hideChildren;
 
 			this.requirement = Configuration.Requirement(requirementId);
 
@@ -128,8 +146,8 @@ namespace KerbalismContracts
 
 			if (duration > 0 && durationParameter == null)
 			{
-				Utils.LogDebug($"Duration {duration} allowed downtime {allowedDowntime}");
-				durationParameter = new DurationParameter(duration, allowedDowntime);
+				Utils.LogDebug($"Duration {duration} allowed downtime {allowedDowntime} resets allowed {allowReset}");
+				durationParameter = new DurationParameter(duration, allowedDowntime, allowReset, waitDuration);
 				AddParameter(durationParameter);
 			}
 
@@ -158,17 +176,21 @@ namespace KerbalismContracts
 			node.AddValue("requirementId", requirementId);
 			node.AddValue("duration", duration);
 			node.AddValue("allowedDowntime", allowedDowntime);
+			node.AddValue("waitDuration", waitDuration);
+			node.AddValue("allowReset", allowReset);
 			node.AddValue("minVessels", minVessels);
 			node.AddValue("waypointIndex", waypointIndex);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
 		{
-			requirementId = ConfigNodeUtil.ParseValue<string>(node, "requirementId", "");
-			duration = ConfigNodeUtil.ParseValue<double>(node, "duration", 0);
-			allowedDowntime = ConfigNodeUtil.ParseValue<double>(node, "allowedDowntime", 0);
-			minVessels = ConfigNodeUtil.ParseValue<int>(node, "minVessels", 1);
-			waypointIndex = ConfigNodeUtil.ParseValue<int>(node, "waypointIndex", 0);
+			requirementId = ConfigNodeUtil.ParseValue(node, "requirementId", "");
+			duration = ConfigNodeUtil.ParseValue(node, "duration", 0.0);
+			allowedDowntime = ConfigNodeUtil.ParseValue(node, "allowedDowntime", 0.0);
+			waitDuration = ConfigNodeUtil.ParseValue(node, "waitDuration", 0.0);
+			allowReset = ConfigNodeUtil.ParseValue(node, "allowReset", true);
+			minVessels = ConfigNodeUtil.ParseValue(node, "minVessels", 1);
+			waypointIndex = ConfigNodeUtil.ParseValue(node, "waypointIndex", 0);
 			requirement = Configuration.Requirement(requirementId);
 		}
 
@@ -250,7 +272,7 @@ namespace KerbalismContracts
 				steps.Add(now - s * stepLength);
 			steps.Add(now);
 
-			return new EvaluationContext(steps, Utils.FetchWaypoint(Root, waypointIndex));
+			return new EvaluationContext(steps, targetBody, Utils.FetchWaypoint(Root, waypointIndex));
 		}
 
 		protected override void OnUpdate()

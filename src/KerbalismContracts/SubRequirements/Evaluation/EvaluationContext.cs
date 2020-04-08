@@ -8,6 +8,7 @@ namespace KerbalismContracts
 	public class EvaluationContext
 	{
 		public readonly Waypoint waypoint;
+		public readonly CelestialBody targetBody;
 		public readonly List<double> steps;
 		public double now;
 		public readonly double ut = Planetarium.GetUniversalTime();
@@ -88,8 +89,9 @@ namespace KerbalismContracts
 			waypointPositions.Clear();
 		}
 
-		public EvaluationContext(List<double> steps, Waypoint waypoint = null)
+		public EvaluationContext(List<double> steps, CelestialBody targetBody = null, Waypoint waypoint = null)
 		{
+			this.targetBody = targetBody ?? waypoint?.celestialBody;
 			this.waypoint = waypoint;
 			this.steps = steps;
 		}

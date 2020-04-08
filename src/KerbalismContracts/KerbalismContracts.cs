@@ -23,7 +23,7 @@ namespace KerbalismContracts
 			Configuration.Load();
 
 			API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
-			// API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
+			//API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
 		}
 	}
 
@@ -32,7 +32,8 @@ namespace KerbalismContracts
 	{
 		public static KerbalismContracts Instance { get; private set; } = null;
 		private readonly Dictionary<int, GlobalRadiationFieldStatus> bodyData = new Dictionary<int, GlobalRadiationFieldStatus>();
-		public static readonly VesselStateTracker EquipmentState = new VesselStateTracker();
+
+		public static readonly EquipmentStateTracker EquipmentState = new EquipmentStateTracker();
 
 		//  constructor
 		public KerbalismContracts()
@@ -160,6 +161,7 @@ namespace KerbalismContracts
 
 			RadiationFieldTracker.Load(node);
 			EquipmentState.Load(node);
+			//ExperimentStateTracker.Load(node);
 		}
 
 		public override void OnSave(ConfigNode node)
@@ -172,6 +174,7 @@ namespace KerbalismContracts
 
 			RadiationFieldTracker.Save(node);
 			EquipmentState.Save(node);
+			//ExperimentStateTracker.Save(node);
 		}
 	}
 
