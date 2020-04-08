@@ -180,6 +180,7 @@ namespace KerbalismContracts
 			node.AddValue("allowReset", allowReset);
 			node.AddValue("minVessels", minVessels);
 			node.AddValue("waypointIndex", waypointIndex);
+			node.AddValue("lastUpdate", lastUpdate);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -191,6 +192,7 @@ namespace KerbalismContracts
 			allowReset = ConfigNodeUtil.ParseValue(node, "allowReset", true);
 			minVessels = ConfigNodeUtil.ParseValue(node, "minVessels", 1);
 			waypointIndex = ConfigNodeUtil.ParseValue(node, "waypointIndex", 0);
+			lastUpdate = ConfigNodeUtil.ParseValue(node, "lastUpdate", 0.0);
 			requirement = Configuration.Requirement(requirementId);
 		}
 
@@ -283,6 +285,12 @@ namespace KerbalismContracts
 
 			if (subRequirementParameters.Count == 0)
 				CreateSubParameters();
+
+			if(lastUpdate == 0)
+			{
+				lastUpdate = Planetarium.GetUniversalTime();
+				return;
+			}
 
 			var lastUpdateAge = Planetarium.GetUniversalTime() - lastUpdate;
 			if (lastUpdateAge < 1.0) return;

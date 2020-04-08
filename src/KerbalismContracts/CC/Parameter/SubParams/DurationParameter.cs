@@ -14,9 +14,14 @@ namespace KerbalismContracts
 		internal double waitDuration;
 
 		// internal state
-		internal double doneAfter;
-		internal double resetAfter;
-		internal double forceStartAfter;
+		private enum DurationState
+		{
+			off, preRun, running, preReset, done, failed
+		}
+		private DurationState durationState = DurationState.off;
+		private double failAfter;
+		private double doneAfter;
+		private double startAfter;
 
 		public DurationParameter() { }
 
@@ -26,51 +31,80 @@ namespace KerbalismContracts
 			this.allowedDowntime = allowedDowntime;
 			this.allowReset = allowReset;
 			this.waitDuration = waitDuration;
-
-			ResetTimer();
-		}
-
-		private void ResetTimer()
-		{
-			if (doneAfter != 0 && !allowReset)
-				SetFailed();
-			else
-				SetIncomplete();
-
-			doneAfter = 0;
-			resetAfter = 0;
-		}
-
-		internal void Update(bool allConditionsMet, double now)
-		{
-			if (waitDuration > 0 && forceStartAfter == 0)
-			{
-				forceStartAfter = now + waitDuration;
-				doneAfter = now + waitDuration + duration;
-			}
-
-			if (allConditionsMet) UpdateGood(now);
-			else UpdateBad(now);
-		}
-
-		private void UpdateBad(double now)
-		{
-			if (resetAfter == 0)
-				resetAfter = now + allowedDowntime;
-
-			if (now > resetAfter)
-				ResetTimer();
 		}
 
 		private void UpdateGood(double now)
 		{
-			if (doneAfter == 0)
-				doneAfter = now + duration;
+			switch (durationState)
+			{
+				case DurationState.off:
+				case DurationState.preRun:
+				case DurationState.preReset:
+					durationState = DurationState.running;
+					doneAfter = now + duration;
+					break;
+				case DurationState.running:
+					if (now > doneAfter)
+						durationState = DurationState.done;
+					break;
+			}
 
-			resetAfter = 0;
-
-			if (now > doneAfter)
+			if (durationState == DurationState.done)
 				SetComplete();
+		}
+
+		private void UpdateBad(double now)
+		{
+			Utils.LogDebug($"Bad begin now {now.ToString("F0")} state {durationState} startAfter {startAfter.ToString("F0")} failAfter {failAfter.ToString("F0")}");
+			switch (durationState)
+			{
+				case DurationState.off:
+					if(waitDuration > 0)
+					{
+						startAfter = now + waitDuration;
+						durationState = DurationState.preRun;
+					}
+					break;
+				case DurationState.preRun:
+					if (now > startAfter)
+					{
+						doneAfter = now + duration;
+						if (allowedDowntime > 0)
+						{
+							failAfter = now + allowedDowntime;
+							durationState = DurationState.preReset;
+						}
+						else
+						{
+							durationState = allowReset ? DurationState.off : DurationState.failed;
+						}
+					}
+					break;
+				case DurationState.running:
+					if(allowedDowntime > 0)
+					{
+						failAfter = now + allowedDowntime;
+						durationState = DurationState.preReset;
+						break;
+					}
+					durationState = allowReset ? DurationState.off : DurationState.failed;
+					break;
+				case DurationState.preReset:
+					if(now > failAfter)
+						durationState = allowReset ? DurationState.off : DurationState.failed;
+					break;
+			}
+
+			Utils.LogDebug($"Bad end now {now.ToString("F0")} state {durationState} startAfter {startAfter.ToString("F0")} failAfter {failAfter.ToString("F0")}");
+
+			if (durationState == DurationState.failed)
+				SetFailed();
+		}
+
+		public void Update(bool allConditionsMet, double now)
+		{
+			if (allConditionsMet) UpdateGood(now);
+			else UpdateBad(now);
 		}
 
 		protected override string GetHashString()
@@ -80,49 +114,56 @@ namespace KerbalismContracts
 
 		protected override string GetTitle()
 		{
+			string result;
 			double now = Planetarium.GetUniversalTime();
 
-			if (doneAfter == 0 && resetAfter == 0)
+			switch (durationState)
 			{
-				string result = Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
-
-				if (allowedDowntime > 0)
-					result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
-						DurationUtil.StringValue(allowedDowntime));
-				else
-					result += "\n\t - " + "Does not allow interruptions";
-
-				if (waitDuration > 0)
-				{
-					if(forceStartAfter == 0)
+				case DurationState.off:
+					result = Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
+					if (waitDuration > 0)
 						result += "\n\t - " + Localizer.Format("Time starts <<1>> after accepting the contract",
-							DurationUtil.StringValue(waitDuration));
+							Lib.Color(DurationUtil.StringValue(waitDuration), Lib.Kolor.Yellow));
+					if (allowedDowntime > 0)
+						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
+							DurationUtil.StringValue(allowedDowntime));
 					else
-						result += "\n\t - " + Localizer.Format("Time starts in <<1>>",
-							Lib.Color(DurationUtil.StringValue(Math.Max(0, forceStartAfter - now)), Lib.Kolor.Yellow));
-				}
+						result += "\n\t - " + "Does not allow interruptions";
+					if (!allowReset)
+						result += "\n\t - " + Lib.Color("Will fail if interrupted beyond allowance", Lib.Kolor.Orange);
 
-				if (!allowReset)
-					result += "\n\t - " + Lib.Color("Will fail if interrupted beyond allowance", Lib.Kolor.Orange);
+					return result;
 
-				return result;
+				case DurationState.preRun:
+					result = Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
+					result += "\n\t - " + Localizer.Format("Time starts in <<1>>",
+							Lib.Color(DurationUtil.StringValue(Math.Max(0, startAfter - now)), Lib.Kolor.Yellow));
+					if (allowedDowntime > 0)
+						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
+							DurationUtil.StringValue(allowedDowntime));
+					return result;
+
+				case DurationState.running:
+					result = Localizer.Format("Remaining: <<1>>", Lib.Color(DurationUtil.StringValue(Math.Max(0, doneAfter - now)), Lib.Kolor.Green));
+					if (allowedDowntime > 0)
+						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
+							DurationUtil.StringValue(allowedDowntime));
+					return result;
+
+				case DurationState.preReset:
+					result = Localizer.Format("Remaining: <<1>> (stop in: <<2>>)",
+						Lib.Color(DurationUtil.StringValue(Math.Max(0, doneAfter - now)), Lib.Kolor.Green),
+						Lib.Color(DurationUtil.StringValue(Math.Max(0, failAfter - now)), allowReset ? Lib.Kolor.Yellow : Lib.Kolor.Red));
+					return result;
+
+				case DurationState.done:
+					return "Done!";
+
+				case DurationState.failed:
+					return "Time is up!";
 			}
 
-			if(now > doneAfter)
-				return "Done!";
-
-			double remaining = doneAfter - now;
-
-			if(resetAfter != 0)
-			{
-				double ttf = Math.Max(0, resetAfter - now);
-				return Localizer.Format("Remaining: <<1>> (stop in: <<2>>)",
-					Lib.Color(DurationUtil.StringValue(remaining), Lib.Kolor.Green),
-					Lib.Color(DurationUtil.StringValue(ttf), Lib.Kolor.Yellow));
-			}
-
-			return Localizer.Format("Remaining: <<1>>",
-				Lib.Color(DurationUtil.StringValue(remaining), Lib.Kolor.Green));
+			return "Invalid state";
 		}
 
 		protected override void OnSave(ConfigNode node)
@@ -132,10 +173,12 @@ namespace KerbalismContracts
 			node.AddValue("duration", duration);
 			node.AddValue("allowedDowntime", allowedDowntime);
 			node.AddValue("waitDuration", waitDuration);
+			node.AddValue("allowReset", allowReset);
 
 			node.AddValue("doneAfter", doneAfter);
-			node.AddValue("resetAfter", resetAfter);
-			node.AddValue("forceStartAfter", forceStartAfter);
+			node.AddValue("failAfter", failAfter);
+			node.AddValue("startAfter", startAfter);
+			node.AddValue("durationState", durationState);
 		}
 
 		protected override void OnLoad(ConfigNode node)
@@ -145,10 +188,12 @@ namespace KerbalismContracts
 			duration = ConfigNodeUtil.ParseValue(node, "duration", 0.0);
 			allowedDowntime = ConfigNodeUtil.ParseValue(node, "allowedDowntime", 0.0);
 			waitDuration = ConfigNodeUtil.ParseValue(node, "waitDuration", 0.0);
+			allowReset = ConfigNodeUtil.ParseValue(node, "allowReset", true);
 
 			doneAfter = ConfigNodeUtil.ParseValue(node, "doneAfter", 0.0);
-			resetAfter = ConfigNodeUtil.ParseValue(node, "resetAfter", double.MaxValue);
-			forceStartAfter = ConfigNodeUtil.ParseValue(node, "forceStartAfter", 0.0);
+			failAfter = ConfigNodeUtil.ParseValue(node, "failAfter", 0.0);
+			startAfter = ConfigNodeUtil.ParseValue(node, "startAfter", 0.0);
+			durationState = Lib.ConfigEnum(node, "durationState", DurationState.off);
 		}
 	}
 }
