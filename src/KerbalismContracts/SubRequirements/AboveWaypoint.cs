@@ -69,7 +69,7 @@ namespace KerbalismContracts
 				result += ", " + Localizer.Format("min. radial vel. <<1>>", Lib.HumanReadableSpeed(minRadialVelocity));
 
 			if (minRadialVelocityChange > 0)
-				result += ", " + Localizer.Format("min. radial vel. change <<1>>/s", Lib.HumanReadableSpeed(minRadialVelocity));
+				result += ", " + Localizer.Format("min. radial vel. change <<1>>/s", Lib.HumanReadableSpeed(minRadialVelocityChange));
 
 			return result;
 		}
