@@ -12,6 +12,12 @@ namespace KerbalismContracts
 		internal double allowedDowntime;
 		internal bool allowReset;
 		internal double waitDuration;
+		internal DurationType durationType;
+
+		public enum DurationType
+		{
+			countdown, accumulating
+		}
 
 		// internal state
 		private enum DurationState
@@ -22,15 +28,19 @@ namespace KerbalismContracts
 		private double failAfter;
 		private double doneAfter;
 		private double startAfter;
+		private double accumulatedDuration;
+
+		private double previousRunningTime;
 
 		public DurationParameter() { }
 
-		public DurationParameter(double duration, double allowedDowntime, bool allowReset, double waitDuration)
+		public DurationParameter(double duration, double allowedDowntime, bool allowReset, double waitDuration, DurationType durationType)
 		{
 			this.duration = duration;
 			this.allowedDowntime = allowedDowntime;
 			this.allowReset = allowReset;
 			this.waitDuration = waitDuration;
+			this.durationType = durationType;
 		}
 
 		private void UpdateGood(double now)
@@ -43,11 +53,25 @@ namespace KerbalismContracts
 					durationState = DurationState.running;
 					doneAfter = now + duration;
 					break;
+
 				case DurationState.running:
-					if (now > doneAfter)
-						durationState = DurationState.done;
+					switch(durationType)
+					{
+						case DurationType.countdown:
+							if (now > doneAfter)
+								durationState = DurationState.done;
+							break;
+
+						case DurationType.accumulating:
+							if (previousRunningTime != 0)
+								accumulatedDuration += now - previousRunningTime;
+							if (accumulatedDuration > duration)
+								durationState = DurationState.done;
+							break;
+					}
 					break;
 			}
+			previousRunningTime = now;
 
 			if (durationState == DurationState.done)
 				SetComplete();
@@ -55,7 +79,6 @@ namespace KerbalismContracts
 
 		private void UpdateBad(double now)
 		{
-			Utils.LogDebug($"Bad begin now {now.ToString("F0")} state {durationState} startAfter {startAfter.ToString("F0")} failAfter {failAfter.ToString("F0")}");
 			switch (durationState)
 			{
 				case DurationState.off:
@@ -65,6 +88,7 @@ namespace KerbalismContracts
 						durationState = DurationState.preRun;
 					}
 					break;
+
 				case DurationState.preRun:
 					if (now > startAfter)
 					{
@@ -80,8 +104,9 @@ namespace KerbalismContracts
 						}
 					}
 					break;
+
 				case DurationState.running:
-					if(allowedDowntime > 0)
+					if (allowedDowntime > 0)
 					{
 						failAfter = now + allowedDowntime;
 						durationState = DurationState.preReset;
@@ -89,13 +114,12 @@ namespace KerbalismContracts
 					}
 					durationState = allowReset ? DurationState.off : DurationState.failed;
 					break;
+
 				case DurationState.preReset:
-					if(now > failAfter)
+					if (now > failAfter)
 						durationState = allowReset ? DurationState.off : DurationState.failed;
 					break;
 			}
-
-			Utils.LogDebug($"Bad end now {now.ToString("F0")} state {durationState} startAfter {startAfter.ToString("F0")} failAfter {failAfter.ToString("F0")}");
 
 			if (durationState == DurationState.failed)
 				SetFailed();
@@ -174,11 +198,13 @@ namespace KerbalismContracts
 			node.AddValue("allowedDowntime", allowedDowntime);
 			node.AddValue("waitDuration", waitDuration);
 			node.AddValue("allowReset", allowReset);
+			node.AddValue("durationType", durationType);
 
 			node.AddValue("doneAfter", doneAfter);
 			node.AddValue("failAfter", failAfter);
 			node.AddValue("startAfter", startAfter);
 			node.AddValue("durationState", durationState);
+			node.AddValue("accumulatedDuration", accumulatedDuration);
 		}
 
 		protected override void OnLoad(ConfigNode node)
@@ -189,10 +215,12 @@ namespace KerbalismContracts
 			allowedDowntime = ConfigNodeUtil.ParseValue(node, "allowedDowntime", 0.0);
 			waitDuration = ConfigNodeUtil.ParseValue(node, "waitDuration", 0.0);
 			allowReset = ConfigNodeUtil.ParseValue(node, "allowReset", true);
+			durationType = Lib.ConfigEnum(node, "durationType", DurationType.countdown);
 
 			doneAfter = ConfigNodeUtil.ParseValue(node, "doneAfter", 0.0);
 			failAfter = ConfigNodeUtil.ParseValue(node, "failAfter", 0.0);
 			startAfter = ConfigNodeUtil.ParseValue(node, "startAfter", 0.0);
+			accumulatedDuration = ConfigNodeUtil.ParseValue(node, "accumulatedDuration", 0.0);
 			durationState = Lib.ConfigEnum(node, "durationState", DurationState.off);
 		}
 	}

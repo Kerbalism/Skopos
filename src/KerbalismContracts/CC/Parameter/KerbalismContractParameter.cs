@@ -20,6 +20,7 @@ namespace KerbalismContracts
 		public bool allowReset;
 		public string title;
 		public bool hideChildren;
+		public DurationParameter.DurationType durationType;
 
 		public Arguments(ConfigNode configNode)
 		{
@@ -32,6 +33,7 @@ namespace KerbalismContracts
 			allowReset = ConfigNodeUtil.ParseValue(configNode, "allowReset", true);
 			title = ConfigNodeUtil.ParseValue(configNode, "title", "");
 			hideChildren = ConfigNodeUtil.ParseValue(configNode, "hideChildren", false);
+			durationType = Lib.ConfigEnum(configNode, "durationType", DurationParameter.DurationType.countdown);
 		}
 	}
 
@@ -80,6 +82,7 @@ namespace KerbalismContracts
 		protected int minVessels;
 		protected int waypointIndex;
 		protected bool allowReset;
+		protected DurationParameter.DurationType durationType;
 
 		protected DurationParameter durationParameter;
 		protected List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
@@ -104,6 +107,7 @@ namespace KerbalismContracts
 			this.waypointIndex = arguments.waypointIndex;
 			this.title = arguments.title;
 			this.hideChildren = arguments.hideChildren;
+			this.durationType = arguments.durationType;
 
 			this.requirement = Configuration.Requirement(requirementId);
 
@@ -146,8 +150,8 @@ namespace KerbalismContracts
 
 			if (duration > 0 && durationParameter == null)
 			{
-				Utils.LogDebug($"Duration {duration} allowed downtime {allowedDowntime} resets allowed {allowReset}");
-				durationParameter = new DurationParameter(duration, allowedDowntime, allowReset, waitDuration);
+				Utils.LogDebug($"Duration {durationType} {duration} allowed downtime {allowedDowntime} resets allowed {allowReset}");
+				durationParameter = new DurationParameter(duration, allowedDowntime, allowReset, waitDuration, durationType);
 				AddParameter(durationParameter);
 			}
 
@@ -181,6 +185,7 @@ namespace KerbalismContracts
 			node.AddValue("minVessels", minVessels);
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("lastUpdate", lastUpdate);
+			node.AddValue("durationType", durationType);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -194,6 +199,7 @@ namespace KerbalismContracts
 			waypointIndex = ConfigNodeUtil.ParseValue(node, "waypointIndex", 0);
 			lastUpdate = ConfigNodeUtil.ParseValue(node, "lastUpdate", 0.0);
 			requirement = Configuration.Requirement(requirementId);
+			durationType = Lib.ConfigEnum(node, "durationType", DurationParameter.DurationType.countdown);
 		}
 
 		/// <summary>
