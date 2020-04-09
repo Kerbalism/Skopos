@@ -7,8 +7,8 @@ namespace KerbalismContracts
 {
 	public class AltitudeState : SubRequirementState
 	{
-		internal double alt;
-	}
+		internal double distance;
+    }
 
 	public class Altitude : SubRequirement
 	{
@@ -78,16 +78,16 @@ namespace KerbalismContracts
 		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
 			AltitudeState state = new AltitudeState();
-			state.alt = context.Altitude(vessel);
+			state.distance = context.Altitude(vessel);
 
 			double minAlt = min != 0 ? min : minR * context.targetBody.Radius;
 			double maxAlt = max != 0 ? max : maxR * context.targetBody.Radius;
 
 			state.requirementMet = true;
 
-			if (minAlt != 0 && state.alt < minAlt)
+			if (minAlt != 0 && state.distance < minAlt)
 				state.requirementMet = false;
-			if (maxAlt != 0 && state.alt > maxAlt)
+			if (maxAlt != 0 && state.distance > maxAlt)
 				state.requirementMet = false;
 
 			return state;
@@ -97,10 +97,10 @@ namespace KerbalismContracts
 		{
 			AltitudeState altitudeState = (AltitudeState)state;
 
-			if (min != 0 && altitudeState.alt < min)
+			if (min != 0 && altitudeState.distance < min)
 				return Lib.Color("too low", Lib.Kolor.Red);
 
-			if (max != 0 && altitudeState.alt > max)
+			if (max != 0 && altitudeState.distance > max)
 				return Lib.Color("too high", Lib.Kolor.Red);
 
 			return Lib.Color("alt OK", Lib.Kolor.Green);

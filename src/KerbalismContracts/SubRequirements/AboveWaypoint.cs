@@ -96,8 +96,6 @@ namespace KerbalismContracts
 			state.elevation = GetElevation(vessel, context);
 			state.distance = GetDistance(vessel, context);
 
-			// TODO determine line of sight obstruction (there may be an occluding body)
-
 			bool meetsCondition = state.elevation >= minElevation;
 
 			if (minDistance > 0 || maxDistance > 0)
