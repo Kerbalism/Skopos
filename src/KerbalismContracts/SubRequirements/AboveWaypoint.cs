@@ -127,7 +127,7 @@ namespace KerbalismContracts
 					var radialVelocityIn10s = Math.Abs((state.distanceIn10s - state.distance) / 10.0);
 					state.radialVelocityChange = Math.Abs((radialVelocityIn10s - state.radialVelocity) / 10.0);
 					meetsCondition &= state.radialVelocityChange >= minRadialVelocityChange;
-					Utils.LogDebug($"{context.waypoint.name} {context.now} el {state.elevation.ToString("F2")} dist {state.distance.ToString("F0")} dist-10s {state.distance10sago.ToString("F0")} dist-20s {state.distanceIn10s.ToString("F0")} radvel {state.radialVelocity.ToString("F1")} radvel-10s {radialVelocityIn10s.ToString("F1")} delta radvel {state.radialVelocityChange.ToString("F1")}");
+					//Utils.LogDebug($"{context.waypoint.name} {context.now} el {state.elevation.ToString("F2")} dist {state.distance.ToString("F0")} dist-10s {state.distance10sago.ToString("F0")} dist-20s {state.distanceIn10s.ToString("F0")} radvel {state.radialVelocity.ToString("F1")} radvel-10s {radialVelocityIn10s.ToString("F1")} delta radvel {state.radialVelocityChange.ToString("F1")}");
 				}
 			}
 
