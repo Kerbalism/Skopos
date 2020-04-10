@@ -85,7 +85,8 @@ namespace KerbalismContracts
 		protected DurationParameter.DurationType durationType;
 
 		protected DurationParameter durationParameter;
-		protected List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
+		protected readonly List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
+		protected readonly List<VesselStatusParameter> vesselStatusParameters = new List<VesselStatusParameter>();
 
 		private double lastUpdate = 0.0f;
 
@@ -135,6 +136,9 @@ namespace KerbalismContracts
 
 				if (p is DurationParameter dp)
 					durationParameter = dp;
+
+				if (p is VesselStatusParameter vsp)
+					vesselStatusParameters.Add(vsp);
 			}
 
 			if (subRequirementParameters.Count > 0)
@@ -171,7 +175,7 @@ namespace KerbalismContracts
 			if(newLabel != statusLabel)
 			{
 				statusLabel = newLabel;
-				ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+				//ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
 			}
 		}
 
@@ -302,7 +306,6 @@ namespace KerbalismContracts
 			if (lastUpdateAge < 1.0) return;
 			lastUpdate = Planetarium.GetUniversalTime();
 
-			RemoveAllParameters(typeof(VesselStatusParameter));
 			vessels.Clear();
 			context = CreateContext(lastUpdateAge);
 
@@ -319,6 +322,14 @@ namespace KerbalismContracts
 
 				vessels.Add(vessel);
 			}
+
+			if (!hideChildren)
+			{
+				foreach (var vsp in vesselStatusParameters)
+					vsp.obsolete = true;
+			}
+
+			bool childParameterChanged = false;
 
 			int stepCount = context.steps.Count;
 			for(int i = 0; i < stepCount; i++)
@@ -337,7 +348,7 @@ namespace KerbalismContracts
 					if (conditionMet) vesselsMeetingAllConditions++;
 
 					if (doLabelUpdate)
-						AddParameter(new VesselStatusParameter(vessel, statusLabel, conditionMet));
+						childParameterChanged |= UpdateVesselStatus(vessel, statusLabel, conditionMet);
 				}
 
 				bool allConditionsMet = vesselsMeetingAllConditions >= minVessels;
@@ -355,17 +366,57 @@ namespace KerbalismContracts
 					break;
 			}
 
-			ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+			childParameterChanged |= RemoveObsoleteVesselStatusParameters();
+			if(childParameterChanged)
+				ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
 		}
 
-		private void RemoveAllParameters(Type type)
+		private bool RemoveObsoleteVesselStatusParameters()
 		{
+			bool parameterRemoved = false;
+			var count = vesselStatusParameters.Count;
+			for (int i = count - 1; i >= 0; i--)
+			{
+				var vsp = vesselStatusParameters[i];
+				if (vsp.obsolete)
+				{
+					RemoveParameter(vsp);
+					vesselStatusParameters.RemoveAt(i);
+					parameterRemoved = true;
+				}
+			}
+			return parameterRemoved;
+		}
+
+		private bool UpdateVesselStatus(Vessel vessel, string statusLabel, bool conditionMet)
+		{
+			foreach (VesselStatusParameter vsp in vesselStatusParameters)
+			{
+				if (vsp.vessel == vessel)
+				{
+					vsp.Update(statusLabel, conditionMet);
+					return false;
+				}
+			}
+
+			VesselStatusParameter p = new VesselStatusParameter(vessel, statusLabel, conditionMet);
+			vesselStatusParameters.Add(p);
+			AddParameter(p);
+			return true;
+		}
+
+		private bool RemoveAllParameters(Type type)
+		{
+			bool removed = false;
 			int c;
 			do
 			{
 				c = ParameterCount;
 				RemoveParameter(type);
+				if (ParameterCount != c)
+					removed = true;
 			} while (c > ParameterCount);
+			return removed;
 		}
 	}
 }

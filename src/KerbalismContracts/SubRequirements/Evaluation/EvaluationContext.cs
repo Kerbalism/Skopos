@@ -59,16 +59,15 @@ namespace KerbalismContracts
 				this.id = waypoint.navigationId;
 				this.time = time;
 
-				CelestialBody body = waypoint.celestialBody;
 				Planetarium.CelestialFrame BodyFrame = default;
-				if (!body.inverseRotation && body.rotates && body.rotationPeriod != 0.0 && (!body.tidallyLocked || (body.orbit != null && body.orbit.period != 0.0)))
+				CelestialBody body = waypoint.celestialBody;
+				if (body.rotationPeriod != 0)
 				{
 					var rotPeriodRecip = 1.0 / body.rotationPeriod;
 					var rotationAngle = (body.initialRotation + 360.0 * rotPeriodRecip * time) % 360.0;
 					var directRotAngle = (rotationAngle - Planetarium.InverseRotAngle) % 360.0;
 					Planetarium.CelestialFrame.PlanetaryFrame(0.0, 90.0, directRotAngle, ref BodyFrame);
 				}
-
 				position = BodyFrame.LocalToWorld(body.GetRelSurfacePosition(waypoint.latitude, waypoint.longitude, 0).xzy).xzy + bodyPosition;
 			}
 		}
@@ -151,7 +150,7 @@ namespace KerbalismContracts
 			while (positionList.Count > 150)
 				positionList.RemoveAt(0);
 
-			var newEntry = new WaypointPositionEntry(waypoint, now - secondsAgo, BodyPosition(waypoint.celestialBody));
+			var newEntry = new WaypointPositionEntry(waypoint, now - secondsAgo, BodyPosition(waypoint.celestialBody, secondsAgo));
 			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}

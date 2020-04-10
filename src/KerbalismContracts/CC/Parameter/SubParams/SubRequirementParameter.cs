@@ -16,10 +16,18 @@ namespace KerbalismContracts
 		internal int matchCounter;
 		internal EvaluationContext context;
 
-		public SubRequirementParameter() { }
+		private readonly TitleTracker titleTracker;
+		private string lastTitle;
+
+		public SubRequirementParameter()
+		{
+			titleTracker = new TitleTracker(this);
+		}
 
 		public SubRequirementParameter(SubRequirement subRequirement)
 		{
+			titleTracker = new TitleTracker(this);
+
 			this.subRequirement = subRequirement;
 			this.requirementId = subRequirement.parent.name;
 			this.subRequirementType = subRequirement.type;
@@ -52,7 +60,14 @@ namespace KerbalismContracts
 
 		protected override string GetTitle()
 		{
-			return subRequirement.GetTitle(context);
+			string result = subRequirement.GetTitle(context);
+			titleTracker.Add(result);
+			if(lastTitle != result && Root != null && (Root.ContractState == Contract.State.Active || Root.ContractState == Contract.State.Failed))
+			{
+				titleTracker.UpdateContractWindow(result);
+				lastTitle = result;
+			}
+			return result;
 		}
 
 		internal bool VesselsMeetCondition(List<Vessel> vessels)
@@ -63,6 +78,8 @@ namespace KerbalismContracts
 				SetComplete();
 			else
 				SetIncomplete();
+
+			GetTitle();
 
 			return completed;
 		}

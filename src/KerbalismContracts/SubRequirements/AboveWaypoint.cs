@@ -15,7 +15,7 @@ namespace KerbalismContracts
 		public double radialVelocityChange;
 		public double angularVelocity;
 		internal double distance10sago;
-		internal double distance20sago;
+		internal double distanceIn10s;
 		internal double elev10sago;
 		internal bool angularRequirementMet;
 	}
@@ -123,11 +123,11 @@ namespace KerbalismContracts
 
 				if(minRadialVelocityChange > 0)
 				{
-					state.distance20sago = GetDistance(vessel, context, 20);
-					var radialVelocity10sago = Math.Abs((state.distance20sago - state.distance10sago) / 10.0);
-					state.radialVelocityChange = Math.Abs((radialVelocity10sago - state.radialVelocity) / 10.0);
-
+					state.distanceIn10s = GetDistance(vessel, context, -10);
+					var radialVelocityIn10s = Math.Abs((state.distanceIn10s - state.distance) / 10.0);
+					state.radialVelocityChange = Math.Abs((radialVelocityIn10s - state.radialVelocity) / 10.0);
 					meetsCondition &= state.radialVelocityChange >= minRadialVelocityChange;
+					Utils.LogDebug($"{context.waypoint.name} {context.now} el {state.elevation.ToString("F2")} dist {state.distance.ToString("F0")} dist-10s {state.distance10sago.ToString("F0")} dist-20s {state.distanceIn10s.ToString("F0")} radvel {state.radialVelocity.ToString("F1")} radvel-10s {radialVelocityIn10s.ToString("F1")} delta radvel {state.radialVelocityChange.ToString("F1")}");
 				}
 			}
 
@@ -181,7 +181,8 @@ namespace KerbalismContracts
 
 			if (minRadialVelocityChange > 0)
 			{
-				label += "\n\t" + Localizer.Format("radial velocity change: <<1>>/s", Lib.Color(Lib.HumanReadableSpeed(wpState.radialVelocityChange),
+				var radialVelocityChangeString = Lib.HumanReadableSpeed(wpState.radialVelocityChange) + "/s";
+				label += "\n\t" + Localizer.Format("radial velocity change: <<1>>", Lib.Color(radialVelocityChangeString,
 					wpState.radialVelocityChange >= minRadialVelocityChange ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 
@@ -202,6 +203,8 @@ namespace KerbalismContracts
 
 			var a = Vector3d.Angle(vesselPosition - bodyPosition, waypointPosition - bodyPosition);
 			var b = Vector3d.Angle(waypointPosition - vesselPosition, bodyPosition - vesselPosition);
+
+			// Utils.LogDebug($"wp {waypointPosition} body {bodyPosition} vessel {vesselPosition} a {a} b {b}");
 
 			// a + b + elevation = 90 degrees
 			return 90.0 - a - b;

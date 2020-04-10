@@ -1,5 +1,6 @@
-﻿using System;
+﻿using ContractConfigurator;
 using Contracts;
+using System;
 
 namespace KerbalismContracts
 {
@@ -8,25 +9,54 @@ namespace KerbalismContracts
 		internal Vessel vessel;
 		internal string statusLabel;
 		internal bool conditionMet;
+		internal bool obsolete;
 
-		public VesselStatusParameter() { }
+		private readonly TitleTracker titleTracker;
+		private string lastTitle;
+
+		public VesselStatusParameter()
+		{
+			titleTracker = new TitleTracker(this);
+		}
 
 		public VesselStatusParameter(Vessel vessel, string statusLabel, bool conditionMet)
 		{
+			titleTracker = new TitleTracker(this);
+
 			this.vessel = vessel;
 			this.statusLabel = statusLabel;
 			this.conditionMet = conditionMet;
-			optional = true;
+			this.obsolete = false;
+		}
+
+		internal void Update(string statusLabel, bool conditionMet)
+		{
+			this.obsolete = false;
+			this.statusLabel = statusLabel;
+			this.conditionMet = conditionMet;
+			GetTitle();
+		}
+
+		protected override void OnSave(ConfigNode node)
+		{
+			base.OnSave(node);
+			if(vessel != null)
+				node.AddValue("vesselId", vessel.id);
+		}
+
+		protected override void OnLoad(ConfigNode node)
+		{
+			base.OnLoad(node);
+			Guid vesselId = new Guid(ConfigNodeUtil.ParseValue(node, "vesselId", ""));
+			vessel = FlightGlobals.FindVessel(vesselId);
 		}
 
 		protected override void OnUpdate()
 		{
 			base.OnUpdate();
 
-			if (vessel != null && conditionMet)
-			{
+			if (conditionMet)
 				SetComplete();
-			}
 		}
 
 		protected override string GetTitle()
@@ -38,10 +68,19 @@ namespace KerbalismContracts
 			if (vesselName == null)
 				vesselName = vessel.name;
 
+			string result;
 			if (string.IsNullOrEmpty(statusLabel))
-				return KERBALISM.Lib.Ellipsis(vesselName, 35);
+				result = KERBALISM.Lib.Ellipsis(vesselName, 35);
+			else
+				result = KERBALISM.Lib.Ellipsis(vesselName, 35) + "\n" + statusLabel;
 
-			return KERBALISM.Lib.Ellipsis(vesselName, 35) + "\n" + statusLabel;
+			titleTracker.Add(result);
+			if (lastTitle != result && Root != null && (Root.ContractState == Contract.State.Active || Root.ContractState == Contract.State.Failed))
+			{
+				titleTracker.UpdateContractWindow(result);
+				lastTitle = result;
+			}
+			return result;
 		}
 	}
 }

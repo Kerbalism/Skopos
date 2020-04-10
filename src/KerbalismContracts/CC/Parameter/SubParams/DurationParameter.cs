@@ -32,10 +32,18 @@ namespace KerbalismContracts
 
 		private double previousRunningTime;
 
-		public DurationParameter() { }
+		private readonly TitleTracker titleTracker;
+		private string lastTitle;
+
+		public DurationParameter()
+		{
+			titleTracker = new TitleTracker(this);
+		}
 
 		public DurationParameter(double duration, double allowedDowntime, bool allowReset, double waitDuration, DurationType durationType)
 		{
+			titleTracker = new TitleTracker(this);
+
 			this.duration = duration;
 			this.allowedDowntime = allowedDowntime;
 			this.allowReset = allowReset;
@@ -129,6 +137,8 @@ namespace KerbalismContracts
 		{
 			if (allConditionsMet) UpdateGood(now);
 			else UpdateBad(now);
+
+			GetTitle();
 		}
 
 		protected override string GetHashString()
@@ -138,7 +148,7 @@ namespace KerbalismContracts
 
 		protected override string GetTitle()
 		{
-			string result;
+			string result = "";
 			double now = Planetarium.GetUniversalTime();
 
 			switch (durationState)
@@ -156,7 +166,7 @@ namespace KerbalismContracts
 					if (!allowReset)
 						result += "\n\t - " + Lib.Color("Will fail if interrupted beyond allowance", Lib.Kolor.Orange);
 
-					return result;
+					break;
 
 				case DurationState.preRun:
 					result = Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
@@ -165,29 +175,40 @@ namespace KerbalismContracts
 					if (allowedDowntime > 0)
 						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
 							DurationUtil.StringValue(allowedDowntime));
-					return result;
+
+					break;
 
 				case DurationState.running:
 					result = Localizer.Format("Remaining: <<1>>", Lib.Color(DurationUtil.StringValue(Math.Max(0, doneAfter - now)), Lib.Kolor.Green));
 					if (allowedDowntime > 0)
 						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
 							DurationUtil.StringValue(allowedDowntime));
-					return result;
+
+					break;
 
 				case DurationState.preReset:
 					result = Localizer.Format("Remaining: <<1>> (stop in: <<2>>)",
 						Lib.Color(DurationUtil.StringValue(Math.Max(0, doneAfter - now)), Lib.Kolor.Green),
 						Lib.Color(DurationUtil.StringValue(Math.Max(0, failAfter - now)), allowReset ? Lib.Kolor.Yellow : Lib.Kolor.Red));
-					return result;
+
+					break;
 
 				case DurationState.done:
-					return "Done!";
+					result = "Done!";
+					break;
 
 				case DurationState.failed:
-					return "Time is up!";
+					result = "Time is up!";
+					break;
 			}
 
-			return "Invalid state";
+			titleTracker.Add(result);
+			if (lastTitle != result && Root != null && (Root.ContractState == Contract.State.Active || Root.ContractState == Contract.State.Failed))
+			{
+				titleTracker.UpdateContractWindow(result);
+				lastTitle = result;
+			}
+			return result;
 		}
 
 		protected override void OnSave(ConfigNode node)
