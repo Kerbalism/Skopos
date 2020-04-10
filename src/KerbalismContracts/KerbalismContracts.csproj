@@ -116,6 +116,7 @@
     <Compile Include="SubRequirements\Base\SubRequirementState.cs" />
     <Compile Include="SubRequirements\Evaluation\EvaluationContext.cs" />
     <Compile Include="SubRequirements\LineOfSight.cs" />
+    <Compile Include="SubRequirements\SolarElevation.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
