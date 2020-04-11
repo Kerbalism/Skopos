@@ -73,7 +73,7 @@ namespace KerbalismContracts
 			if (!string.IsNullOrEmpty(title))
 				return title;
 
-			string bodyName = targetBody != null ? targetBody.CleanDisplayName() : "a body";
+			string bodyName = targetBody?.CleanDisplayName() ?? "a body";
 			return Localizer.Format("Find <<1>> of <<2>>", RadiationField.Name(field), bodyName);
 		}
 
