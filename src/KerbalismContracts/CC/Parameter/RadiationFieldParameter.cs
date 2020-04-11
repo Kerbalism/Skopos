@@ -57,6 +57,8 @@ namespace KerbalismContracts
 		protected int crossings_min;
 		protected int crossings_max;
 
+		protected int crossed_count = 0;
+
 		public RadiationFieldParameter(): base(null) {}
 
 		public RadiationFieldParameter(RadiationFieldType field, int crossings_min, int crossings_max, CelestialBody targetBody, string title)
@@ -70,11 +72,29 @@ namespace KerbalismContracts
 
 		protected override string GetParameterTitle()
 		{
-			if (!string.IsNullOrEmpty(title))
-				return title;
-
 			string bodyName = targetBody?.CleanDisplayName() ?? "a body";
-			return Localizer.Format("Find <<1>> of <<2>>", RadiationField.Name(field), bodyName);
+			string fieldName = RadiationField.Name(field);
+
+			string prefix = title;
+			if (!string.IsNullOrEmpty(prefix))
+				prefix = prefix + ":\n - ";
+
+			if (crossed_count == 0)
+			{
+				if (crossings_min > 0)
+					return prefix + Localizer.Format("Cross <<1>> of <<2>> at least <<3>> times", fieldName, bodyName, crossings_min);
+				if (crossings_max > 0)
+					return prefix + Localizer.Format("Cross <<1>> of <<2>> no more than <<3>> times", fieldName, bodyName, crossings_max);
+			}
+			else
+			{
+				if (crossings_min > 0)
+					return prefix + Localizer.Format("Cross <<1>> of <<2>> at least <<3>> times (<<4>>/<<3>>)", fieldName, bodyName, crossings_min, crossed_count);
+				if (crossings_max > 0)
+					return prefix + Localizer.Format("Cross <<1>> of <<2>> no more than <<3>> times (<<4>>/<<3>>)", fieldName, bodyName, crossings_max, crossed_count);
+			}
+
+			return prefix + Localizer.Format("Find <<1>> of <<2>>", fieldName, bodyName);
 		}
 
 		protected override void OnParameterSave(ConfigNode node)
@@ -123,20 +143,18 @@ namespace KerbalismContracts
 			if (bd == null)
 				return;
 
-			int compareValue = 0;
-
 			switch (field)
 			{
-				case RadiationFieldType.INNER_BELT: compareValue = bd.inner_crossings; break;
-				case RadiationFieldType.OUTER_BELT: compareValue = bd.outer_crossings; break;
-				case RadiationFieldType.MAGNETOPAUSE: compareValue = bd.magneto_crossings; break;
+				case RadiationFieldType.INNER_BELT: crossed_count = bd.inner_crossings; break;
+				case RadiationFieldType.OUTER_BELT: crossed_count = bd.outer_crossings; break;
+				case RadiationFieldType.MAGNETOPAUSE: crossed_count = bd.magneto_crossings; break;
 			}
 
 			var result = ParameterState.Incomplete;
 
-			if (crossings_min > 0 && compareValue >= crossings_min)
+			if (crossings_min > 0 && crossed_count >= crossings_min)
 				result = ParameterState.Complete;
-			if (crossings_max > 0 && compareValue > crossings_max)
+			if (crossings_max > 0 && crossed_count > crossings_max)
 				result = ParameterState.Failed;
 
 			SetState(result);
