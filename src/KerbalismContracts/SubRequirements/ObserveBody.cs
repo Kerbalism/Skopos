@@ -38,9 +38,6 @@ namespace KerbalismContracts
 			maxDistance = Lib.ConfigValue(node, "maxDistance", 0.0);
 			maxDistanceAU = Lib.ConfigValue(node, "maxDistanceAU", 0.0);
 			minSurface = Lib.ConfigValue(node, "minSurface", 0.0);
-
-			if (maxDistance == 0 && maxDistanceAU != 0)
-				maxDistance = Sim.AU * maxDistanceAU;
 		}
 
 		public override string GetTitle(EvaluationContext context)
@@ -79,13 +76,17 @@ namespace KerbalismContracts
 			if (context.targetBody == null || vessel.orbit == null)
 				return false;
 
+			double distance = maxDistance;
+			if (distance == 0 && maxDistanceAU != 0)
+				distance = Sim.AU * maxDistanceAU;
+
 			// if distance is not a limiting factor, every vessel is a candidate
-			if (maxDistance == 0)
+			if (distance == 0)
 				return true;
 
 			// if vessel is orbiting target body...
 			if(vessel.mainBody == context.targetBody)
-				return vessel.orbit.PeA < maxDistance;
+				return vessel.orbit.PeA < distance;
 
 			// look for a parent body that is orbiting our target body (i.e. moon -> earth -> sun = target)
 			var vesselOrbitingBody = vessel.mainBody;
@@ -93,7 +94,7 @@ namespace KerbalismContracts
 				vesselOrbitingBody = vesselOrbitingBody.referenceBody;
 
 			if(vesselOrbitingBody.referenceBody == context.targetBody)
-				return vesselOrbitingBody.orbit.PeA < maxDistance;
+				return vesselOrbitingBody.orbit.PeA < distance;
 
 
 			// our main body is not orbiting our target, find a common anchestor
@@ -103,7 +104,7 @@ namespace KerbalismContracts
 			if (!TrackToCommonAncestor(vessel.mainBody, context.targetBody, out vesselOrbitingBody, out targetOrbitingBody))
 				return false;
 
-			return vesselOrbitingBody.orbit.PeA + targetOrbitingBody.orbit.PeA < maxDistance;
+			return vesselOrbitingBody.orbit.PeA + targetOrbitingBody.orbit.PeA < distance;
 		}
 
 		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
@@ -120,7 +121,11 @@ namespace KerbalismContracts
 			bodyDir /= state.distance;
 			state.distance -= body.Radius;
 
-			if (maxDistance != 0 && state.distance > maxDistance)
+			double distance = maxDistance;
+			if (distance == 0 && maxDistanceAU != 0)
+				distance = Sim.AU * maxDistanceAU;
+
+			if (distance != 0 && state.distance > distance)
 			{
 				state.requirementMet = false;
 				return state;

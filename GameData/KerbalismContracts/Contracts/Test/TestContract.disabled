@@ -32,8 +32,7 @@ CONTRACT_TYPE
 KerbalismContractRequirement
 {
   name = TestContract
-  min_step = 20
-  max_step = 120
+  max_step = 200
 
   Requirement
   {

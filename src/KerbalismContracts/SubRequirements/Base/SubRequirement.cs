@@ -86,8 +86,6 @@ namespace KerbalismContracts
 					subRequirementActivators.Add(t.Name, ctor);
 				}
 			}
-
-			Utils.LogDebug($"Found {subRequirementActivators.Count} sub requirement types.");
 		}
 
 		public static SubRequirement Load(KerbalismContractRequirement requirement, ConfigNode node)
