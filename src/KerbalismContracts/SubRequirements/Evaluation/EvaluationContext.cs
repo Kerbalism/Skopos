@@ -72,11 +72,12 @@ namespace KerbalismContracts
 			}
 		}
 
-		internal double Altitude(Vessel vessel)
+		internal double Altitude(Vessel vessel, CelestialBody referenceBody = null)
 		{
+			CelestialBody body = referenceBody ?? vessel.mainBody;
 			Vector3d vesselPosition = VesselPosition(vessel);
-			Vector3d bodyPosition = BodyPosition(vessel.mainBody);
-			return (vesselPosition - bodyPosition).magnitude - vessel.mainBody.Radius;
+			Vector3d bodyPosition = BodyPosition(body);
+			return (vesselPosition - bodyPosition).magnitude - body.Radius;
 		}
 
 		private static readonly Dictionary<Guid, SortedList<double, WaypointPositionEntry>> waypointPositions = new Dictionary<Guid, SortedList<double, WaypointPositionEntry>>();

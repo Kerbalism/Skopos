@@ -58,7 +58,7 @@ namespace KerbalismContracts
 				return null;
 			}
 
-			var result = new KerbalismContractParameter(arguments);
+			var result = new KerbalismContractParameter(arguments, targetBody);
 
 			if (requirement.NeedsWaypoint())
 			{
@@ -97,7 +97,7 @@ namespace KerbalismContracts
 
 		public KerbalismContractParameter() { }
 
-		public KerbalismContractParameter(Arguments arguments)
+		public KerbalismContractParameter(Arguments arguments, CelestialBody targetBody)
 		{
 			this.requirementId = arguments.requirementId;
 			this.duration = arguments.duration.Value;
@@ -109,8 +109,11 @@ namespace KerbalismContracts
 			this.title = arguments.title;
 			this.hideChildren = arguments.hideChildren;
 			this.durationType = arguments.durationType;
+			this.targetBody = targetBody;
 
 			this.requirement = Configuration.Requirement(requirementId);
+
+			
 
 			CreateSubParameters();
 		}
@@ -146,7 +149,6 @@ namespace KerbalismContracts
 
 			foreach (var req in Configuration.Requirement(requirementId).SubRequirements)
 			{
-				Utils.LogDebug($"Creating sub requirement for {requirementId}.{req.type}...");
 				var sub = new SubRequirementParameter(req);
 				subRequirementParameters.Add(sub);
 				AddParameter(sub);
@@ -154,19 +156,21 @@ namespace KerbalismContracts
 
 			if (duration > 0 && durationParameter == null)
 			{
-				Utils.LogDebug($"Duration {durationType} {duration} allowed downtime {allowedDowntime} resets allowed {allowReset}");
 				durationParameter = new DurationParameter(duration, allowedDowntime, allowReset, waitDuration, durationType);
 				AddParameter(durationParameter);
 			}
-
-			Utils.LogDebug($"Created {ParameterCount} sub parameters");
 		}
 
 		protected override string GetParameterTitle()
 		{
-			string result = !string.IsNullOrEmpty(title) ? title : Configuration.Requirement(requirementId).title;
+			// make sure to never return an empty string here (the contract window won't show the parameter if the title was empty once)
+			string result = title;
+			if(string.IsNullOrEmpty(result)) result = Configuration.Requirement(requirementId).title;
+			if (string.IsNullOrEmpty(result)) result = requirementId;
+
 			if (!string.IsNullOrEmpty(statusLabel))
 				result += ": " + statusLabel;
+
 			return result;
 		}
 
@@ -175,7 +179,7 @@ namespace KerbalismContracts
 			if(newLabel != statusLabel)
 			{
 				statusLabel = newLabel;
-				//ContractConfigurator.ContractConfigurator.OnParameterChange.Fire(this.Root, this);
+				GetTitle();
 			}
 		}
 
@@ -190,6 +194,8 @@ namespace KerbalismContracts
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("lastUpdate", lastUpdate);
 			node.AddValue("durationType", durationType);
+			if (targetBody != null)
+				node.AddValue("targetBody", targetBody.name);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
@@ -204,6 +210,7 @@ namespace KerbalismContracts
 			lastUpdate = ConfigNodeUtil.ParseValue(node, "lastUpdate", 0.0);
 			requirement = Configuration.Requirement(requirementId);
 			durationType = Lib.ConfigEnum(node, "durationType", DurationParameter.DurationType.countdown);
+			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
 		}
 
 		/// <summary>
@@ -232,10 +239,6 @@ namespace KerbalismContracts
 			foreach(var sp in subRequirementParameters)
 			{
 				var state = sp.subRequirement.VesselMeetsCondition(vessel, context);
-
-				if (state.requirementMet)
-					sp.matchCounter++;
-
 				result &= state.requirementMet;
 
 				if (doUpdateLabel)
@@ -258,14 +261,32 @@ namespace KerbalismContracts
 		/// final filter: looks at the collection of all vessels that passed the hard and soft filters,
 		/// use this to check constellations, count vessels etc.
 		/// </summary>
-		private bool VesselsMeetCondition(List<Vessel> vessels, int vesselsMeetingAllConditions)
+		private bool VesselsMeetCondition(List<Vessel> vessels)
 		{
-			bool result = true;
-			foreach(var subParameter in subRequirementParameters)
-				result &= subParameter.VesselsMeetCondition(vessels);
+			bool result = vessels.Count >= minVessels;
+			string statusLabel = string.Empty;
 
-			string statusLabel = Lib.Color($"{vesselsMeetingAllConditions}/{minVessels}",
-					vesselsMeetingAllConditions >= minVessels ? Lib.Kolor.Green : Lib.Kolor.Red);
+			if (result)
+			{
+				foreach (var subParameter in subRequirementParameters)
+				{
+					string label;
+					result &= subParameter.VesselsMeetCondition(vessels, out label);
+					if (!string.IsNullOrEmpty(label))
+					{
+						if (!string.IsNullOrEmpty(statusLabel))
+							statusLabel += " ";
+						statusLabel += label;
+					}
+				}
+			}
+
+			if(minVessels > 1)
+			{
+				statusLabel = Lib.Color($"{vessels.Count}/{minVessels}",
+						vessels.Count >= minVessels ? Lib.Kolor.Green : Lib.Kolor.Red)
+					+ " " + statusLabel;
+			}
 
 			SetStatusLabel(statusLabel);
 			
@@ -293,13 +314,17 @@ namespace KerbalismContracts
 			if (ParameterCount == 0) return;
 			if (state != ParameterState.Incomplete) return;
 
-			if (subRequirementParameters.Count == 0)
-				CreateSubParameters();
-
-			if(lastUpdate == 0)
+			if (lastUpdate == 0)
 			{
 				lastUpdate = Planetarium.GetUniversalTime();
 				return;
+			}
+
+			bool childParameterChanged = false;
+			if (subRequirementParameters.Count == 0)
+			{
+				childParameterChanged = true;
+				CreateSubParameters();
 			}
 
 			var lastUpdateAge = Planetarium.GetUniversalTime() - lastUpdate;
@@ -329,7 +354,7 @@ namespace KerbalismContracts
 					vsp.obsolete = true;
 			}
 
-			bool childParameterChanged = false;
+			List<Vessel> vesselsMeetingCondition = new List<Vessel>();
 
 			int stepCount = context.steps.Count;
 			for(int i = 0; i < stepCount; i++)
@@ -337,7 +362,7 @@ namespace KerbalismContracts
 				var now = context.steps[i];
 				context.SetTime(now);
 
-				int vesselsMeetingAllConditions = 0;
+				vesselsMeetingCondition.Clear();
 				bool doLabelUpdate = !hideChildren && i + 1 == stepCount;
 
 				foreach (Vessel vessel in vessels)
@@ -345,14 +370,14 @@ namespace KerbalismContracts
 					string statusLabel;
 
 					bool conditionMet = VesselMeetsCondition(vessel, doLabelUpdate, out statusLabel);
-					if (conditionMet) vesselsMeetingAllConditions++;
+					if (conditionMet) vesselsMeetingCondition.Add(vessel);
 
 					if (doLabelUpdate)
 						childParameterChanged |= UpdateVesselStatus(vessel, statusLabel, conditionMet);
 				}
 
-				bool allConditionsMet = vesselsMeetingAllConditions >= minVessels;
-				allConditionsMet &= VesselsMeetCondition(vessels, vesselsMeetingAllConditions);
+				bool allConditionsMet = vesselsMeetingCondition.Count >= minVessels;
+				allConditionsMet &= VesselsMeetCondition(vesselsMeetingCondition);
 
 				if (durationParameter == null)
 					SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);
@@ -403,20 +428,6 @@ namespace KerbalismContracts
 			vesselStatusParameters.Add(p);
 			AddParameter(p);
 			return true;
-		}
-
-		private bool RemoveAllParameters(Type type)
-		{
-			bool removed = false;
-			int c;
-			do
-			{
-				c = ParameterCount;
-				RemoveParameter(type);
-				if (ParameterCount != c)
-					removed = true;
-			} while (c > ParameterCount);
-			return removed;
 		}
 	}
 }

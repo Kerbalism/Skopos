@@ -53,9 +53,10 @@ namespace KerbalismContracts
 		/// final filter: looks at the collection of all vessels that passed the hard and soft filters,
 		/// use this to check constellations, count vessels etc.
 		/// </summary>
-		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, int timesConditionMet, EvaluationContext context)
+		internal virtual bool VesselsMeetCondition(List<Vessel> vessels, EvaluationContext context, out string statusLabel)
 		{
-			return timesConditionMet > 0;
+			statusLabel = string.Empty;
+			return vessels.Count > 0;
 		}
 
 		private static void InitSubRequirementActivators()

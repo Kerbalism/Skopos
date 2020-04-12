@@ -12,8 +12,6 @@ namespace KerbalismContracts
 		private string requirementId;
 		private string subRequirementType;
 
-		/// <summary> the number of vessels meeting this condition </summary>
-		internal int matchCounter;
 		internal EvaluationContext context;
 
 		private readonly TitleTracker titleTracker;
@@ -70,16 +68,14 @@ namespace KerbalismContracts
 			return result;
 		}
 
-		internal bool VesselsMeetCondition(List<Vessel> vessels)
+		internal bool VesselsMeetCondition(List<Vessel> vessels, out string statusLabel)
 		{
-			completed = subRequirement.VesselsMeetCondition(vessels, matchCounter, context);
+			completed = subRequirement.VesselsMeetCondition(vessels, context, out statusLabel);
 
 			if (completed)
 				SetComplete();
 			else
 				SetIncomplete();
-
-			GetTitle();
 
 			return completed;
 		}
@@ -87,7 +83,6 @@ namespace KerbalismContracts
 		internal void ResetContext(EvaluationContext context)
 		{
 			this.context = context;
-			matchCounter = 0;
 		}
 	}
 }

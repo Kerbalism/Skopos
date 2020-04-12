@@ -157,6 +157,8 @@ namespace KerbalismContracts
 			if (crossings_max > 0 && crossed_count > crossings_max)
 				result = ParameterState.Failed;
 
+			GetTitle();
+
 			SetState(result);
 		}
 	}

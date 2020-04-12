@@ -204,11 +204,15 @@ namespace KerbalismContracts
 			if (stay_out && in_field) return false;
 			if (stay_in || stay_out) return true;
 
-			Utils.LogDebug($"VesselRadiationFieldParameter {field} / {vessel}: in_field { in_field} currently {currently_in_field} crossed {crossed_count}");
+			// Utils.LogDebug($"VesselRadiationFieldParameter {field} / {vessel}: in_field { in_field} currently {currently_in_field} crossed {crossed_count}");
 
-			if (in_field != currently_in_field) crossed_count++;
+			if (in_field != currently_in_field)
+			{
+				crossed_count++;
+				GetTitle();
+			}
 			currently_in_field = in_field;
-
+			
 			if (crossings_min >= 0 && crossed_count < crossings_min)
 				return false;
 			if (crossings_max >= 0 && crossed_count > crossings_max)
