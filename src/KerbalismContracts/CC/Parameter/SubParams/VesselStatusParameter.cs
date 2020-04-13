@@ -47,8 +47,12 @@ namespace KerbalismContracts
 		protected override void OnLoad(ConfigNode node)
 		{
 			base.OnLoad(node);
-			Guid vesselId = new Guid(ConfigNodeUtil.ParseValue(node, "vesselId", ""));
-			vessel = FlightGlobals.FindVessel(vesselId);
+			string idString = ConfigNodeUtil.ParseValue<string>(node, "vesselId", null);
+			if (!string.IsNullOrEmpty(idString))
+			{
+				Guid vesselId = new Guid(idString);
+				vessel = FlightGlobals.FindVessel(vesselId);
+			}
 		}
 
 		protected override void OnUpdate()

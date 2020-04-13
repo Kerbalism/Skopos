@@ -113,8 +113,6 @@ namespace KerbalismContracts
 
 			this.requirement = Configuration.Requirement(requirementId);
 
-			
-
 			CreateSubParameters();
 		}
 
@@ -378,6 +376,13 @@ namespace KerbalismContracts
 
 				bool allConditionsMet = vesselsMeetingCondition.Count >= minVessels;
 				allConditionsMet &= VesselsMeetCondition(vesselsMeetingCondition);
+
+				if (vessels.Count == 0)
+				{
+					foreach (SubRequirementParameter srp in subRequirementParameters)
+						srp.NoVesselMeetsCondition();
+					break;
+				}
 
 				if (durationParameter == null)
 					SetState(allConditionsMet ? ParameterState.Complete : ParameterState.Incomplete);

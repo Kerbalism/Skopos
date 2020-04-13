@@ -84,5 +84,10 @@ namespace KerbalismContracts
 		{
 			this.context = context;
 		}
+
+		internal void NoVesselMeetsCondition()
+		{
+			SetIncomplete();
+		}
 	}
 }
