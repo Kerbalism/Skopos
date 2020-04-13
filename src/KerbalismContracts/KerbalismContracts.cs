@@ -23,7 +23,8 @@ namespace KerbalismContracts
 			Configuration.Load();
 
 			API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
-			//API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
+			API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
+			GameEvents.onVesselChange.Add((vessel) => { ExperimentStateTracker.Remove(vessel.id); });
 		}
 	}
 
@@ -160,8 +161,8 @@ namespace KerbalismContracts
 			}
 
 			RadiationFieldTracker.Load(node);
+			ExperimentStateTracker.Load(node);
 			EquipmentState.Load(node);
-			//ExperimentStateTracker.Load(node);
 		}
 
 		public override void OnSave(ConfigNode node)
@@ -173,8 +174,8 @@ namespace KerbalismContracts
 			}
 
 			RadiationFieldTracker.Save(node);
+			ExperimentStateTracker.Save(node);
 			EquipmentState.Save(node);
-			//ExperimentStateTracker.Save(node);
 		}
 	}
 

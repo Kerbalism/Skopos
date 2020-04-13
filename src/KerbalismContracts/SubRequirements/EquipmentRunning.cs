@@ -11,31 +11,31 @@ namespace KerbalismContracts
 
 	public class EquipmentRunning : SubRequirement
 	{
-		private string equipment;
+		private string equipmentId;
 		private string description;
 		private string shortDescription;
 
 		public EquipmentRunning(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
-			equipment = Lib.ConfigValue(node, "equipment", "");
+			equipmentId = Lib.ConfigValue(node, "equipmentId", "");
 			description = Lib.ConfigValue<string>(node, "description", null);
 			shortDescription = Lib.ConfigValue<string>(node, "shortDescription", null);
 		}
 
 		public override string GetTitle(EvaluationContext context)
 		{
-			return description ?? shortDescription ?? equipment;
+			return description ?? shortDescription ?? equipmentId;
 		}
 
 		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
-			return KerbalismContracts.EquipmentState.HasValue(vessel, equipment);
+			return KerbalismContracts.EquipmentState.HasValue(vessel, equipmentId);
 		}
 
 		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
 			EquipmentRunningState state = new EquipmentRunningState();
-			state.equipmentState = KerbalismContracts.EquipmentState.GetValue(vessel, equipment);
+			state.equipmentState = KerbalismContracts.EquipmentState.GetValue(vessel, equipmentId);
 			state.requirementMet = state.equipmentState == EquipmentState.nominal;
 			return state;
 		}

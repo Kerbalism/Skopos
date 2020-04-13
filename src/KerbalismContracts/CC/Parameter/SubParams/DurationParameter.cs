@@ -87,6 +87,7 @@ namespace KerbalismContracts
 
 		private void UpdateBad(double now)
 		{
+			previousRunningTime = 0;
 			switch (durationState)
 			{
 				case DurationState.off:
@@ -151,6 +152,10 @@ namespace KerbalismContracts
 			string result = "";
 			double now = Planetarium.GetUniversalTime();
 
+			string remainingStr = durationType == DurationType.countdown
+				? DurationUtil.StringValue(Math.Max(0, doneAfter - now))
+				: DurationUtil.StringValue(Math.Max(0, duration - accumulatedDuration));
+
 			switch (durationState)
 			{
 				case DurationState.off:
@@ -179,7 +184,7 @@ namespace KerbalismContracts
 					break;
 
 				case DurationState.running:
-					result = Localizer.Format("Remaining: <<1>>", Lib.Color(DurationUtil.StringValue(Math.Max(0, doneAfter - now)), Lib.Kolor.Green));
+					result = Localizer.Format("Remaining: <<1>>", Lib.Color(remainingStr, Lib.Kolor.Green));
 					if (allowedDowntime > 0)
 						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
 							DurationUtil.StringValue(allowedDowntime));
@@ -187,8 +192,7 @@ namespace KerbalismContracts
 					break;
 
 				case DurationState.preReset:
-					result = Localizer.Format("Remaining: <<1>> (stop in: <<2>>)",
-						Lib.Color(DurationUtil.StringValue(Math.Max(0, doneAfter - now)), Lib.Kolor.Green),
+					result = Localizer.Format("Remaining: <<1>> (stop in: <<2>>)", Lib.Color(remainingStr, Lib.Kolor.Green),
 						Lib.Color(DurationUtil.StringValue(Math.Max(0, failAfter - now)), allowReset ? Lib.Kolor.Yellow : Lib.Kolor.Red));
 
 					break;

@@ -117,6 +117,9 @@
     <Compile Include="SubRequirements\Evaluation\EvaluationContext.cs" />
     <Compile Include="SubRequirements\ObserveBody.cs" />
     <Compile Include="SubRequirements\SolarElevation.cs" />
+    <Compile Include="ExperimentStateTracker.cs" />
+    <Compile Include="SubRequirements\ExperimentRunning.cs" />
+    <Compile Include="CC\Parameter\VesselExperimentRunningParameter.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

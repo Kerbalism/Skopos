@@ -95,7 +95,7 @@ namespace KerbalismContracts
 
 			string prefix = title;
 			if (!string.IsNullOrEmpty(prefix))
-				prefix = prefix + ":\n - ";
+				prefix = prefix + ": ";
 
 			if (stay_in)
 				return prefix + Localizer.Format("Stay in <<1>> of <<2>>", fieldName, bodyName);
