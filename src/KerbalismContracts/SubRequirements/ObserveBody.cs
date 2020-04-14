@@ -43,12 +43,19 @@ namespace KerbalismContracts
 		public override string GetTitle(EvaluationContext context)
 		{
 			string targetName = context?.targetBody?.displayName ?? "target";
+			string result = Localizer.Format("Line of sight to <<1>>", targetName);
 
-			if(maxDistance == 0)
-				return Localizer.Format("Line of sight to <<1>>", targetName);
-			else
-				return Localizer.Format("Line of sight to <<1>> (max. distance <<2>>)",
-					targetName, Lib.HumanReadableDistance(maxDistance));
+			double distance = maxDistance;
+			if (distance == 0 && maxDistanceAU != 0)
+				distance = Sim.AU * maxDistanceAU;
+
+			if (distance != 0)
+				result += " " + Localizer.Format("max. distance <<1>>", Lib.HumanReadableDistance(distance));
+
+			if (minSurface != 0)
+				result += " " + Localizer.Format("<<1>> of surface observed", Lib.HumanReadablePerc(minSurface / 100.0));
+
+			return result;
 		}
 
 		internal bool TrackToCommonAncestor(CelestialBody vesselMainBody, CelestialBody targetBody,
@@ -207,8 +214,10 @@ namespace KerbalismContracts
 
 				visible = 100.0 * visibleSurfaces / (double)surfaces.Count;
 			}
-			statusLabel = Localizer.Format("<<1>> of surface observed",
-				Lib.Color(Lib.HumanReadablePerc(visible / 100.0), visible > minSurface ? Lib.Kolor.Green : Lib.Kolor.Red));
+
+			string observedPercStr = Lib.HumanReadablePerc(visible / 100.0) + " / " + Lib.HumanReadablePerc(minSurface / 100.0);
+			observedPercStr = Lib.Color(observedPercStr, visible > minSurface ? Lib.Kolor.Green : Lib.Kolor.Red);
+			statusLabel = Localizer.Format("<<1>> of surface observed", observedPercStr);
 			return visible > minSurface;
 		}
 

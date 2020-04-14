@@ -264,18 +264,15 @@ namespace KerbalismContracts
 			bool result = vessels.Count >= minVessels;
 			string statusLabel = string.Empty;
 
-			if (result)
+			foreach (var subParameter in subRequirementParameters)
 			{
-				foreach (var subParameter in subRequirementParameters)
+				string label;
+				result &= subParameter.VesselsMeetCondition(vessels, out label);
+				if (!string.IsNullOrEmpty(label))
 				{
-					string label;
-					result &= subParameter.VesselsMeetCondition(vessels, out label);
-					if (!string.IsNullOrEmpty(label))
-					{
-						if (!string.IsNullOrEmpty(statusLabel))
-							statusLabel += " ";
-						statusLabel += label;
-					}
+					if (!string.IsNullOrEmpty(statusLabel))
+						statusLabel += " ";
+					statusLabel += label;
 				}
 			}
 
