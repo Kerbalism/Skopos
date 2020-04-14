@@ -57,9 +57,12 @@ namespace KerbalismContracts
 			{
 				case DurationState.off:
 				case DurationState.preRun:
-				case DurationState.preReset:
 					durationState = DurationState.running;
 					doneAfter = now + duration;
+					break;
+
+				case DurationState.preReset:
+					durationState = DurationState.running;
 					break;
 
 				case DurationState.running:
