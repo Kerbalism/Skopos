@@ -111,8 +111,6 @@
     <Compile Include="SubRequirements\Base\SubRequirement.cs" />
     <Compile Include="CC\Parameter\SubParams\VesselStatusParameter.cs" />
     <Compile Include="SubRequirements\Altitude.cs" />
-    <Compile Include="SubRequirements\CommLink.cs" />
-    <Compile Include="SubRequirements\Powered.cs" />
     <Compile Include="SubRequirements\Base\SubRequirementState.cs" />
     <Compile Include="SubRequirements\Evaluation\EvaluationContext.cs" />
     <Compile Include="SubRequirements\ObserveBody.cs" />
