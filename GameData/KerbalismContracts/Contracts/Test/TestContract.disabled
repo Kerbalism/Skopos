@@ -39,4 +39,10 @@ KerbalismContractRequirement
     name = ObserveBody
     minSurface = 70.0
   }
+
+  Requirement
+  {
+    name = ExperimentRunning
+    experimentId = geigerCounter
+  }
 }
