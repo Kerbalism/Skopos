@@ -9,8 +9,8 @@ namespace KerbalismContracts
 	{
 		public SubRequirement subRequirement { get; private set; }
 		private bool completed;
-		private string requirementId;
-		private string subRequirementType;
+		internal string requirementId;
+		internal string subRequirementType;
 
 		internal EvaluationContext context;
 

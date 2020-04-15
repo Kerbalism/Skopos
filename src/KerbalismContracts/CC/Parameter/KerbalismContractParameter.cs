@@ -129,11 +129,17 @@ namespace KerbalismContracts
 			if (subRequirementParameters.Count > 0)
 				return;
 
-			for(int i = 0; i < ParameterCount; i++)
+			int count = ParameterCount;
+			for(int i = count - 1; i >= 0; i--)
 			{
 				var p = GetParameter(i);
 				if(p is SubRequirementParameter srp)
-					subRequirementParameters.Add(srp);
+				{
+					if(srp.subRequirement != null)
+						subRequirementParameters.Add(srp);
+					else
+						RemoveParameter(i); // this can happen when contract definitions change
+				}
 
 				if (p is DurationParameter dp)
 					durationParameter = dp;
@@ -236,6 +242,9 @@ namespace KerbalismContracts
 
 			foreach(var sp in subRequirementParameters)
 			{
+				if (sp.subRequirement == null)
+					continue;
+
 				var state = sp.subRequirement.VesselMeetsCondition(vessel, context);
 				result &= state.requirementMet;
 
