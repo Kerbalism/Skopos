@@ -19,9 +19,9 @@ You will have to answer a set of questions: which orbit do you choose, and where
 Magnetic fields and radiation belts need to be researched before they will become visible. Radiation fields are discovered independently, so you might see an inner belt but not know about the outer belt until later. There are missions that have you send probes to run radiation scans from within the fields before they become visible in map view. Some bodies have very oddly shaped fields in unexpected locations - so good luck with that!
 
 
-## TV Satellites
+## Terrestrial Infrastructure
 
-Have at least one satellite with a running UHF transponder directly above a given location at all times, without interruption, for an extended period of time. Sure, you think, you've done geostationary orbits before, right? Yes, there are contracts that can be done that way. But what if the location is not near the equator? Find a solution!
+Be an internet and TV service provider! You probably did geostationary orbits before, but have you ever had to make sure that the satellite will stay exactly in location? This is what TV satellites do: they need to be directly above a given location at all times, without interruption, for an extended period of time. Easy, right? But what do you do if the location is nowhere near the equator? Find a solution!
 
 
 ## Navigation Systems
