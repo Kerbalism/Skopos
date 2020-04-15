@@ -11,12 +11,14 @@ The overall goal is to leave mission design (orbit choice, constellation design)
 
 Finding solutions to mission requirements that are similar to real life mission constraints. Most of the contracts require at least basic understanding of orbital dynamics and astrophysics. You will need careful planning and the ability to execute your plan without much room for error. This time, moar boosters just won't cut it.
 
-You will have to answer a set of questions: which orbit do you choose, and where? How many satellites do you need? Could it be less if you're being clever about it?
+You will have to answer a set of questions: which orbit do you choose, and where? How many satellites do you need? Could you do with maybe one less less if you're being clever about it?
+
+Most contracts will be easy to finish when you launch more than the absolute minimum of satellites required (most times: one). But there is a caveat: the equipment that you will have to launch is extremely expensive. The bulk of the cost of your rockets will go towards the payload, so plan wisely and be careful with the launches!
 
 
 ## Discover Radiation fields
 
-Magnetic fields and radiation belts need to be researched before they will become visible. Radiation fields are discovered independently, so you might see an inner belt but not know about the outer belt until later. There are missions that have you send probes to run radiation scans from within the fields before they become visible in map view. Some bodies have very oddly shaped fields in unexpected locations - so good luck with that!
+Magnetic fields and radiation belts need to be researched before they can be seen in the tracking station. Radiation fields are discovered independently, so you might see an inner radiation belt but not know about the outer radiation belt until later - or the other way around. Some bodies have very oddly shaped fields in unexpected locations - so good luck with that!
 
 
 ## Terrestrial Infrastructure
