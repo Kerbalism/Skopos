@@ -2,14 +2,14 @@
 
 **A contract pack for Kerbalism.**
 
-The overall goal is to leave mission design (orbit choice, constellation design) to you, instead of forcing a particular solution (such as a specific orbit specified by the contract).
+These contracts will test your skills. Gradually explore the depths of the Kerbin universe, discover radiation fields, learn how to build your first global satellite navigation system, provide satellite TV and internet service from space, and do long-term observations of Kerbin and the sun.
 
-These contracts will test your skills. Gradually explore the depths of the Kerbin universe, discover radiation fields, learn how to build your first global satellite navigation system and provide satellite TV coverage.
+The overall goal is to leave mission design (orbit choice, constellation design) to you, instead of forcing a particular solution (such as a specific orbit specified by the contract).
 
 
 ## What it is about
 
-Finding solutions to mission requirements that are very similar to real life. Most of these contracts require a basic understanding of orbital dynamics and astrophysics. You will need careful planning and the ability to execute your plan without much room for error. This time, moar boosters just won't cut it.
+Finding solutions to mission requirements that are similar to real life mission constraints. Most of the contracts require at least basic understanding of orbital dynamics and astrophysics. You will need careful planning and the ability to execute your plan without much room for error. This time, moar boosters just won't cut it.
 
 You will have to answer a set of questions: which orbit do you choose, and where? How many satellites do you need? Could it be less if you're being clever about it?
 
