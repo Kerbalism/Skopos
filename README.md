@@ -16,28 +16,28 @@ You will have to answer a set of questions: which orbit do you choose, and where
 Most contracts will be easy to finish when you launch more than the absolute minimum of satellites required (most times: one). But there is a caveat: the equipment that you will have to launch is extremely expensive. The bulk of the cost of your rockets will go towards the payload, so plan wisely and be careful with the launches!
 
 
-## Discover Radiation fields
+### Discover Radiation fields
 
 Magnetic fields and radiation belts need to be researched before they can be seen in the tracking station. Radiation fields are discovered independently, so you might see an inner radiation belt but not know about the outer radiation belt until later - or the other way around. Some bodies have very oddly shaped fields in unexpected locations - so good luck with that!
 
 
-## Terrestrial Infrastructure
+### Terrestrial Infrastructure
 
 Be an internet and TV service provider! You probably did geostationary orbits before, but have you ever had to make sure that the satellite will stay exactly in location? This is what TV satellites do: they need to be directly above a given location at all times, without interruption, for an extended period of time. Easy, right? But what do you do if the location is nowhere near the equator? Find a solution!
 
 
-## Navigation Systems
+### Navigation Systems
 
 Everybody knows GPS. But do you know its predecessor, and how it worked? Create your own networks of navigation
 satellites that satisfy the unique demands of the technology they're built on!
 
 
-## Observe the Earth
+### Observe the Earth
 
 Build a satellite network with earth observing sensors for a wide range of applications: weather satellites, long term topology observations for agriculture, wildfire detection and tracking and many more!
 
 
-## Observe the Sun
+### Observe the Sun
 
 Launch new scientific missions to observe the sun. Find new orbits that allow uninterrupted solar observations for years, and for better predictions of solar activity, look at the solar surface from all directions.
 
@@ -49,7 +49,7 @@ Easy money and easy science. These are not "put a vessel this orbit and then pus
 
 # Documentation for modders
 
-Documentation for modders is on the [KerbalismContracts Wiki Wiki](https://github.com/Kerbalism/KerbalismContracts/wiki).
+Documentation for modders is on the [KerbalismContracts Wiki](https://github.com/Kerbalism/KerbalismContracts/wiki).
 If you have any questions, we're on the [Kerbalism discord server](https://discord.gg/3JAE2JE).
 
 # Installation
