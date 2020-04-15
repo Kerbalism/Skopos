@@ -47,9 +47,10 @@ Launch new scientific missions to observe the sun. Find new orbits that allow un
 Easy money and easy science. These are not "put a vessel this orbit and then push a button" type of contracts. You will get a set of mission parameters, finding the solution is up to you.
 
 
-# Documentation
+# Documentation for modders
 
-Please have a look at the Wiki: https://github.com/Kerbalism/KerbalismContracts/wiki
+Documentation for modders is (on the Wiki)[https://github.com/Kerbalism/KerbalismContracts/wiki].
+If you have any questions, we're on the (Kerbalism discord server)[https://discord.gg/3JAE2JE].
 
 # Installation
 
