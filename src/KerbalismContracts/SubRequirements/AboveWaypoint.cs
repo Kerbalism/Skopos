@@ -195,10 +195,16 @@ namespace KerbalismContracts
 			return label;
 		}
 
-		private double GetElevation(Vessel vessel, EvaluationContext context, int secondsAgo = 0)
+		internal static double GetElevation(Vessel vessel, EvaluationContext context, int secondsAgo = 0)
 		{
-			Vector3d waypointPosition = context.WaypointSurfacePosition(secondsAgo);
-			Vector3d bodyPosition = context.BodyPosition(context.waypoint.celestialBody, secondsAgo);
+			var wp = context.waypoint;
+			return GetElevation(vessel, wp.latitude, wp.longitude, wp.celestialBody, context, secondsAgo);
+		}
+
+		internal static double GetElevation(Vessel vessel, double lat, double lon, CelestialBody body, EvaluationContext context, int secondsAgo = 0)
+		{
+			Vector3d waypointPosition = context.SurfacePosition(lat, lon, body, secondsAgo);
+			Vector3d bodyPosition = context.BodyPosition(body, secondsAgo);
 			Vector3d vesselPosition = context.VesselPosition(vessel, secondsAgo);
 
 			var a = Vector3d.Angle(vesselPosition - bodyPosition, waypointPosition - bodyPosition);
@@ -210,7 +216,7 @@ namespace KerbalismContracts
 			return 90.0 - a - b;
 		}
 
-		private double GetDistance(Vessel vessel, EvaluationContext context, int secondsAgo = 0)
+		internal static double GetDistance(Vessel vessel, EvaluationContext context, int secondsAgo = 0)
 		{
 			var waypointPosition = context.WaypointSurfacePosition(secondsAgo);
 			Vector3d vesselPosition = context.VesselPosition(vessel, secondsAgo);

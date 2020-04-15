@@ -50,17 +50,21 @@ namespace KerbalismContracts
 
 		private class WaypointPositionEntry
 		{
-			internal Guid id;
+			internal double id;
 			internal Vector3d position;
 			internal double time;
 
 			public WaypointPositionEntry(Waypoint waypoint, double time, Vector3d bodyPosition)
+				:this(waypoint.latitude, waypoint.longitude, waypoint.celestialBody, time, bodyPosition)
 			{
-				this.id = waypoint.navigationId;
+			}
+
+			public WaypointPositionEntry(double latitude, double longitude, CelestialBody body, double time, Vector3d bodyPosition)
+			{
+				this.id = Id(latitude, longitude);
 				this.time = time;
 
 				Planetarium.CelestialFrame BodyFrame = default;
-				CelestialBody body = waypoint.celestialBody;
 				if (body.rotationPeriod != 0)
 				{
 					var rotPeriodRecip = 1.0 / body.rotationPeriod;
@@ -68,7 +72,17 @@ namespace KerbalismContracts
 					var directRotAngle = (rotationAngle - Planetarium.InverseRotAngle) % 360.0;
 					Planetarium.CelestialFrame.PlanetaryFrame(0.0, 90.0, directRotAngle, ref BodyFrame);
 				}
-				position = BodyFrame.LocalToWorld(body.GetRelSurfacePosition(waypoint.latitude, waypoint.longitude, 0).xzy).xzy + bodyPosition;
+				position = BodyFrame.LocalToWorld(body.GetRelSurfacePosition(latitude, longitude, 0).xzy).xzy + bodyPosition;
+			}
+
+			public static double Id(double lat, double lon)
+			{
+				return (lat + 90.0) * 360.0 + (lon + 180.0);
+			}
+
+			public static double Id(Waypoint waypoint)
+			{
+				return Id(waypoint.latitude, waypoint.longitude);
 			}
 		}
 
@@ -80,7 +94,7 @@ namespace KerbalismContracts
 			return (vesselPosition - bodyPosition).magnitude - body.Radius;
 		}
 
-		private static readonly Dictionary<Guid, SortedList<double, WaypointPositionEntry>> waypointPositions = new Dictionary<Guid, SortedList<double, WaypointPositionEntry>>();
+		private static readonly Dictionary<double, SortedList<double, WaypointPositionEntry>> waypointPositions = new Dictionary<double, SortedList<double, WaypointPositionEntry>>();
 
 		public static void Clear()
 		{
@@ -140,18 +154,23 @@ namespace KerbalismContracts
 
 		internal Vector3d WaypointSurfacePosition(int secondsAgo = 0)
 		{
-			if (!waypointPositions.ContainsKey(waypoint.navigationId))
-				waypointPositions.Add(waypoint.navigationId, new SortedList<double, WaypointPositionEntry>());
+			return SurfacePosition(waypoint.latitude, waypoint.longitude, waypoint.celestialBody, secondsAgo);
+		}
 
-			var positionList = waypointPositions[waypoint.navigationId];
+		internal Vector3d SurfacePosition(double lat, double lon, CelestialBody body, int secondsAgo = 0)
+		{
+			if (!waypointPositions.ContainsKey(WaypointPositionEntry.Id(lat, lon)))
+				waypointPositions.Add(WaypointPositionEntry.Id(lat, lon), new SortedList<double, WaypointPositionEntry>());
+
+			var positionList = waypointPositions[WaypointPositionEntry.Id(lat, lon)];
 			WaypointPositionEntry entry;
-			if(positionList.TryGetValue(now - secondsAgo, out entry))
+			if (positionList.TryGetValue(now - secondsAgo, out entry))
 				return entry.position;
 
 			while (positionList.Count > 150)
 				positionList.RemoveAt(0);
 
-			var newEntry = new WaypointPositionEntry(waypoint, now - secondsAgo, BodyPosition(waypoint.celestialBody, secondsAgo));
+			var newEntry = new WaypointPositionEntry(lat, lon, body, now - secondsAgo, BodyPosition(waypoint.celestialBody, secondsAgo));
 			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}

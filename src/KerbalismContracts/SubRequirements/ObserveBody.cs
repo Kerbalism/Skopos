@@ -10,6 +10,8 @@ namespace KerbalismContracts
 	{
 		internal double distance;
 		internal CelestialBody occluder;
+		internal double angularVelocity;
+		internal bool angularRequirementMet;
 	}
 
 	public class ObserveBody : SubRequirement
@@ -17,6 +19,8 @@ namespace KerbalismContracts
 		internal double maxDistance;
 		internal double maxDistanceAU;
 		internal double minSurface;
+		internal double minAngularVelocity;
+		internal double maxAngularVelocity;
 
 		private class Surface
 		{
@@ -38,6 +42,8 @@ namespace KerbalismContracts
 			maxDistance = Lib.ConfigValue(node, "maxDistance", 0.0);
 			maxDistanceAU = Lib.ConfigValue(node, "maxDistanceAU", 0.0);
 			minSurface = Lib.ConfigValue(node, "minSurface", 0.0);
+			minAngularVelocity = Lib.ConfigValue(node, "minAngularVelocity", 0.0);
+			maxAngularVelocity = Lib.ConfigValue(node, "maxAngularVelocity", 0.0);
 		}
 
 		public override string GetTitle(EvaluationContext context)
@@ -54,6 +60,12 @@ namespace KerbalismContracts
 
 			if (minSurface != 0)
 				result += " " + Localizer.Format("<<1>> of surface observed", Lib.HumanReadablePerc(minSurface / 100.0));
+
+			if (minAngularVelocity > 0)
+				result += ", " + Localizer.Format("min. angular vel. <<1>> °/m", minAngularVelocity.ToString("F1"));
+
+			if (maxAngularVelocity > 0)
+				result += ", " + Localizer.Format("max. angular vel. <<1>> °/m", maxAngularVelocity.ToString("F1"));
 
 			return result;
 		}
@@ -138,6 +150,22 @@ namespace KerbalismContracts
 				return state;
 			}
 
+			if (minAngularVelocity > 0 || maxAngularVelocity > 0)
+			{
+				var elevation = AboveWaypoint.GetElevation(vessel, 0, 0, context.targetBody, context);
+				var elevation10s = AboveWaypoint.GetElevation(vessel, 0, 0, context.targetBody, context, 10);
+
+				state.angularVelocity = Math.Abs((elevation10s - elevation) * 6.0); // radial velocity is in degrees/minute
+				state.angularRequirementMet = true;
+
+				if (minAngularVelocity > 0)
+					state.angularRequirementMet &= state.angularVelocity >= minAngularVelocity;
+				if (maxAngularVelocity > 0)
+					state.angularRequirementMet &= state.angularVelocity <= maxAngularVelocity;
+
+				state.requirementMet &= state.angularRequirementMet;
+			}
+
 			VesselData vd;
 			if (!vessel.TryGetVesselData(out vd))
 			{
@@ -173,9 +201,22 @@ namespace KerbalismContracts
 					return Localizer.Format("Occluded by <<1>>", Lib.Color(losState.occluder.displayName, Lib.Kolor.Red));
 				if (losState.distance > 0)
 					return Localizer.Format("Distance <<1>>", Lib.Color(Lib.HumanReadableDistance(losState.distance), Lib.Kolor.Red));
+
+				if(!losState.angularRequirementMet && (minAngularVelocity != 0 || maxAngularVelocity != 0))
+				{
+					string angularVelocityStr = Lib.Color(losState.angularVelocity.ToString("F1") + " °/m", Lib.Kolor.Red);
+					return Localizer.Format("Angular velocity <<1>>", angularVelocityStr);
+				}
 				return Localizer.Format("<<1>> is <<2>>", targetName, Lib.Color("not visible", Lib.Kolor.Red));
 			}
-			return Localizer.Format("<<1>> is <<2>>", targetName, Lib.Color("visible", Lib.Kolor.Green));
+
+			string result = Localizer.Format("<<1>> is <<2>>", targetName, Lib.Color("visible", Lib.Kolor.Green));
+			if (losState.angularRequirementMet)
+			{
+				string angularVelocityStr = Lib.Color(losState.angularVelocity.ToString("F1") + " °/m", Lib.Kolor.Green);
+				result += ", " + Localizer.Format("angular velocity: <<1>>", angularVelocityStr);
+			}
+			return result;
 		}
 
 		internal override bool VesselsMeetCondition(List<Vessel> vessels, EvaluationContext context, out string statusLabel)
