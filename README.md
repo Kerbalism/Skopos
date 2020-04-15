@@ -49,8 +49,8 @@ Easy money and easy science. These are not "put a vessel this orbit and then pus
 
 # Documentation for modders
 
-Documentation for modders is (on the Wiki)[https://github.com/Kerbalism/KerbalismContracts/wiki].
-If you have any questions, we're on the (Kerbalism discord server)[https://discord.gg/3JAE2JE].
+Documentation for modders is on the [KerbalismContracts Wiki Wiki](https://github.com/Kerbalism/KerbalismContracts/wiki).
+If you have any questions, we're on the [Kerbalism discord server](https://discord.gg/3JAE2JE).
 
 # Installation
 
