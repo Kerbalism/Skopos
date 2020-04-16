@@ -11,9 +11,10 @@ The overall goal is to leave mission design (orbit choice, constellation design)
 
 Finding solutions to mission requirements that are similar to real life mission constraints. Most of the contracts require at least basic understanding of orbital dynamics and astrophysics. You will need careful planning and the ability to execute your plan without much room for error. This time, moar boosters just won't cut it.
 
-You will have to answer a set of questions: which orbit do you choose, and where? How many satellites do you need? Could you do with maybe one less less if you're being clever about it?
+Most contracts will be easy to finish when you launch more than the absolute minimum of satellites required (most times: one). But there is a caveat: you will need equipment that is extremely expensive. The bulk of the cost of your rockets will go towards the payload, so plan wisely and be careful with the launches.
 
-Most contracts will be easy to finish when you launch more than the absolute minimum of satellites required (most times: one). But there is a caveat: the equipment that you will have to launch is extremely expensive. The bulk of the cost of your rockets will go towards the payload, so plan wisely and be careful with the launches!
+You will have to answer a set of questions: which orbit do you choose, and where? How many satellites do you need? Could you do it with one less to save a lot of money on the payload?
+
 
 
 ### Discover Radiation fields
@@ -44,7 +45,7 @@ Launch new scientific missions to observe the sun. Find new orbits that allow un
 
 ## What it is not about
 
-Easy money and easy science. These are not "put a vessel this orbit and then push a button" type of contracts. You will get a set of mission parameters, finding the solution is up to you.
+Easy money and free science. These are not "put a vessel this orbit and then push a button" type of contracts. You will get a set of mission parameters, finding the solution is up to you.
 
 
 # Documentation for modders
@@ -57,6 +58,6 @@ If you have any questions, we're on the [Kerbalism discord server](https://disco
 You need the following:
 
 * KSP 1.8 or newer
-* Kerbalism 4.0 or newer
+* Kerbalism 4.0 or newer (not available yet)
 * Contract Configurator
 * Module Manager
