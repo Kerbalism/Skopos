@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- IMPORTANT NOTE : any change made here won't be applied in your IDE (Visual Studio, Monodevelop...) -->
+  <!-- until you completely close and reload the solution (the "reload" option in VS won't work). -->
+  <!-- Not doing it will result in weird things happening -->
+
+  <PropertyGroup>
+    <!-- REQUIRED : Full path to your KSP installation -->
+    <KSPDevPath>K:\Projets\KSP\Kerbal Space Program 1.9.1 DEV</KSPDevPath>
+    <!--<KSPDevPath>K:\Projets\KSP\Kerbal Space Program 1.6.1 RO-RP1</KSPDevPath>-->
+
+    <!-- REQUIRED: path to KSPs DLL files, usually KSP_x64_Data\Managed -->
+    <KSPDevDllsRelativePath>KSP_x64_Data\Managed</KSPDevDllsRelativePath>
+  </PropertyGroup>
+</Project>
