@@ -1,13 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+
+  <Import Condition="Exists('..\..\DevEnvironment.xml')" Project="..\..\DevEnvironment.xml" />
+  
   <PropertyGroup>
-
-    <!-- REQUIRED: Full path to your KSP installation -->
-    <KSPDevPath>/Applications/KSP_osx</KSPDevPath>
-
-    <!-- REQUIRED: path to KSPs DLL files, usually KSP_x64_Data\Managed -->
-    <KSPDevDllsRelativePath>KSP.app/Contents/Resources/Data/Managed</KSPDevDllsRelativePath>
-
     <ProjectGuid>{7CF587A9-6E49-46E8-AB3F-87B80A6276DA}</ProjectGuid>
     <ProjectTypeGuids>{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -15,7 +11,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>KERBALISM</RootNamespace>
     <AssemblyName>KerbalismContracts</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <NoWin32Manifest>False</NoWin32Manifest>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
@@ -40,6 +36,8 @@
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <NoWarn>IDE0018</NoWarn>
     <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -83,7 +81,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Kerbalism">
-        <HintPath>$(KSPDevPath)/GameData/Kerbalism/Kerbalism.dll</HintPath>
+      <HintPath>$(KSPDevPath)/GameData/Kerbalism/Kerbalism.dll</HintPath>
       <Private>False</Private>
       <IncludeInPackage>false</IncludeInPackage>
     </Reference>
@@ -120,26 +118,14 @@
     <Compile Include="CC\Parameter\VesselExperimentRunningParameter.cs" />
   </ItemGroup>
   <ItemGroup />
-  <ItemGroup>
-    <Folder Include="Properties\" />
-    <Folder Include="Modules\" />
-    <Folder Include="Util\" />
-    <Folder Include="CC\" />
-    <Folder Include="CC\Behavior\" />
-    <Folder Include="CC\Parameter\" />
-    <Folder Include="CC\Requirement\" />
-    <Folder Include="SubRequirements\" />
-    <Folder Include="CC\Parameter\SubParams\" />
-    <Folder Include="SubRequirements\Base\" />
-    <Folder Include="SubRequirements\Evaluation\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
       <Output TaskParameter="Assemblies" ItemName="Targets" />
     </GetAssemblyIdentity>
     <ItemGroup>
-      <VersionNumber Include="@(Targets-&gt;'%(Version)')" />
+      <VersionNumber Include="@(Targets->'%(Version)')" />
     </ItemGroup>
   </Target>
   <ProjectExtensions>
