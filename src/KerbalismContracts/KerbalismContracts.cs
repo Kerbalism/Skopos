@@ -12,19 +12,25 @@ namespace KerbalismContracts
 	[KSPAddon(KSPAddon.Startup.MainMenu, false)]
 	public class KerbalismContractsMain : MonoBehaviour
 	{
-		public static bool initialized = false;
+		public static bool fieldVisibilityInitialized = false;
 		public static bool KerbalismInitialized = false;
+		public static bool firstStart = true;
 
 		public void Start()
 		{
-			// this needs to be called to initialize all derivates of KsmPartModule in this plugin
-			ModuleData.Init(Assembly.GetExecutingAssembly());
+			if (firstStart)
+			{
+				firstStart = false;
 
-			Configuration.Load();
+				// this needs to be called to initialize all derivates of KsmPartModule in this plugin
+				ModuleData.Init(Assembly.GetExecutingAssembly());
 
-			API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
-			API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
-			GameEvents.onVesselChange.Add((vessel) => { ExperimentStateTracker.Remove(vessel.id); });
+				Configuration.Load();
+
+				API.OnRadiationFieldChanged.Add(RadiationFieldTracker.Update);
+				API.OnExperimentStateChanged.Add(ExperimentStateTracker.Update);
+				GameEvents.onVesselChange.Add((vessel) => { ExperimentStateTracker.Remove(vessel.id); });
+			}
 		}
 	}
 
@@ -50,10 +56,10 @@ namespace KerbalismContracts
 
 		private void Update()
 		{
-			if (!KerbalismContractsMain.initialized)
+			if (!KerbalismContractsMain.fieldVisibilityInitialized)
 			{
 				StartCoroutine(InitFieldVisibilityDeferred());
-				KerbalismContractsMain.initialized = true;
+				KerbalismContractsMain.fieldVisibilityInitialized = true;
 			}
 		}
 
@@ -144,7 +150,7 @@ namespace KerbalismContracts
 
 		public override void OnLoad(ConfigNode node)
 		{
-			KerbalismContractsMain.initialized = false;
+			KerbalismContractsMain.fieldVisibilityInitialized = false;
 			KerbalismContractsMain.KerbalismInitialized = false;
 
 			bodyData.Clear();
