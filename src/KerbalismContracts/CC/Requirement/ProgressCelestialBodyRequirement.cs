@@ -17,7 +17,6 @@ namespace KerbalismContracts
 
         public override bool LoadFromConfig(ConfigNode configNode)
         {
-            Utils.LogDebug("ITS ME, ITS ME!!! :)");
             // Load base class
             bool valid = base.LoadFromConfig(configNode);
 

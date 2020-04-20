@@ -318,6 +318,8 @@ namespace KerbalismContracts
 			if (ParameterCount == 0) return;
 			if (state != ParameterState.Incomplete) return;
 
+			if (!KerbalismContractsMain.KerbalismInitialized) return;
+
 			if (lastUpdate == 0)
 			{
 				lastUpdate = Planetarium.GetUniversalTime();

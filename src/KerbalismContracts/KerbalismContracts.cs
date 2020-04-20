@@ -13,7 +13,17 @@ namespace KerbalismContracts
 	public class KerbalismContractsMain : MonoBehaviour
 	{
 		public static bool fieldVisibilityInitialized = false;
+
+		/// <summary>
+		/// We need some time after loading until everything is initialized properly.
+		/// F.i. it might take a few seconds until comm net is initalized (which is
+		/// a requirement for most of our equipment). Also, KSP itself might need some
+		/// time until access to FlightGlobals is possible. This is used for deferred
+		/// initialization (5 seconds delay) after load, when this is true everything
+		/// should be fine and dandy
+		/// </summary>
 		public static bool KerbalismInitialized = false;
+
 		public static bool firstStart = true;
 
 		public void Start()
