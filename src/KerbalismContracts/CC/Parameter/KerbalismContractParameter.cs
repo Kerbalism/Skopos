@@ -373,6 +373,22 @@ namespace KerbalismContracts
 
 				foreach (Vessel vessel in vessels)
 				{
+					// Note considering early termination for performance gains:
+					// If we already know that we have enough vessels to satisfy
+					// our requirement, and if we don't have to update labels,
+					// then we don' tneed to test all vessels. However, this
+					// doesn't work when we have complex requirements that need
+					// to consider multiple vessels at once (like body surface
+					// observation percentage). We could change the implementation
+					// to continuously integrate one vessel at a time into the
+					// multi-vessel test and abort as soon as that one is satisfied,
+					// but if that also calculates a number visible to the user
+					// (like percentage of surface observed), that number would
+					// be wrong. So we need to test all vessels, all the time.
+
+					// if (!doLabelUpdate && vesselsMeetingCondition.Count >= minVessels)
+					//	break;
+
 					string statusLabel;
 
 					bool conditionMet = VesselMeetsCondition(vessel, doLabelUpdate, out statusLabel);
