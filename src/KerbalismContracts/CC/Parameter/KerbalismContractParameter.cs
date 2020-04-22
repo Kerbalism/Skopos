@@ -20,6 +20,7 @@ namespace KerbalismContracts
 		public bool allowReset;
 		public string title;
 		public bool hideChildren;
+		public bool allowUnpowered;
 		public DurationParameter.DurationType durationType;
 
 		public Arguments(ConfigNode configNode)
@@ -34,6 +35,7 @@ namespace KerbalismContracts
 			title = ConfigNodeUtil.ParseValue(configNode, "title", "");
 			hideChildren = ConfigNodeUtil.ParseValue(configNode, "hideChildren", false);
 			durationType = Lib.ConfigEnum(configNode, "durationType", DurationParameter.DurationType.countdown);
+			allowUnpowered = ConfigNodeUtil.ParseValue(configNode, "allowUnpowered", false);
 		}
 	}
 
@@ -83,6 +85,7 @@ namespace KerbalismContracts
 		protected int waypointIndex;
 		protected bool allowReset;
 		protected DurationParameter.DurationType durationType;
+		protected bool allowUnpowered;
 
 		protected DurationParameter durationParameter;
 		protected readonly List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
@@ -109,6 +112,7 @@ namespace KerbalismContracts
 			this.title = arguments.title;
 			this.hideChildren = arguments.hideChildren;
 			this.durationType = arguments.durationType;
+			this.allowUnpowered = arguments.allowUnpowered;
 			this.targetBody = targetBody;
 
 			this.requirement = Configuration.Requirement(requirementId);
@@ -198,6 +202,7 @@ namespace KerbalismContracts
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("lastUpdate", lastUpdate);
 			node.AddValue("durationType", durationType);
+			node.AddValue("allowUnpowered", allowUnpowered);
 			if (targetBody != null)
 				node.AddValue("targetBody", targetBody.name);
 		}
@@ -214,6 +219,7 @@ namespace KerbalismContracts
 			lastUpdate = ConfigNodeUtil.ParseValue(node, "lastUpdate", 0.0);
 			requirement = Configuration.Requirement(requirementId);
 			durationType = Lib.ConfigEnum(node, "durationType", DurationParameter.DurationType.countdown);
+			allowUnpowered = ConfigNodeUtil.ParseValue(node, "allowUnpowered", false);
 			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
 		}
 
@@ -239,6 +245,17 @@ namespace KerbalismContracts
 		{
 			label = string.Empty;
 			bool result = true;
+
+			if (!allowUnpowered)
+			{
+				var powered = API.ResourceAmount(vessel, "ElectricCharge") > 0.01;
+				if(!powered)
+				{
+					if(doUpdateLabel)
+						label = Lib.Color("No Electricity", Lib.Kolor.Red);
+					return false;
+				}
+			}
 
 			foreach(var sp in subRequirementParameters)
 			{
