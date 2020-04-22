@@ -11,23 +11,24 @@ namespace KerbalismContracts
 {
 	public class Arguments
 	{
-		public ContractConfigurator.Duration duration;
-		public ContractConfigurator.Duration allowedDowntime;
-		public ContractConfigurator.Duration waitDuration;
+		public double duration;
+		public double allowedDowntime;
+		public double waitDuration;
 		public string requirementId;
 		public int minVessels;
 		public int waypointIndex;
 		public bool allowReset;
 		public string title;
 		public bool hideChildren;
-		public bool allowUnpowered;
+		public bool requireElectricity;
+		public bool requireCommunication;
 		public DurationParameter.DurationType durationType;
 
 		public Arguments(ConfigNode configNode)
 		{
-			duration = ConfigNodeUtil.ParseValue(configNode, "duration", new ContractConfigurator.Duration(0.0));
-			allowedDowntime = ConfigNodeUtil.ParseValue(configNode, "allowedDowntime", new ContractConfigurator.Duration(0.0));
-			waitDuration = ConfigNodeUtil.ParseValue(configNode, "waitDuration", new ContractConfigurator.Duration(0.0));
+			duration = ConfigNodeUtil.ParseValue(configNode, "duration", new ContractConfigurator.Duration(0.0)).Value;
+			allowedDowntime = ConfigNodeUtil.ParseValue(configNode, "allowedDowntime", new ContractConfigurator.Duration(0.0)).Value;
+			waitDuration = ConfigNodeUtil.ParseValue(configNode, "waitDuration", new ContractConfigurator.Duration(0.0)).Value;
 			requirementId = ConfigNodeUtil.ParseValue(configNode, "id", "");
 			minVessels = ConfigNodeUtil.ParseValue(configNode, "minVessels", 1);
 			waypointIndex = ConfigNodeUtil.ParseValue(configNode, "waypointIndex", 0);
@@ -35,7 +36,24 @@ namespace KerbalismContracts
 			title = ConfigNodeUtil.ParseValue(configNode, "title", "");
 			hideChildren = ConfigNodeUtil.ParseValue(configNode, "hideChildren", false);
 			durationType = Lib.ConfigEnum(configNode, "durationType", DurationParameter.DurationType.countdown);
-			allowUnpowered = ConfigNodeUtil.ParseValue(configNode, "allowUnpowered", false);
+			requireElectricity = ConfigNodeUtil.ParseValue(configNode, "requireElectricity", true);
+			requireCommunication = ConfigNodeUtil.ParseValue(configNode, "requireCommunication", false);
+		}
+
+		public void Save(ConfigNode node)
+		{
+			node.AddValue("duration", duration);
+			node.AddValue("allowedDowntime", allowedDowntime);
+			node.AddValue("waitDuration", waitDuration);
+			node.AddValue("requirementId", requirementId);
+			node.AddValue("minVessels", minVessels);
+			node.AddValue("waypointIndex", waypointIndex);
+			node.AddValue("allowReset", allowReset);
+			node.AddValue("title", title);
+			node.AddValue("hideChildren", hideChildren);
+			node.AddValue("requireElectricity", requireElectricity);
+			node.AddValue("requireCommunication", requireCommunication);
+			node.AddValue("durationType", durationType);
 		}
 	}
 
@@ -77,6 +95,8 @@ namespace KerbalismContracts
 
 	public class KerbalismContractParameter : ContractConfiguratorParameter
 	{
+		protected Arguments arguments;
+		/*
 		protected string requirementId;
 		protected double duration;
 		protected double allowedDowntime;
@@ -86,6 +106,7 @@ namespace KerbalismContracts
 		protected bool allowReset;
 		protected DurationParameter.DurationType durationType;
 		protected bool allowUnpowered;
+		*/
 
 		protected DurationParameter durationParameter;
 		protected readonly List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
@@ -102,20 +123,10 @@ namespace KerbalismContracts
 
 		public KerbalismContractParameter(Arguments arguments, CelestialBody targetBody)
 		{
-			this.requirementId = arguments.requirementId;
-			this.duration = arguments.duration.Value;
-			this.allowedDowntime = arguments.allowedDowntime.Value;
-			this.waitDuration = arguments.waitDuration.Value;
-			this.allowReset = arguments.allowReset;
-			this.minVessels = arguments.minVessels;
-			this.waypointIndex = arguments.waypointIndex;
-			this.title = arguments.title;
-			this.hideChildren = arguments.hideChildren;
-			this.durationType = arguments.durationType;
-			this.allowUnpowered = arguments.allowUnpowered;
+			this.arguments = arguments;
 			this.targetBody = targetBody;
 
-			this.requirement = Configuration.Requirement(requirementId);
+			requirement = Configuration.Requirement(arguments.requirementId);
 
 			CreateSubParameters();
 		}
@@ -155,16 +166,17 @@ namespace KerbalismContracts
 			if (subRequirementParameters.Count > 0)
 				return;
 
-			foreach (var req in Configuration.Requirement(requirementId).SubRequirements)
+			foreach (var req in Configuration.Requirement(arguments.requirementId).SubRequirements)
 			{
 				var sub = new SubRequirementParameter(req);
 				subRequirementParameters.Add(sub);
 				AddParameter(sub);
 			}
 
-			if (duration > 0 && durationParameter == null)
+			if (arguments.duration > 0 && durationParameter == null)
 			{
-				durationParameter = new DurationParameter(duration, allowedDowntime, allowReset, waitDuration, durationType);
+				durationParameter = new DurationParameter(arguments.duration, arguments.allowedDowntime,
+					arguments.allowReset, arguments.waitDuration, arguments.durationType);
 				AddParameter(durationParameter);
 			}
 		}
@@ -173,8 +185,8 @@ namespace KerbalismContracts
 		{
 			// make sure to never return an empty string here (the contract window won't show the parameter if the title was empty once)
 			string result = title;
-			if(string.IsNullOrEmpty(result)) result = Configuration.Requirement(requirementId).title;
-			if (string.IsNullOrEmpty(result)) result = requirementId;
+			if(string.IsNullOrEmpty(result)) result = Configuration.Requirement(arguments.requirementId).title;
+			if (string.IsNullOrEmpty(result)) result = arguments.requirementId;
 
 			if (!string.IsNullOrEmpty(statusLabel))
 				result += ": " + statusLabel;
@@ -193,33 +205,17 @@ namespace KerbalismContracts
 
 		protected override void OnParameterSave(ConfigNode node)
 		{
-			node.AddValue("requirementId", requirementId);
-			node.AddValue("duration", duration);
-			node.AddValue("allowedDowntime", allowedDowntime);
-			node.AddValue("waitDuration", waitDuration);
-			node.AddValue("allowReset", allowReset);
-			node.AddValue("minVessels", minVessels);
-			node.AddValue("waypointIndex", waypointIndex);
+			arguments.Save(node);
 			node.AddValue("lastUpdate", lastUpdate);
-			node.AddValue("durationType", durationType);
-			node.AddValue("allowUnpowered", allowUnpowered);
 			if (targetBody != null)
 				node.AddValue("targetBody", targetBody.name);
 		}
 
 		protected override void OnParameterLoad(ConfigNode node)
 		{
-			requirementId = ConfigNodeUtil.ParseValue(node, "requirementId", "");
-			duration = ConfigNodeUtil.ParseValue(node, "duration", 0.0);
-			allowedDowntime = ConfigNodeUtil.ParseValue(node, "allowedDowntime", 0.0);
-			waitDuration = ConfigNodeUtil.ParseValue(node, "waitDuration", 0.0);
-			allowReset = ConfigNodeUtil.ParseValue(node, "allowReset", true);
-			minVessels = ConfigNodeUtil.ParseValue(node, "minVessels", 1);
-			waypointIndex = ConfigNodeUtil.ParseValue(node, "waypointIndex", 0);
+			arguments = new Arguments(node);
+			requirement = Configuration.Requirement(arguments.requirementId);
 			lastUpdate = ConfigNodeUtil.ParseValue(node, "lastUpdate", 0.0);
-			requirement = Configuration.Requirement(requirementId);
-			durationType = Lib.ConfigEnum(node, "durationType", DurationParameter.DurationType.countdown);
-			allowUnpowered = ConfigNodeUtil.ParseValue(node, "allowUnpowered", false);
 			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);
 		}
 
@@ -238,24 +234,13 @@ namespace KerbalismContracts
 
 		/// <summary>
 		/// soft filter: run on ALL vessels that pass the hard filter (CouldBeCandidate),
-		/// determine if the vessel currently meets the condition (i.e. currently over location or not)
+		/// determine if the vessel currently meets the condition (f.i. currently over location or not)
 		/// </summary>
 		/// <param name="label">label to add to this vessel in the status display</param>
 		private bool VesselMeetsCondition(Vessel vessel, bool doUpdateLabel, out string label)
 		{
 			label = string.Empty;
 			bool result = true;
-
-			if (!allowUnpowered)
-			{
-				var powered = API.ResourceAmount(vessel, "ElectricCharge") > 0.01;
-				if(!powered)
-				{
-					if(doUpdateLabel)
-						label = Lib.Color("No Electricity", Lib.Kolor.Red);
-					return false;
-				}
-			}
 
 			foreach(var sp in subRequirementParameters)
 			{
@@ -287,7 +272,7 @@ namespace KerbalismContracts
 		/// </summary>
 		private bool VesselsMeetCondition(List<Vessel> vessels)
 		{
-			bool result = vessels.Count >= minVessels;
+			bool result = vessels.Count >= arguments.minVessels;
 			string statusLabel = string.Empty;
 
 			foreach (var subParameter in subRequirementParameters)
@@ -302,10 +287,10 @@ namespace KerbalismContracts
 				}
 			}
 
-			if(minVessels > 1)
+			if(arguments.minVessels > 1)
 			{
-				statusLabel = Lib.Color($"{vessels.Count}/{minVessels}",
-						vessels.Count >= minVessels ? Lib.Kolor.Green : Lib.Kolor.Red)
+				statusLabel = Lib.Color($"{vessels.Count}/{arguments.minVessels}",
+						vessels.Count >= arguments.minVessels ? Lib.Kolor.Green : Lib.Kolor.Red)
 					+ " " + statusLabel;
 			}
 
@@ -326,7 +311,7 @@ namespace KerbalismContracts
 				steps.Add(now - s * stepLength);
 			steps.Add(now);
 
-			return new EvaluationContext(steps, targetBody, Utils.FetchWaypoint(Root, waypointIndex));
+			return new EvaluationContext(steps, targetBody, Utils.FetchWaypoint(Root, arguments.waypointIndex));
 		}
 
 		protected override void OnUpdate()
@@ -367,6 +352,20 @@ namespace KerbalismContracts
 
 				if (!CouldBeCandidate(vessel))
 					continue;
+
+				if (arguments.requireElectricity && !API.IsPowered(vessel))
+				{
+					if (!hideChildren)
+						childParameterChanged |= UpdateVesselStatus(vessel, Lib.Color("No EC", Lib.Kolor.Red), false);
+					continue;
+				}
+
+				if (arguments.requireCommunication && !API.VesselConnectionLinked(vessel))
+				{
+					if (!hideChildren)
+						childParameterChanged |= UpdateVesselStatus(vessel, Lib.Color("No Comms", Lib.Kolor.Red), false);
+					continue;
+				}
 
 				vessels.Add(vessel);
 			}
@@ -415,7 +414,7 @@ namespace KerbalismContracts
 						childParameterChanged |= UpdateVesselStatus(vessel, statusLabel, conditionMet);
 				}
 
-				bool allConditionsMet = vesselsMeetingCondition.Count >= minVessels;
+				bool allConditionsMet = vesselsMeetingCondition.Count >= arguments.minVessels;
 				allConditionsMet &= VesselsMeetCondition(vesselsMeetingCondition);
 
 				if (durationParameter == null)
