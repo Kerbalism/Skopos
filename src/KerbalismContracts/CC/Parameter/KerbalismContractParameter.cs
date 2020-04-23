@@ -96,17 +96,6 @@ namespace KerbalismContracts
 	public class KerbalismContractParameter : ContractConfiguratorParameter
 	{
 		protected Arguments arguments;
-		/*
-		protected string requirementId;
-		protected double duration;
-		protected double allowedDowntime;
-		protected double waitDuration;
-		protected int minVessels;
-		protected int waypointIndex;
-		protected bool allowReset;
-		protected DurationParameter.DurationType durationType;
-		protected bool allowUnpowered;
-		*/
 
 		protected DurationParameter durationParameter;
 		protected readonly List<SubRequirementParameter> subRequirementParameters = new List<SubRequirementParameter>();
@@ -356,14 +345,14 @@ namespace KerbalismContracts
 				if (arguments.requireElectricity && !API.IsPowered(vessel))
 				{
 					if (!hideChildren)
-						childParameterChanged |= UpdateVesselStatus(vessel, Lib.Color("No EC", Lib.Kolor.Red), false);
+						childParameterChanged |= UpdateVesselStatus(vessel, Lib.Color("#KerCon_NoEC", Lib.Kolor.Red), false); // No EC
 					continue;
 				}
 
 				if (arguments.requireCommunication && !API.VesselConnectionLinked(vessel))
 				{
 					if (!hideChildren)
-						childParameterChanged |= UpdateVesselStatus(vessel, Lib.Color("No Comms", Lib.Kolor.Red), false);
+						childParameterChanged |= UpdateVesselStatus(vessel, Lib.Color("#KerCon_NoComms", Lib.Kolor.Red), false); // No Comms
 					continue;
 				}
 

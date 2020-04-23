@@ -47,29 +47,29 @@ namespace KerbalismContracts
 
 		public override string GetTitle(EvaluationContext context)
 		{
-			string waypointName = "waypoint";
+			string waypointName = "#autoLOC_900252"; // Waypoint
 			if (context?.waypoint != null)
 				waypointName = context.waypoint.name;
 
-			string result = Localizer.Format("Min. <<1>>° above <<2>>", minElevation.ToString("F1"), waypointName);
+			string result = Localizer.Format("#KerCon_MinAngleXAboveY", minElevation.ToString("F1"), waypointName); // Min. <<1>>° above <<2>>
 
 			if (minAngularVelocity > 0)
-				result += ", " + Localizer.Format("min. angular vel. <<1>> °/m", minAngularVelocity.ToString("F1"));
+				result += ", " + Localizer.Format("#KerCon_MinAngularVelX", minAngularVelocity.ToString("F1")); // min. angular vel. <<1>> °/m
 
 			if (maxAngularVelocity > 0)
-				result += ", " + Localizer.Format("max. angular vel. <<1>> °/m", maxAngularVelocity.ToString("F1"));
+				result += ", " + Localizer.Format("#KerCon_MaxAngularVelX", maxAngularVelocity.ToString("F1")); // max. angular vel. <<1>> °/m
 
 			if (minDistance > 0)
-				result += ", " + Localizer.Format("min. distance <<1>>", Lib.HumanReadableDistance(minDistance));
+				result += ", " + Localizer.Format("#KerCon_MinDistanceX", Lib.HumanReadableDistance(minDistance)); // min. distance <<1>>
 
 			if (maxDistance > 0)
-				result += ", " + Localizer.Format("max. distance <<1>>", Lib.HumanReadableDistance(maxDistance));
+				result += ", " + Localizer.Format("#KerCon_MaxDistanceX", Lib.HumanReadableDistance(maxDistance)); // max. distance <<1>>
 
 			if (minRadialVelocity > 0)
-				result += ", " + Localizer.Format("min. radial vel. <<1>>", Lib.HumanReadableSpeed(minRadialVelocity));
+				result += ", " + Localizer.Format("#KerCon_MinRadialVelX", Lib.HumanReadableSpeed(minRadialVelocity)); // min. radial vel. <<1>>
 
 			if (minRadialVelocityChange > 0)
-				result += ", " + Localizer.Format("min. radial vel. change <<1>>/s", Lib.HumanReadableSpeed(minRadialVelocityChange));
+				result += ", " + Localizer.Format("#KerCon_MinRadialVelChangeX", Lib.HumanReadableSpeed(minRadialVelocityChange)); // min. radial vel. change <<1>>/s
 
 			return result;
 		}
@@ -158,37 +158,37 @@ namespace KerbalismContracts
 
 			string elevationString = Lib.BuildString(wpState.elevation.ToString("F1"), " °");
 			if (wpState.elevation < minElevation)
-				label = Localizer.Format("elevation above <<1>>: <<2>>",
+				label = Localizer.Format("#KerCon_elevAboveXisY", // elevation above <<1>>: <<2>>
 					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Red));
 			else if (wpState.elevation - (90 - minElevation) / 3 < minElevation)
-				label = Localizer.Format("elevation above <<1>>: <<2>>",
+				label = Localizer.Format("#KerCon_elevAboveXisY", // elevation above <<1>>: <<2>>
 					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Yellow));
 			else
-				label = Localizer.Format("elevation above <<1>>: <<2>>",
+				label = Localizer.Format("#KerCon_elevAboveXisY", // elevation above <<1>>: <<2>>
 					context.waypoint.name, Lib.Color(elevationString, Lib.Kolor.Green));
 
 			if (minDistance > 0 || maxDistance > 0)
 			{
-				label += "\n\t" + Localizer.Format("distance: <<1>>", Lib.Color(Lib.HumanReadableDistance(wpState.distance),
+				label += "\n\t" + Localizer.Format("#KerCon_DistanceX", Lib.Color(Lib.HumanReadableDistance(wpState.distance), // distance: <<1>>
 					wpState.distanceMet ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 
 			if (minRadialVelocity > 0)
 			{
-				label += "\n\t" + Localizer.Format("radial velocity: <<1>>", Lib.Color(Lib.HumanReadableSpeed(wpState.radialVelocity),
+				label += "\n\t" + Localizer.Format("#KerCon_RadialVelX", Lib.Color(Lib.HumanReadableSpeed(wpState.radialVelocity), // radial velocity: <<1>>
 					wpState.radialVelocity >= minRadialVelocity ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 
 			if (minRadialVelocityChange > 0)
 			{
 				var radialVelocityChangeString = Lib.HumanReadableSpeed(wpState.radialVelocityChange) + "/s";
-				label += "\n\t" + Localizer.Format("radial velocity change: <<1>>", Lib.Color(radialVelocityChangeString,
+				label += "\n\t" + Localizer.Format("#KerCon_RadialVelChangeX", Lib.Color(radialVelocityChangeString, // radial velocity change: <<1>>
 					wpState.radialVelocityChange >= minRadialVelocityChange ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 
 			if (minAngularVelocity > 0 || maxAngularVelocity > 0)
 			{
-				label += "\n\t" + Localizer.Format("angular velocity: <<1>>", Lib.Color(wpState.angularVelocity.ToString("F1") + " °/m",
+				label += "\n\t" + Localizer.Format("#KerCon_AngularVelX", Lib.Color(wpState.angularVelocity.ToString("F1") + " °/m", // angular velocity: <<1>>
 					wpState.angularRequirementMet ? Lib.Kolor.Green : Lib.Kolor.Red));
 			}
 

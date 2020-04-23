@@ -48,24 +48,24 @@ namespace KerbalismContracts
 
 		public override string GetTitle(EvaluationContext context)
 		{
-			string targetName = context?.targetBody?.displayName ?? "target";
-			string result = Localizer.Format("Line of sight to <<1>>", targetName);
+			string targetName = context?.targetBody?.displayName ?? "#KerCon_ABody";
+			string result = Localizer.Format("#KerCon_LineOfSightToX", targetName); // Line of sight to <<1>>
 
 			double distance = maxDistance;
 			if (distance == 0 && maxDistanceAU != 0)
 				distance = Sim.AU * maxDistanceAU;
 
 			if (distance != 0)
-				result += " " + Localizer.Format("max. distance <<1>>", Lib.HumanReadableDistance(distance));
+				result += " " + Localizer.Format("#KerCon_MaxDistanceX", Lib.HumanReadableDistance(distance));
 
 			if (minSurface != 0)
-				result += " " + Localizer.Format("<<1>> of surface observed", Lib.HumanReadablePerc(minSurface / 100.0));
+				result += " " + Localizer.Format("#KerCon_XofSurfaceObserved", Lib.HumanReadablePerc(minSurface / 100.0)); // <<1>> of surface observed
 
 			if (minAngularVelocity > 0)
-				result += ", " + Localizer.Format("min. angular vel. <<1>> °/m", minAngularVelocity.ToString("F1"));
+				result += ", " + Localizer.Format("#KerCon_MinAngularVelX", minAngularVelocity.ToString("F1"));
 
 			if (maxAngularVelocity > 0)
-				result += ", " + Localizer.Format("max. angular vel. <<1>> °/m", maxAngularVelocity.ToString("F1"));
+				result += ", " + Localizer.Format("#KerCon_MaxAngularVelX", maxAngularVelocity.ToString("F1"));
 
 			return result;
 		}
@@ -191,30 +191,30 @@ namespace KerbalismContracts
 
 		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
 		{
-			string targetName = context?.targetBody?.displayName ?? "target";
+			string targetName = context?.targetBody?.displayName ?? "#KerCon_ABody";
 
 			ObserveBodyState losState = (ObserveBodyState) state;
 
 			if (!losState.requirementMet)
 			{
 				if (losState.occluder != null)
-					return Localizer.Format("Occluded by <<1>>", Lib.Color(losState.occluder.displayName, Lib.Kolor.Red));
+					return Localizer.Format("#KerCon_OccludedByX", Lib.Color(losState.occluder.displayName, Lib.Kolor.Red)); // Occluded by <<1>>
 				if (losState.distance > 0)
-					return Localizer.Format("Distance <<1>>", Lib.Color(Lib.HumanReadableDistance(losState.distance), Lib.Kolor.Red));
+					return Localizer.Format("#KerCon_DistanceX", Lib.Color(Lib.HumanReadableDistance(losState.distance), Lib.Kolor.Red));
 
 				if(!losState.angularRequirementMet && (minAngularVelocity != 0 || maxAngularVelocity != 0))
 				{
 					string angularVelocityStr = Lib.Color(losState.angularVelocity.ToString("F1") + " °/m", Lib.Kolor.Red);
-					return Localizer.Format("Angular velocity <<1>>", angularVelocityStr);
+					return Localizer.Format("#KerCon_AngularVelX", angularVelocityStr);
 				}
-				return Localizer.Format("<<1>> is <<2>>", targetName, Lib.Color("not visible", Lib.Kolor.Red));
+				return Localizer.Format("#KerCon_XisY", targetName, Lib.Color("#KerCon_NotVisible", Lib.Kolor.Red));
 			}
 
-			string result = Localizer.Format("<<1>> is <<2>>", targetName, Lib.Color("visible", Lib.Kolor.Green));
+			string result = Localizer.Format("#KerCon_XisY", targetName, Lib.Color("#KerCon_Visible", Lib.Kolor.Green));
 			if (losState.angularRequirementMet)
 			{
 				string angularVelocityStr = Lib.Color(losState.angularVelocity.ToString("F1") + " °/m", Lib.Kolor.Green);
-				result += ", " + Localizer.Format("angular velocity: <<1>>", angularVelocityStr);
+				result += ", " + Localizer.Format("#KerCon_AngularVelX", angularVelocityStr);
 			}
 			return result;
 		}
@@ -258,7 +258,7 @@ namespace KerbalismContracts
 
 			string observedPercStr = Lib.HumanReadablePerc(visible / 100.0) + " / " + Lib.HumanReadablePerc(minSurface / 100.0);
 			observedPercStr = Lib.Color(observedPercStr, visible > minSurface ? Lib.Kolor.Green : Lib.Kolor.Red);
-			statusLabel = Localizer.Format("<<1>> of surface observed", observedPercStr);
+			statusLabel = Localizer.Format("#KerCon_XofSurfaceObserved", observedPercStr);
 			return visible > minSurface;
 		}
 

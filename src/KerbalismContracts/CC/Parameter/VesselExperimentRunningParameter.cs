@@ -61,7 +61,7 @@ namespace KerbalismContracts
 			if (!string.IsNullOrEmpty(title))
 				return title;
 			title = ScienceDB.GetExperimentInfo(experimentId)?.Title ?? experimentId;
-			title = Localizer.Format("Run experiment <<1>>", title);
+			title = Localizer.Format("#KerCon_RunExperimentX", title); // Run experiment <<1>>
 			return title;
 		}
 

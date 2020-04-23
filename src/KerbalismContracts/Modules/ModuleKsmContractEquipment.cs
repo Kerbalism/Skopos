@@ -41,8 +41,8 @@ namespace KerbalismContracts
 			{
 				case EquipmentState.off: return Lib.Color(Local.Generic_OFF, Lib.Kolor.Yellow);
 				case EquipmentState.nominal: return Lib.Color(Local.Generic_ON, Lib.Kolor.Green);
-				case EquipmentState.no_ec: return Lib.Color("No EC", Lib.Kolor.Red);
-				case EquipmentState.no_bandwidth: return Lib.Color("Low Bandwidth", Lib.Kolor.Red);
+				case EquipmentState.no_ec: return Lib.Color("#KerCon_NoEC", Lib.Kolor.Red);
+				case EquipmentState.no_bandwidth: return Lib.Color("#KerCon_LowBandwidth", Lib.Kolor.Red);
 				default: return string.Empty;
 			}
 		}
@@ -168,7 +168,7 @@ namespace KerbalismContracts
 
 			var res = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
 			if (RequiredEC > 0) specs.Add(res.displayName, Lib.HumanReadableRate(RequiredEC));
-			if (RequiredBandwidth > 0) specs.Add("Min. data rate", Lib.HumanReadableDataRate(RequiredBandwidth));
+			if (RequiredBandwidth > 0) specs.Add(Localizer.Format("#KerCon_MinDataRate", Lib.HumanReadableDataRate(RequiredBandwidth))); // Min. data rate
 
 			return specs.Info();
 		}

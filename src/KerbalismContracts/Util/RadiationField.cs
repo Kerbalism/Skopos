@@ -10,10 +10,10 @@ namespace KerbalismContracts
 		{
 			switch (field)
 			{
-				case RadiationFieldType.INNER_BELT: return "inner radiation belt";
-				case RadiationFieldType.OUTER_BELT: return "outer radiation belt";
-				case RadiationFieldType.MAGNETOPAUSE: return "magnetopause";
-				case RadiationFieldType.ANY: return "radiation field";
+				case RadiationFieldType.INNER_BELT: return "#KerCon_innerBelt"; // inner radiation belt
+				case RadiationFieldType.OUTER_BELT: return "#KerCon_outerBelt";
+				case RadiationFieldType.MAGNETOPAUSE: return "#KerCon_magnetopause"; // magnetopause
+				case RadiationFieldType.ANY: return "#KerCon_radiationField"; // radiation field
 			}
 			return "INVALID FIELD TYPE";
 		}

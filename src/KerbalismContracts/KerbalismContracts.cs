@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
-using System;
+using KSP.Localization;
 using KSP.UI.Screens;
 using System.Text;
 using KERBALISM;
@@ -91,15 +91,17 @@ namespace KerbalismContracts
 			if (visible && !wasVisible)
 			{
 				StringBuilder sb = new StringBuilder(256);
-				string message = Lib.BuildString("<b>", body.bodyName, ": <color=#8BED8B>", RadiationField.Name(field), "</color> researched</b>");
+				string message = Localizer.Format("#KerCon_FieldXofYresearched", // <<1>>: <<2>> researched
+					Lib.Bold(body.bodyName), Lib.Color(RadiationField.Name(field), Lib.Kolor.Science));
 				sb.Append(message);
 				sb.Append("\n\n");
+				sb.Append(Localizer.Format("#KerCon_FieldResearchedMessage"));
 
 				var bd = Instance.BodyData(body);
 
 				API.Message(sb.ToString());
 
-				MessageSystem.Message m = new MessageSystem.Message("Radiation Field Researched", sb.ToString(), MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
+				MessageSystem.Message m = new MessageSystem.Message("#KerCon_FieldResearched", sb.ToString(), MessageSystemButton.MessageButtonColor.GREEN, MessageSystemButton.ButtonIcons.ACHIEVE);
 				MessageSystem.Instance.AddMessage(m);
 			}
 		}

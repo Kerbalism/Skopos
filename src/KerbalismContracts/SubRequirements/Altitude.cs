@@ -49,11 +49,12 @@ namespace KerbalismContracts
 				return string.Empty;
 
 			if (minAlt != 0 && maxAlt != 0)
-				description = Localizer.Format("Altitude between <<1>> and <<2>>", Lib.HumanReadableDistance(minAlt), Lib.HumanReadableDistance(maxAlt));
+				description = Localizer.Format("#KerCon_AltBetweenXAndY", // Altitude between <<1>> and <<2>>
+					Lib.HumanReadableDistance(minAlt), Lib.HumanReadableDistance(maxAlt));
 			else if (minAlt != 0)
-				description = Localizer.Format("Altitude above <<1>>", Lib.HumanReadableDistance(minAlt));
+				description = Localizer.Format("#KerCon_AltAboveX", Lib.HumanReadableDistance(minAlt)); // Altitude above <<1>>
 			else if (maxAlt != 0)
-				description = Localizer.Format("Altitude below <<1>>", Lib.HumanReadableDistance(maxAlt));
+				description = Localizer.Format("#KerCon_AltBelowX", Lib.HumanReadableDistance(maxAlt)); // Altitude below <<1>>
 
 			return description;
 		}
@@ -98,12 +99,12 @@ namespace KerbalismContracts
 			AltitudeState altitudeState = (AltitudeState)state;
 
 			if (min != 0 && altitudeState.distance < min)
-				return Lib.Color("too low", Lib.Kolor.Red);
+				return Lib.Color("#KerCon_TooLow", Lib.Kolor.Red); // too low
 
 			if (max != 0 && altitudeState.distance > max)
-				return Lib.Color("too high", Lib.Kolor.Red);
+				return Lib.Color("#KerCon_TooHigh", Lib.Kolor.Red);
 
-			return Lib.Color("alt OK", Lib.Kolor.Green);
+			return Lib.Color("#KerCon_AltOK", Lib.Kolor.Green); // Alt. OK
 		}
 	}
 }

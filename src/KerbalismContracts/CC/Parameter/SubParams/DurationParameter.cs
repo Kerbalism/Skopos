@@ -162,50 +162,50 @@ namespace KerbalismContracts
 			switch (durationState)
 			{
 				case DurationState.off:
-					result = Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
+					result = Localizer.Format("#KerCon_Duration_X", DurationUtil.StringValue(duration)); // Duration: <<1>>
 					if (waitDuration > 0)
-						result += "\n\t - " + Localizer.Format("Time starts <<1>> after accepting the contract",
+						result += "\n\t - " + Localizer.Format("#KerCon_TimeStartsAfterAccepting", // Time starts <<1>> after accepting the contract"
 							Lib.Color(DurationUtil.StringValue(waitDuration), Lib.Kolor.Yellow));
 					if (allowedDowntime > 0)
-						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
+						result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
 							DurationUtil.StringValue(allowedDowntime));
 					else
-						result += "\n\t - " + "Does not allow interruptions";
+						result += "\n\t - " + "#KerCon_DoesNotAllowInterruptions"; // Does not allow interruptions
 					if (!allowReset)
-						result += "\n\t - " + Lib.Color("Will fail if interrupted beyond allowance", Lib.Kolor.Orange);
+						result += "\n\t - " + Lib.Color("#KerCon_WillFailIfInterrupted", Lib.Kolor.Orange); // Will fail if interrupted beyond allowance
 
 					break;
 
 				case DurationState.preRun:
-					result = Localizer.Format("Duration: <<1>>", DurationUtil.StringValue(duration));
-					result += "\n\t - " + Localizer.Format("Time starts in <<1>>",
+					result = Localizer.Format("#KerCon_Duration_X", DurationUtil.StringValue(duration)); // Duration: <<1>>
+					result += "\n\t - " + Localizer.Format("#KerCon_TimeStartsIn", // Time starts in <<1>>
 							Lib.Color(DurationUtil.StringValue(Math.Max(0, startAfter - now)), Lib.Kolor.Yellow));
 					if (allowedDowntime > 0)
-						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
+						result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
 							DurationUtil.StringValue(allowedDowntime));
 
 					break;
 
 				case DurationState.running:
-					result = Localizer.Format("Remaining: <<1>>", Lib.Color(remainingStr, Lib.Kolor.Green));
+					result = Localizer.Format("#KerCon_Reamining_X", Lib.Color(remainingStr, Lib.Kolor.Green)); // Remaining: <<1>>
 					if (allowedDowntime > 0)
-						result += "\n\t - " + Localizer.Format("Allows interruptions up to <<1>>",
+						result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
 							DurationUtil.StringValue(allowedDowntime));
 
 					break;
 
 				case DurationState.preReset:
-					result = Localizer.Format("Remaining: <<1>> (stop in: <<2>>)", Lib.Color(remainingStr, Lib.Kolor.Green),
+					result = Localizer.Format("#KerCon_Reamining_X_stopIn_Y", Lib.Color(remainingStr, Lib.Kolor.Green), // Remaining: <<1>> (stop in: <<2>>)
 						Lib.Color(DurationUtil.StringValue(Math.Max(0, failAfter - now)), allowReset ? Lib.Kolor.Yellow : Lib.Kolor.Red));
 
 					break;
 
 				case DurationState.done:
-					result = "Done!";
+					result = "#autoLOC_135144"; // Success!!
 					break;
 
 				case DurationState.failed:
-					result = "Time is up!";
+					result = "#KerCon_TimeIsUp"; // Time is up!
 					break;
 			}
 

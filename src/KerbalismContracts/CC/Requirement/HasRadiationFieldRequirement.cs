@@ -32,7 +32,7 @@ namespace KerbalismContracts
 
 		protected override string RequirementText()
 		{
-			return targetBody.name + " has " + RadiationField.Name(field);
+			return Localizer.Format("#KerCon_XhasY", targetBody.name, RadiationField.Name(field));
 		}
 
 		public override bool RequirementMet(ConfiguredContract contract)

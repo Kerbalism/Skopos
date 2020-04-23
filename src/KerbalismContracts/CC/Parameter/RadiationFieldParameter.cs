@@ -72,7 +72,7 @@ namespace KerbalismContracts
 
 		protected override string GetParameterTitle()
 		{
-			string bodyName = targetBody?.CleanDisplayName() ?? "a body";
+			string bodyName = targetBody?.CleanDisplayName() ?? "#KerCon_ABody"; // a body
 			string fieldName = RadiationField.Name(field);
 
 			string prefix = title;
@@ -82,19 +82,19 @@ namespace KerbalismContracts
 			if (crossed_count == 0)
 			{
 				if (crossings_min > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> at least <<3>> times", fieldName, bodyName, crossings_min);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatLeastZtimes", fieldName, bodyName, crossings_min); // Cross <<1>> of <<2>> at least <<3>> times
 				if (crossings_max > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> no more than <<3>> times", fieldName, bodyName, crossings_max);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatMostZtimes", fieldName, bodyName, crossings_max); // Cross <<1>> of <<2>> no more than <<3>> times
 			}
 			else
 			{
 				if (crossings_min > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> at least <<3>> times (<<4>>/<<3>>)", fieldName, bodyName, crossings_min, crossed_count);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatLeastZtimes_n", fieldName, bodyName, crossings_min, crossed_count); // Cross <<1>> of <<2>> at least <<3>> times (<<4>>/<<3>>)
 				if (crossings_max > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> no more than <<3>> times (<<4>>/<<3>>)", fieldName, bodyName, crossings_max, crossed_count);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatMostZtimes_n", fieldName, bodyName, crossings_max, crossed_count); // Cross <<1>> of <<2>> no more than <<3>> times (<<4>>/<<3>>)
 			}
 
-			return prefix + Localizer.Format("Find <<1>> of <<2>>", fieldName, bodyName);
+			return prefix + Localizer.Format("#KerCon_FindXofY", fieldName, bodyName); // Find <<1>> of <<2>>
 		}
 
 		protected override void OnParameterSave(ConfigNode node)

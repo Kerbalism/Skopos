@@ -90,7 +90,7 @@ namespace KerbalismContracts
 
 		protected override string GetParameterTitle()
 		{
-			string bodyName = targetBody?.CleanDisplayName() ?? "a body";
+			string bodyName = targetBody?.CleanDisplayName() ?? "#KerCon_ABody";
 			string fieldName = RadiationField.Name(field);
 
 			string prefix = title;
@@ -98,26 +98,26 @@ namespace KerbalismContracts
 				prefix = prefix + ": ";
 
 			if (stay_in)
-				return prefix + Localizer.Format("Stay in <<1>> of <<2>>", fieldName, bodyName);
-			if(stay_out)
-				return prefix + Localizer.Format("Do not enter <<1>> of <<2>>", fieldName, bodyName);
+				return prefix + Localizer.Format("#KerCon_StayInXofY", fieldName, bodyName); // Stay in <<1>> of <<2>>
+			if (stay_out)
+				return prefix + Localizer.Format("#KerCon_StayOutOfXofY", fieldName, bodyName); // Do not enter <<1>> of <<2>>
 
-			if(crossed_count == 0)
+			if (crossed_count == 0)
 			{
 				if(crossings_min > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> at least <<3>> times", fieldName, bodyName, crossings_min);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatLeastZtimes", fieldName, bodyName, crossings_min);
 				if (crossings_max > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> no more than <<3>> times", fieldName, bodyName, crossings_max);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatMostZtimes", fieldName, bodyName, crossings_max);
 			}
 			else
 			{
 				if (crossings_min > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> at least <<3>> times (<<4>>/<<3>>)", fieldName, bodyName, crossings_min, crossed_count);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatLeastZtimes_n", fieldName, bodyName, crossings_min, crossed_count);
 				if (crossings_max > 0)
-					return prefix + Localizer.Format("Cross <<1>> of <<2>> no more than <<3>> times (<<4>>/<<3>>)", fieldName, bodyName, crossings_max, crossed_count);
+					return prefix + Localizer.Format("#KerCon_CrossXofYatMostZtimes_n", fieldName, bodyName, crossings_max, crossed_count);
 			}
 
-			return prefix + Localizer.Format("Find <<1>> of <<2>>", fieldName, bodyName);
+			return prefix + Localizer.Format("#KerCon_FindXofY", fieldName, bodyName);
 		}
 
 		protected override void OnParameterSave(ConfigNode node)

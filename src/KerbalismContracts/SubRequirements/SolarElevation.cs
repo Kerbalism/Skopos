@@ -29,11 +29,11 @@ namespace KerbalismContracts
 				return description;
 
 			if (min != double.MinValue && max != double.MaxValue)
-				description = Localizer.Format("Solar elevation between <<1>> ° and <<2>> °", min.ToString("F1"), max.ToString("F1"));
+				description = Localizer.Format("#KerCon_SolarElevBetweenXandY", min.ToString("F1"), max.ToString("F1")); // Solar elevation between <<1>> ° and <<2>> °
 			else if (min != double.MinValue)
-				description = Localizer.Format("Solar elevation above <<1>> °", min.ToString("F1"));
+				description = Localizer.Format("#KerCon_SolarElevAboveX", min.ToString("F1")); // Solar elevation above <<1>> °
 			else if (max != double.MaxValue)
-				description = Localizer.Format("Solar elevation below <<1>> °", max.ToString("F1"));
+				description = Localizer.Format("#KerCon_SolarElevBelowX", max.ToString("F1")); // Solar elevation below <<1>> °
 
 			return description;
 		}
@@ -69,7 +69,7 @@ namespace KerbalismContracts
 		{
 			SolarElevationState elevationState = (SolarElevationState)state;
 			string degreesString = elevationState.solarElevation.ToString("F1") + " °";
-			return Localizer.Format("Solar elevation: <<1>>",
+			return Localizer.Format("#KerCon_SolarElevX",
 				Lib.Color(degreesString, elevationState.requirementMet ? Lib.Kolor.Green : Lib.Kolor.Red));
 		}
 	}
