@@ -26,10 +26,10 @@ namespace KerbalismContracts
 
 		public Arguments(ConfigNode configNode)
 		{
+			requirementId = ConfigNodeUtil.ParseValue(configNode, "requirementId", "");
 			duration = ConfigNodeUtil.ParseValue(configNode, "duration", new ContractConfigurator.Duration(0.0)).Value;
 			allowedDowntime = ConfigNodeUtil.ParseValue(configNode, "allowedDowntime", new ContractConfigurator.Duration(0.0)).Value;
 			waitDuration = ConfigNodeUtil.ParseValue(configNode, "waitDuration", new ContractConfigurator.Duration(0.0)).Value;
-			requirementId = ConfigNodeUtil.ParseValue(configNode, "id", "");
 			minVessels = ConfigNodeUtil.ParseValue(configNode, "minVessels", 1);
 			waypointIndex = ConfigNodeUtil.ParseValue(configNode, "waypointIndex", 0);
 			allowReset = ConfigNodeUtil.ParseValue(configNode, "allowReset", true);
@@ -42,10 +42,10 @@ namespace KerbalismContracts
 
 		public void Save(ConfigNode node)
 		{
+			node.AddValue("requirementId", requirementId);
 			node.AddValue("duration", duration);
 			node.AddValue("allowedDowntime", allowedDowntime);
 			node.AddValue("waitDuration", waitDuration);
-			node.AddValue("requirementId", requirementId);
 			node.AddValue("minVessels", minVessels);
 			node.AddValue("waypointIndex", waypointIndex);
 			node.AddValue("allowReset", allowReset);
