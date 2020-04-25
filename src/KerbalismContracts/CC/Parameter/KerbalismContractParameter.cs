@@ -114,6 +114,7 @@ namespace KerbalismContracts
 		{
 			this.arguments = arguments;
 			this.targetBody = targetBody;
+			this.title = arguments.title;
 
 			requirement = Configuration.Requirement(arguments.requirementId);
 
@@ -203,6 +204,7 @@ namespace KerbalismContracts
 		protected override void OnParameterLoad(ConfigNode node)
 		{
 			arguments = new Arguments(node);
+			title = arguments.title;
 			requirement = Configuration.Requirement(arguments.requirementId);
 			lastUpdate = ConfigNodeUtil.ParseValue(node, "lastUpdate", 0.0);
 			targetBody = ConfigNodeUtil.ParseValue<CelestialBody>(node, "targetBody", (CelestialBody)null);

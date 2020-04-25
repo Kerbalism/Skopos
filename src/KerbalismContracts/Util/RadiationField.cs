@@ -1,4 +1,4 @@
-﻿using System;
+﻿using KSP.Localization;
 
 namespace KerbalismContracts
 {
@@ -10,10 +10,10 @@ namespace KerbalismContracts
 		{
 			switch (field)
 			{
-				case RadiationFieldType.INNER_BELT: return "#KerCon_innerBelt"; // inner radiation belt
-				case RadiationFieldType.OUTER_BELT: return "#KerCon_outerBelt";
-				case RadiationFieldType.MAGNETOPAUSE: return "#KerCon_magnetopause"; // magnetopause
-				case RadiationFieldType.ANY: return "#KerCon_radiationField"; // radiation field
+				case RadiationFieldType.INNER_BELT: return Localizer.Format("#KerCon_innerBelt"); // inner radiation belt
+				case RadiationFieldType.OUTER_BELT: return Localizer.Format("#KerCon_outerBelt"); // outer radiation belt
+				case RadiationFieldType.MAGNETOPAUSE: return Localizer.Format("#KerCon_magnetopause"); // magnetopause
+				case RadiationFieldType.ANY: return Localizer.Format("#KerCon_radiationField"); // radiation field
 			}
 			return "INVALID FIELD TYPE";
 		}
