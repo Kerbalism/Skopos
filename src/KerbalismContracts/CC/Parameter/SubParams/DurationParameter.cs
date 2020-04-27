@@ -150,8 +150,30 @@ namespace KerbalismContracts
 			return (Root != null ? (Root.MissionSeed.ToString() + Root.DateAccepted.ToString()) : "") + ID + "/duration";
 		}
 
+		private static string KerCon_DoesNotAllowInterruptions = Localizer.Format("#KerCon_DoesNotAllowInterruptions");
+		private static string KerCon_WillFailIfInterrupted = Lib.Color(Localizer.Format("#KerCon_WillFailIfInterrupted"), Lib.Kolor.Orange);
+
+		private string KerCon_AllowsInterruptionsUpTo;
+		private string KerCon_TimeStartsAfterAccepting;
+		private string KerCon_Duration_X;
+
+		/// <summary> Cache some strings for performance gains (less memory churning) </summary>
+		private void InitStrings()
+		{
+			if (!string.IsNullOrEmpty(KerCon_AllowsInterruptionsUpTo))
+				return;
+
+			KerCon_AllowsInterruptionsUpTo = Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
+							DurationUtil.StringValue(allowedDowntime));
+			KerCon_TimeStartsAfterAccepting = Localizer.Format("#KerCon_TimeStartsAfterAccepting", // Time starts <<1>> after accepting the contract"
+							Lib.Color(DurationUtil.StringValue(waitDuration), Lib.Kolor.Yellow));
+			KerCon_Duration_X = Localizer.Format("#KerCon_Duration_X", DurationUtil.StringValue(duration));
+		}
+
 		protected override string GetTitle()
 		{
+			InitStrings();
+
 			string result = "";
 			double now = Planetarium.GetUniversalTime();
 
@@ -162,35 +184,32 @@ namespace KerbalismContracts
 			switch (durationState)
 			{
 				case DurationState.off:
-					result = Localizer.Format("#KerCon_Duration_X", DurationUtil.StringValue(duration)); // Duration: <<1>>
+					result = KerCon_Duration_X; // Duration: <<1>>
 					if (waitDuration > 0)
-						result += "\n\t - " + Localizer.Format("#KerCon_TimeStartsAfterAccepting", // Time starts <<1>> after accepting the contract"
-							Lib.Color(DurationUtil.StringValue(waitDuration), Lib.Kolor.Yellow));
+						result += "\n\t - " + KerCon_TimeStartsAfterAccepting;
 					if (allowedDowntime > 0)
-						result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
-							DurationUtil.StringValue(allowedDowntime));
+						result += "\n\t - " + KerCon_AllowsInterruptionsUpTo;
 					else
-						result += "\n\t - " + "#KerCon_DoesNotAllowInterruptions"; // Does not allow interruptions
+						result += "\n\t - " + KerCon_DoesNotAllowInterruptions; // Does not allow interruptions
 					if (!allowReset)
-						result += "\n\t - " + Lib.Color("#KerCon_WillFailIfInterrupted", Lib.Kolor.Orange); // Will fail if interrupted beyond allowance
+						result += "\n\t - " + KerCon_WillFailIfInterrupted; // Will fail if interrupted beyond allowance
 
 					break;
 
 				case DurationState.preRun:
-					result = Localizer.Format("#KerCon_Duration_X", DurationUtil.StringValue(duration)); // Duration: <<1>>
+					result = KerCon_Duration_X; // Duration: <<1>>
 					result += "\n\t - " + Localizer.Format("#KerCon_TimeStartsIn", // Time starts in <<1>>
 							Lib.Color(DurationUtil.StringValue(Math.Max(0, startAfter - now)), Lib.Kolor.Yellow));
 					if (allowedDowntime > 0)
-						result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
-							DurationUtil.StringValue(allowedDowntime));
+						result += "\n\t - " + KerCon_AllowsInterruptionsUpTo;
 
 					break;
 
 				case DurationState.running:
 					result = Localizer.Format("#KerCon_Reamining_X", Lib.Color(remainingStr, Lib.Kolor.Green)); // Remaining: <<1>>
-					if (allowedDowntime > 0)
-						result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
-							DurationUtil.StringValue(allowedDowntime));
+					//if (allowedDowntime > 0)
+					//	result += "\n\t - " + Localizer.Format("#KerCon_AllowsInterruptionsUpTo", // Allows interruptions up to <<1>>
+					//		DurationUtil.StringValue(allowedDowntime));
 
 					break;
 
@@ -208,6 +227,9 @@ namespace KerbalismContracts
 					result = "#KerCon_TimeIsUp"; // Time is up!
 					break;
 			}
+
+			if (result.StartsWith("#"))
+				result = Localizer.Format(result);
 
 			titleTracker.Add(result);
 			if (lastTitle != result && Root != null && (Root.ContractState == Contract.State.Active || Root.ContractState == Contract.State.Failed))

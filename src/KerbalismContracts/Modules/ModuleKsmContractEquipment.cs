@@ -35,14 +35,19 @@ namespace KerbalismContracts
 			node.AddValue("equipmentId", equipmentId);
 		}
 
+		private static string off = Lib.Color(Local.Generic_OFF, Lib.Kolor.Yellow);
+		private static string nominal = Lib.Color(Local.Generic_ON, Lib.Kolor.Green);
+		private static string noEC = Lib.Color(Localizer.Format("#KerCon_NoEC"), Lib.Kolor.Red);
+		private static string noBW = Lib.Color(Localizer.Format("#KerCon_LowBandwidth"), Lib.Kolor.Red);
+
 		public static string StatusInfo(EquipmentState status)
 		{
 			switch (status)
 			{
-				case EquipmentState.off: return Lib.Color(Local.Generic_OFF, Lib.Kolor.Yellow);
-				case EquipmentState.nominal: return Lib.Color(Local.Generic_ON, Lib.Kolor.Green);
-				case EquipmentState.no_ec: return Lib.Color("#KerCon_NoEC", Lib.Kolor.Red);
-				case EquipmentState.no_bandwidth: return Lib.Color("#KerCon_LowBandwidth", Lib.Kolor.Red);
+				case EquipmentState.off: return off;
+				case EquipmentState.nominal: return nominal;
+				case EquipmentState.no_ec: return noEC;
+				case EquipmentState.no_bandwidth: return noBW;
 				default: return string.Empty;
 			}
 		}
@@ -54,10 +59,13 @@ namespace KerbalismContracts
 		[KSPField] public string title = string.Empty;
 		[KSPField] public double RequiredBandwidth;
 		[KSPField] public double RequiredEC;
-		[KSPField] public string uiGroup;
 		[KSPField] public string uiGroupName;
+		[KSPField] public string uiGroupDisplayName;
 		[KSPField] public string animationName = string.Empty;
 		[KSPField] public bool animReverse = false;
+
+		[KSPField(guiActive = true, guiName = "_")]
+		public string UIState;
 
 		public Animator deployAnimator;
 
@@ -80,9 +88,13 @@ namespace KerbalismContracts
 			deployAnimator = new Animator(part, animationName, animReverse);
 			deployAnimator.Still(moduleData.isRunning ? 1f : 0f);
 
-			if (uiGroup != null)
+			Fields["UIState"].guiName = title;
+
+			if (uiGroupName != null)
 			{
-				Events["ToggleEvent"].group = new BasePAWGroup(uiGroupName ?? uiGroup, uiGroup, false);
+				var group = new BasePAWGroup(uiGroupName, uiGroupDisplayName ?? uiGroupName, false);
+				Events["ToggleEvent"].group = group;
+				Fields["UIState"].group = group;
 			}
 		}
 
@@ -135,16 +147,33 @@ namespace KerbalismContracts
 
 		private static void RunningUpdate(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab, double elapsed_s)
 		{
-			ed.state = GetState(v, vd, ed, prefab);
+			double connectionRate = API.VesselConnectionRate(v);
+			ed.state = GetState(v, vd, ed, prefab, connectionRate);
 
 			bool running = ed.state == EquipmentState.nominal;
 			if (running)
 				vd.ResHandler.ElectricCharge.Consume(prefab.RequiredEC * elapsed_s, EquipmentBroker);
 
 			KerbalismContracts.EquipmentState.Update(v, prefab.id, ed.state);
+
+			if(ed.loadedModule != null)
+			{
+				ed.loadedModule.UIState = Lib.BuildString("EC: ", Lib.HumanReadableRate(prefab.RequiredEC));
+				if (prefab.RequiredBandwidth > 0)
+				{
+					var color = Lib.Kolor.Green;
+
+					var rate = connectionRate / prefab.RequiredBandwidth;
+					if (rate <= 1.0) color = Lib.Kolor.Red;
+					else if (rate <= 1.2) color = Lib.Kolor.Orange;
+
+					ed.loadedModule.UIState += Lib.BuildString(", ",
+						Localizer.Format("#KerCon_DataRate", Lib.HumanReadableRate(prefab.RequiredBandwidth), Lib.Color(Lib.HumanReadableRate(connectionRate), color)));
+				}
+			}
 		}
 
-		private static EquipmentState GetState(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab)
+		private static EquipmentState GetState(Vessel v, VesselData vd, EquipmentData ed, ModuleKsmContractEquipment prefab, double connectionRate)
 		{
 			if (!ed.isRunning)
 				return EquipmentState.off;
@@ -152,7 +181,7 @@ namespace KerbalismContracts
 			if (vd.ResHandler.ElectricCharge.AvailabilityFactor == 0.0)
 				return EquipmentState.no_ec;
 
-			else if (API.VesselConnectionRate(v) < prefab.RequiredBandwidth)
+			else if (connectionRate < prefab.RequiredBandwidth)
 				return EquipmentState.no_bandwidth;
 
 			return EquipmentState.nominal;
@@ -168,7 +197,7 @@ namespace KerbalismContracts
 
 			var res = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
 			if (RequiredEC > 0) specs.Add(res.displayName, Lib.HumanReadableRate(RequiredEC));
-			if (RequiredBandwidth > 0) specs.Add(Localizer.Format("#KerCon_MinDataRate", Lib.HumanReadableDataRate(RequiredBandwidth))); // Min. data rate
+			if (RequiredBandwidth > 0) specs.Add(Localizer.Format("#KerCon_MinDataRate"), Lib.HumanReadableDataRate(RequiredBandwidth)); // Min. data rate
 
 			return specs.Info();
 		}

@@ -48,7 +48,7 @@ namespace KerbalismContracts
 
 		public override string GetTitle(EvaluationContext context)
 		{
-			string targetName = context?.targetBody?.displayName ?? "#KerCon_ABody";
+			string targetName = context?.targetBody?.displayName ?? Localizer.Format("#KerCon_ABody");
 			string result = Localizer.Format("#KerCon_LineOfSightToX", targetName); // Line of sight to <<1>>
 
 			double distance = maxDistance;
@@ -56,10 +56,10 @@ namespace KerbalismContracts
 				distance = Sim.AU * maxDistanceAU;
 
 			if (distance != 0)
-				result += " " + Localizer.Format("#KerCon_MaxDistanceX", Lib.HumanReadableDistance(distance));
+				result += ", " + Localizer.Format("#KerCon_MaxDistanceX", Lib.HumanReadableDistance(distance));
 
 			if (minSurface != 0)
-				result += " " + Localizer.Format("#KerCon_XofSurfaceObserved", Lib.HumanReadablePerc(minSurface / 100.0)); // <<1>> of surface observed
+				result += ", " + Localizer.Format("#KerCon_XofSurfaceObserved", Lib.HumanReadablePerc(minSurface / 100.0)); // <<1>> of surface observed
 
 			if (minAngularVelocity > 0)
 				result += ", " + Localizer.Format("#KerCon_MinAngularVelX", minAngularVelocity.ToString("F1"));
@@ -191,7 +191,7 @@ namespace KerbalismContracts
 
 		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
 		{
-			string targetName = context?.targetBody?.displayName ?? "#KerCon_ABody";
+			string targetName = context?.targetBody?.displayName ?? Localizer.Format("#KerCon_ABody");
 
 			ObserveBodyState losState = (ObserveBodyState) state;
 
@@ -207,10 +207,10 @@ namespace KerbalismContracts
 					string angularVelocityStr = Lib.Color(losState.angularVelocity.ToString("F1") + " °/m", Lib.Kolor.Red);
 					return Localizer.Format("#KerCon_AngularVelX", angularVelocityStr);
 				}
-				return Localizer.Format("#KerCon_XisY", targetName, Lib.Color("#KerCon_NotVisible", Lib.Kolor.Red));
+				return Localizer.Format("#KerCon_XisY", targetName, Lib.Color(Localizer.Format("#KerCon_NotVisible"), Lib.Kolor.Red));
 			}
 
-			string result = Localizer.Format("#KerCon_XisY", targetName, Lib.Color("#KerCon_Visible", Lib.Kolor.Green));
+			string result = Localizer.Format("#KerCon_XisY", targetName, Lib.Color(Localizer.Format("#KerCon_Visible"), Lib.Kolor.Green));
 			if (losState.angularRequirementMet)
 			{
 				string angularVelocityStr = Lib.Color(losState.angularVelocity.ToString("F1") + " °/m", Lib.Kolor.Green);
