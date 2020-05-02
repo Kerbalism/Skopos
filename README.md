@@ -6,6 +6,7 @@ These contracts will test your skills. Gradually explore the depths of the Kerbi
 
 The overall goal is to leave mission design (orbit choice, constellation design) to you, instead of forcing a particular solution (such as a specific orbit specified by the contract).
 
+https://www.youtube.com/watch?v=kF4Wc2g2VlE
 
 ## What it is about
 
