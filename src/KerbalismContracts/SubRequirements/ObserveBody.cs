@@ -174,7 +174,7 @@ namespace KerbalismContracts
 			}
 
 			// check if the ray intersects with an occluder
-			foreach (CelestialBody occludingBody in vd.EnvVisibleBodies)
+			foreach (CelestialBody occludingBody in vd.VisibleBodies)
 			{
 				if (occludingBody == body) continue;
 				if (!Sim.RayAvoidBody(vesselPosition, bodyDir, state.distance, occludingBody))

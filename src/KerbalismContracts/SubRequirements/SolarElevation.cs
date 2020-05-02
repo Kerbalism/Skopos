@@ -40,7 +40,7 @@ namespace KerbalismContracts
 
 		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
-			return vessel.orbit != null && !Lib.IsSun(vessel.mainBody);
+			return vessel.orbit != null && !Sim.IsStar(vessel.mainBody);
 		}
 
 		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
@@ -49,7 +49,7 @@ namespace KerbalismContracts
 
 			var vesselPosition = context.VesselPosition(vessel);
 			var mainBodyPosition = context.BodyPosition(vessel.mainBody);
-			var sunPosition = context.BodyPosition(Lib.GetParentSun(vessel.mainBody));
+			var sunPosition = context.BodyPosition(Sim.GetParentStar(vessel.mainBody));
 
 			var a = vesselPosition - mainBodyPosition;
 			var b = sunPosition - mainBodyPosition;
