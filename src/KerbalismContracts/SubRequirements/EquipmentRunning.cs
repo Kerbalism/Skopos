@@ -29,13 +29,13 @@ namespace KerbalismContracts
 
 		internal override bool CouldBeCandiate(Vessel vessel, EvaluationContext context)
 		{
-			return KerbalismContracts.EquipmentState.HasValue(vessel, equipmentId);
+			return KerbalismContracts.EquipmentStates.HasValue(vessel, equipmentId);
 		}
 
 		internal override SubRequirementState VesselMeetsCondition(Vessel vessel, EvaluationContext context)
 		{
 			EquipmentRunningState state = new EquipmentRunningState();
-			state.equipmentState = KerbalismContracts.EquipmentState.GetValue(vessel, equipmentId);
+			state.equipmentState = KerbalismContracts.EquipmentStates.GetValue(vessel, equipmentId);
 			state.requirementMet = state.equipmentState == EquipmentState.nominal;
 			return state;
 		}

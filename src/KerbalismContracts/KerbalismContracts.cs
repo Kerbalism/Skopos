@@ -6,6 +6,7 @@ using KSP.UI.Screens;
 using System.Text;
 using KERBALISM;
 using System.Reflection;
+using System;
 
 namespace KerbalismContracts
 {
@@ -50,7 +51,10 @@ namespace KerbalismContracts
 		public static KerbalismContracts Instance { get; private set; } = null;
 		private readonly Dictionary<int, GlobalRadiationFieldStatus> bodyData = new Dictionary<int, GlobalRadiationFieldStatus>();
 
-		public static readonly EquipmentStateTracker EquipmentState = new EquipmentStateTracker();
+		public static readonly EquipmentStateTracker EquipmentStates = new EquipmentStateTracker();
+
+		private float sunObservationStatusTime;
+		private List<Surface> solarSurfaces;
 
 		//  constructor
 		public KerbalismContracts()
@@ -70,6 +74,53 @@ namespace KerbalismContracts
 			{
 				StartCoroutine(InitFieldVisibilityDeferred());
 				KerbalismContractsMain.fieldVisibilityInitialized = true;
+			}
+
+			if(Time.time - sunObservationStatusTime > 10)
+			{
+				sunObservationStatusTime = Time.time;
+				UpdateSunObservationStatus();
+			}
+		}
+
+		static readonly Dictionary<CelestialBody, List<Vessel>> vesselsPerSun = new Dictionary<CelestialBody, List<Vessel>>();
+
+		private void UpdateSunObservationStatus()
+		{
+			// determine sun surface observation status for all suns in the system
+			vesselsPerSun.Clear();
+			foreach(var entries in EquipmentStates.states)
+			{
+				foreach(var e in entries.Value)
+				{
+					if(e.id == Configuration.SunObservationEquipment && e.value == EquipmentState.nominal)
+					{
+						Vessel v = FlightGlobals.FindVessel(entries.Key);
+						if (v != null)
+						{
+							var sun = Sim.GetParentStar(v.mainBody);
+							if (!vesselsPerSun.ContainsKey(sun))
+								vesselsPerSun[sun] = new List<Vessel>();
+							vesselsPerSun[sun].Add(v);
+						}
+					}
+				}
+			}
+
+			foreach (var e in vesselsPerSun)
+			{
+				var sun = e.Key;
+				var vessels = e.Value;
+				if (solarSurfaces == null)
+					solarSurfaces = BodySurfaceObservation.CreateVisibleSurfaces();
+				BodySurfaceObservation.Reset(solarSurfaces);
+
+				var context = new EvaluationContext(null, sun);
+				Vector3d sunPosition = context.BodyPosition(sun);
+
+				var observedSurface = (float)BodySurfaceObservation.VisibleSurface(vessels, context, sunPosition, Configuration.MinSunObservationAngle, solarSurfaces);
+				API.SetStormObservationQuality(sun, observedSurface);
+				Utils.LogDebug($"Solar surface observation for {sun.displayName}: {(observedSurface * 100.0).ToString("F2")}%");
 			}
 		}
 
@@ -147,10 +198,9 @@ namespace KerbalismContracts
 			{
 				var bd = BodyData(body);
 
-				// Utils.LogDebug($"Field visibility {body.name}: {bd.inner_visible} / {bd.outer_visible} / {bd.pause_visible}");
-				API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible);
-				API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible);
-				API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible);
+				API.SetInnerBeltVisible(body, isSandboxGame || bd.inner_visible || !Configuration.HideRadiationBelts);
+				API.SetOuterBeltVisible(body, isSandboxGame || bd.outer_visible || !Configuration.HideRadiationBelts);
+				API.SetMagnetopauseVisible(body, isSandboxGame || bd.pause_visible || !Configuration.HideRadiationBelts);
 
 				bd.has_inner = API.HasInnerBelt(body);
 				bd.has_outer = API.HasOuterBelt(body);
@@ -180,7 +230,7 @@ namespace KerbalismContracts
 
 			RadiationFieldTracker.Load(node);
 			ExperimentStateTracker.Load(node);
-			EquipmentState.Load(node);
+			EquipmentStates.Load(node);
 		}
 
 		public override void OnSave(ConfigNode node)
@@ -193,7 +243,7 @@ namespace KerbalismContracts
 
 			RadiationFieldTracker.Save(node);
 			ExperimentStateTracker.Save(node);
-			EquipmentState.Save(node);
+			EquipmentStates.Save(node);
 		}
 	}
 

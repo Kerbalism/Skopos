@@ -129,6 +129,8 @@
     <Compile Include="CC\Requirement\ProgressCelestialBodyRequirement\RendezvousRequirement.cs" />
     <Compile Include="CC\Requirement\ProgressCelestialBodyRequirement\LandingRequirement.cs" />
     <Compile Include="CC\Requirement\ProgressCelestialBodyRequirement\OrbitRequirement.cs" />
+    <Compile Include="CC\Requirement\RadiationFieldsHidden.cs" />
+    <Compile Include="SubRequirements\Evaluation\BodySurfaceObservation.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup />

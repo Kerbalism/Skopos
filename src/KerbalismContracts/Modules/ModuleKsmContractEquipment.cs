@@ -154,7 +154,7 @@ namespace KerbalismContracts
 			if (running)
 				vd.ResHandler.ElectricCharge.Consume(prefab.RequiredEC * elapsed_s, EquipmentBroker);
 
-			KerbalismContracts.EquipmentState.Update(v, prefab.id, ed.state);
+			KerbalismContracts.EquipmentStates.Update(v, prefab.id, ed.state);
 
 			if(ed.loadedModule != null)
 			{
