@@ -1,5 +1,4 @@
-﻿using System;
-namespace KerbalismContracts
+﻿namespace KerbalismContracts
 {
 	public class SubRequirementState
 	{

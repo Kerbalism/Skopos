@@ -1,6 +1,4 @@
 ﻿using System;
-using FinePrint;
-using Contracts;
 using KERBALISM;
 using KSP.Localization;
 

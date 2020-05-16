@@ -1,6 +1,4 @@
-﻿using System;
-using KERBALISM;
-using Contracts;
+﻿using KERBALISM;
 using KSP.Localization;
 
 namespace KerbalismContracts

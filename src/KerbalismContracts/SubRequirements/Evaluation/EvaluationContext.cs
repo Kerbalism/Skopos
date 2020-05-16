@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using FinePrint;
-using KERBALISM;
 using System;
 
 namespace KerbalismContracts
@@ -170,7 +169,7 @@ namespace KerbalismContracts
 			while (positionList.Count > 150)
 				positionList.RemoveAt(0);
 
-			var newEntry = new WaypointPositionEntry(lat, lon, body, now - secondsAgo, BodyPosition(waypoint.celestialBody, secondsAgo));
+			var newEntry = new WaypointPositionEntry(lat, lon, body, now - secondsAgo, BodyPosition(body, secondsAgo));
 			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}

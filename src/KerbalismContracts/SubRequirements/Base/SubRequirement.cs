@@ -1,10 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using System;
-using Contracts;
-using FinePrint;
-using System.Text;
-using System.Threading.Tasks;
 using KERBALISM;
 
 namespace KerbalismContracts

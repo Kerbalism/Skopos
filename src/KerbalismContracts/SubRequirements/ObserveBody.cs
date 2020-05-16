@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using KERBALISM;
-using ContractConfigurator;
 using KSP.Localization;
 using System;
 
@@ -37,7 +36,7 @@ namespace KerbalismContracts
 
 		public override string GetTitle(EvaluationContext context)
 		{
-			string targetName = context?.targetBody?.displayName ?? Localizer.Format("#KerCon_ABody");
+			string targetName = context?.targetBody?.displayName.LocalizeRemoveGender() ?? Localizer.Format("#KerCon_ABody");
 			string result = Localizer.Format("#KerCon_LineOfSightToX", targetName); // Line of sight to <<1>>
 
 			double distance = maxDistance;
@@ -141,8 +140,8 @@ namespace KerbalismContracts
 
 			if (minAngularVelocity > 0 || maxAngularVelocity > 0)
 			{
-				var elevation = AboveWaypoint.GetElevation(vessel, 0, 0, context.targetBody, context);
-				var elevation10s = AboveWaypoint.GetElevation(vessel, 0, 0, context.targetBody, context, 10);
+				var elevation = AboveWaypoint.GetElevation(vessel, 0, 0, body, context);
+				var elevation10s = AboveWaypoint.GetElevation(vessel, 0, 0, body, context, 10);
 
 				state.angularVelocity = Math.Abs((elevation10s - elevation) * 6.0); // radial velocity is in degrees/minute
 				state.angularRequirementMet = true;
@@ -180,14 +179,14 @@ namespace KerbalismContracts
 
 		internal override string GetLabel(Vessel vessel, EvaluationContext context, SubRequirementState state)
 		{
-			string targetName = context?.targetBody?.displayName ?? Localizer.Format("#KerCon_ABody");
+			string targetName = context?.targetBody?.displayName.LocalizeRemoveGender() ?? Localizer.Format("#KerCon_ABody");
 
 			ObserveBodyState losState = (ObserveBodyState) state;
 
 			if (!losState.requirementMet)
 			{
 				if (losState.occluder != null)
-					return Localizer.Format("#KerCon_OccludedByX", Lib.Color(losState.occluder.displayName, Lib.Kolor.Red)); // Occluded by <<1>>
+					return Localizer.Format("#KerCon_OccludedByX", Lib.Color(losState.occluder.displayName.LocalizeRemoveGender(), Lib.Kolor.Red)); // Occluded by <<1>>
 				if (losState.distance > 0)
 					return Localizer.Format("#KerCon_DistanceX", Lib.Color(Lib.HumanReadableDistance(losState.distance), Lib.Kolor.Red));
 

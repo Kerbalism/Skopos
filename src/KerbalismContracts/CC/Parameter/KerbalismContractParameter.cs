@@ -383,7 +383,7 @@ namespace KerbalismContracts
 					// Note considering early termination for performance gains:
 					// If we already know that we have enough vessels to satisfy
 					// our requirement, and if we don't have to update labels,
-					// then we don' tneed to test all vessels. However, this
+					// then we don't need to test all vessels. However, this
 					// doesn't work when we have complex requirements that need
 					// to consider multiple vessels at once (like body surface
 					// observation percentage). We could change the implementation
