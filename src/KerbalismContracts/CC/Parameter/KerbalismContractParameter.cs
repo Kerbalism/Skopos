@@ -301,7 +301,6 @@ namespace KerbalismContracts
 			for (int s = (int)stepsNeeded - 1; s > 1; s--)
 				steps.Add(now - s * stepLength);
 			steps.Add(now);
-
 			return new EvaluationContext(steps, targetBody, Utils.FetchWaypoint(Root, arguments.waypointIndex));
 		}
 

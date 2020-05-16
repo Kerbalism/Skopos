@@ -152,6 +152,7 @@ namespace KerbalismContracts
 
 		private static string KerCon_DoesNotAllowInterruptions = Localizer.Format("#KerCon_DoesNotAllowInterruptions");
 		private static string KerCon_WillFailIfInterrupted = Lib.Color(Localizer.Format("#KerCon_WillFailIfInterrupted"), Lib.Kolor.Orange);
+		private static string KerCon_AccumulatingDuration = Localizer.Format("#KerCon_AccumulatingDuration");
 
 		private string KerCon_AllowsInterruptionsUpTo;
 		private string KerCon_TimeStartsAfterAccepting;
@@ -189,6 +190,8 @@ namespace KerbalismContracts
 						result += "\n\t - " + KerCon_TimeStartsAfterAccepting;
 					if (allowedDowntime > 0)
 						result += "\n\t - " + KerCon_AllowsInterruptionsUpTo;
+					else if(durationType == DurationType.accumulating)
+						result += "\n\t - " + KerCon_AccumulatingDuration;
 					else
 						result += "\n\t - " + KerCon_DoesNotAllowInterruptions; // Does not allow interruptions
 					if (!allowReset)
