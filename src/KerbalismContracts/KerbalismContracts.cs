@@ -6,7 +6,6 @@ using KSP.UI.Screens;
 using System.Text;
 using KERBALISM;
 using System.Reflection;
-using System;
 
 namespace KerbalismContracts
 {
@@ -114,14 +113,26 @@ namespace KerbalismContracts
 				if (solarSurfaces == null)
 					solarSurfaces = BodySurfaceObservation.CreateVisibleSurfaces();
 				BodySurfaceObservation.Reset(solarSurfaces);
-
-				var context = new EvaluationContext(null, sun);
+				
+				var context = new EvaluationContext(GetUniverseEvaluator(), null, sun);
+				context.SetTime(Planetarium.GetUniversalTime());
 				Vector3d sunPosition = context.BodyPosition(sun);
 
 				var observedSurface = (float)BodySurfaceObservation.VisibleSurface(vessels, context, sunPosition, Configuration.MinSunObservationAngle, solarSurfaces);
 				API.SetStormObservationQuality(sun, observedSurface);
 				Utils.LogDebug($"Solar surface observation for {sun.displayName}: {(observedSurface * 100.0).ToString("F2")}%");
 			}
+		}
+
+		private IUniverseEvaluator evaluator = null;
+		public IUniverseEvaluator GetUniverseEvaluator()
+		{
+			if (evaluator != null)
+				return evaluator;
+
+			evaluator = Principia.GetUniverseEvaluator() ?? new StockUniverseEvaluator();
+
+			return evaluator;
 		}
 
 		private IEnumerator InitFieldVisibilityDeferred()

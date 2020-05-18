@@ -6,6 +6,8 @@ namespace KerbalismContracts
 {
 	public class EvaluationContext
 	{
+		internal readonly IUniverseEvaluator evaluator;
+
 		public readonly Waypoint waypoint;
 		public readonly CelestialBody targetBody;
 		public readonly List<double> steps;
@@ -18,11 +20,11 @@ namespace KerbalismContracts
 			internal Vector3d position;
 			internal double time;
 
-			public VesselPositionEntry(Vessel vessel, Vector3d bodyPosition, double time)
+			public VesselPositionEntry(IUniverseEvaluator evaluator, Vessel vessel, Vector3d vesselBodyPosition, double time)
 			{
 				this.vessel = vessel;
 				this.time = time;
-				this.position = bodyPosition + vessel.orbit.getRelativePositionAtUT(time).xzy;
+				this.position = evaluator.GetVesselPosition(vessel, vesselBodyPosition, time);
 			}
 		}
 
@@ -35,14 +37,11 @@ namespace KerbalismContracts
 			internal Vector3d position;
 			internal double time;
 
-			public BodyPositionEntry(CelestialBody body, double time)
+			public BodyPositionEntry(IUniverseEvaluator evaluator, CelestialBody body, double time)
 			{
 				this.flightGlobalsIndex = body.flightGlobalsIndex;
 				this.time = time;
-				if (body.orbit == null) // suns?
-					position = body.position;
-				else
-					position = body.orbit.getTruePositionAtUT(time);
+				this.position = evaluator.GetBodyPosition(body, time);
 			}
 		}
 		private static readonly Dictionary<int, SortedList<double, BodyPositionEntry>> bodyPositions = new Dictionary<int, SortedList<double, BodyPositionEntry>>();
@@ -53,33 +52,25 @@ namespace KerbalismContracts
 			internal Vector3d position;
 			internal double time;
 
-			public WaypointPositionEntry(Waypoint waypoint, double time, Vector3d bodyPosition)
-				:this(waypoint.latitude, waypoint.longitude, waypoint.celestialBody, time, bodyPosition)
+			public WaypointPositionEntry(IUniverseEvaluator evaluator, Waypoint waypoint, double time, Vector3d bodyPosition)
+				:this(evaluator, waypoint.latitude, waypoint.longitude, waypoint.celestialBody, time, bodyPosition)
 			{
 			}
 
-			public WaypointPositionEntry(double latitude, double longitude, CelestialBody body, double time, Vector3d bodyPosition)
+			public WaypointPositionEntry(IUniverseEvaluator evaluator, double latitude, double longitude, CelestialBody body, double time, Vector3d bodyPosition)
 			{
 				this.id = Id(latitude, longitude);
 				this.time = time;
 
-				Planetarium.CelestialFrame BodyFrame = default;
-				if (body.rotationPeriod != 0)
-				{
-					var rotPeriodRecip = 1.0 / body.rotationPeriod;
-					var rotationAngle = (body.initialRotation + 360.0 * rotPeriodRecip * time) % 360.0;
-					var directRotAngle = (rotationAngle - Planetarium.InverseRotAngle) % 360.0;
-					Planetarium.CelestialFrame.PlanetaryFrame(0.0, 90.0, directRotAngle, ref BodyFrame);
-				}
-				position = BodyFrame.LocalToWorld(body.GetRelSurfacePosition(latitude, longitude, 0).xzy).xzy + bodyPosition;
+				this.position = evaluator.GetWaypointPosition(latitude, longitude, body, bodyPosition, time);
 			}
 
-			public static double Id(double lat, double lon)
+			internal static double Id(double lat, double lon)
 			{
 				return (lat + 90.0) * 360.0 + (lon + 180.0);
 			}
 
-			public static double Id(Waypoint waypoint)
+			internal static double Id(Waypoint waypoint)
 			{
 				return Id(waypoint.latitude, waypoint.longitude);
 			}
@@ -102,8 +93,9 @@ namespace KerbalismContracts
 			waypointPositions.Clear();
 		}
 
-		public EvaluationContext(List<double> steps, CelestialBody targetBody = null, Waypoint waypoint = null)
+		public EvaluationContext(IUniverseEvaluator evaluator, List<double> steps, CelestialBody targetBody = null, Waypoint waypoint = null)
 		{
+			this.evaluator = evaluator;
 			this.targetBody = targetBody ?? waypoint?.celestialBody;
 			this.waypoint = waypoint;
 			this.steps = steps;
@@ -125,7 +117,7 @@ namespace KerbalismContracts
 				positionList.RemoveAt(0);
 
 			var vesselBodyPosition = BodyPosition(vessel.mainBody, secondsAgo);
-			var newEntry = new VesselPositionEntry(vessel, vesselBodyPosition, t);
+			var newEntry = new VesselPositionEntry(evaluator, vessel, vesselBodyPosition, t);
 			positionList.Add(t, newEntry);
 			return newEntry.position;
 		}
@@ -146,7 +138,7 @@ namespace KerbalismContracts
 			while (positionList.Count > 150)
 				positionList.RemoveAt(0);
 
-			var newEntry = new BodyPositionEntry(body, now - secondsAgo);
+			var newEntry = new BodyPositionEntry(evaluator, body, now - secondsAgo);
 			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}
@@ -169,7 +161,7 @@ namespace KerbalismContracts
 			while (positionList.Count > 150)
 				positionList.RemoveAt(0);
 
-			var newEntry = new WaypointPositionEntry(lat, lon, body, now - secondsAgo, BodyPosition(body, secondsAgo));
+			var newEntry = new WaypointPositionEntry(evaluator, lat, lon, body, now - secondsAgo, BodyPosition(body, secondsAgo));
 			positionList.Add(now - secondsAgo, newEntry);
 			return newEntry.position;
 		}

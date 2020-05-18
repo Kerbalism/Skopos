@@ -119,7 +119,7 @@ namespace KerbalismContracts
 			ObserveBodyState state = new ObserveBodyState();
 
 			var body = context.targetBody;
-
+			
 			// generate ray parameters
 			var vesselPosition = context.VesselPosition(vessel);
 			var bodyDir = context.BodyPosition(body) - vesselPosition;

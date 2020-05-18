@@ -131,9 +131,14 @@
     <Compile Include="CC\Requirement\ProgressCelestialBodyRequirement\OrbitRequirement.cs" />
     <Compile Include="CC\Requirement\RadiationFieldsHidden.cs" />
     <Compile Include="SubRequirements\Evaluation\BodySurfaceObservation.cs" />
+    <Compile Include="External\Principia.cs" />
+    <Compile Include="SubRequirements\Evaluation\UniverseEvaluator.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup />
+  <ItemGroup>
+    <Folder Include="External\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
