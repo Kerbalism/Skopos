@@ -41,7 +41,7 @@ namespace KerbalismContracts
             if (principia == null)
                 return null;
 
-            Utils.LogDebug("Principia detected, instantiating principias universe evaluator");
+            Utils.Log("Principia found, will use principias history instead of stock orbits");
 
             return new PrincipiaEvaluator(principia);
 		}
@@ -53,9 +53,13 @@ namespace KerbalismContracts
 
         private Vector3d Vector3d(object xyz)
         {
-            double x = Reflection.GetFieldValue<double>(xyz, Reflection.FieldName.x);
-            double y = Reflection.GetFieldValue<double>(xyz, Reflection.FieldName.y);
-            double z = Reflection.GetFieldValue<double>(xyz, Reflection.FieldName.z);
+            // Principia does not guarantee that the values are (or will remain to be) fields or properties.
+            // "we may change them between fields and properties depending on the phase of the moon or convenience"
+
+            // TODO evaluate the performance impact of this
+            double x = Reflection.GetFieldOrPropertyValue<double>(xyz, "x");
+            double y = Reflection.GetFieldOrPropertyValue<double>(xyz, "y");
+            double z = Reflection.GetFieldOrPropertyValue<double>(xyz, "z");
             return new Vector3d(x, y, z);
         }
 
@@ -132,76 +136,45 @@ namespace KerbalismContracts
 	/// </summary>
 	public static class Reflection
     {
-		public enum FieldName
-		{
-			x, y, z
-		}
-
-        private static FieldInfo x;
-        private static FieldInfo y;
-        private static FieldInfo z;
-
-        public static T GetFieldValue<T>(object obj, FieldName fieldName)
-        {
-            Type type = obj.GetType();
-
-            FieldInfo f;
-			switch (fieldName)
-			{
-                case FieldName.x:
-					if(x == null)
-						x = type.GetField("x", public_instance);
-                    f = x;
-                    break;
-                case FieldName.y:
-                    if (y == null)
-                        y = type.GetField("y", public_instance);
-                    f = y;
-                    break;
-                case FieldName.z:
-                    if (z == null)
-                        z = type.GetField("z", public_instance);
-                    f = z;
-                    break;
-                default:
-					return default(T);
-            }
-
-            return (T) f.GetValue(obj);
-        }
-
-        public static void SetFieldOrPropertyValue<T>(object obj, string name, T value)
+        public static T GetFieldOrPropertyValue<T>(object obj, string name)
         {
             if (obj == null)
             {
                 throw new NullReferenceException(
-                    $"Cannot set {typeof(T).FullName} {name} on null object");
+                    $"Cannot access {typeof(T).FullName} {name} on null object");
             }
             Type type = obj.GetType();
+            object result = null;
             FieldInfo field = type.GetField(name, public_instance);
             PropertyInfo property = type.GetProperty(name, public_instance);
-            if (field == null && property == null)
+            if (field != null)
+            {
+                result = field.GetValue(obj);
+            }
+            else if (property != null)
+            {
+                result = property.GetValue(obj, index: null);
+            }
+            else
             {
                 throw new MissingMemberException(
                     $"No public instance field or property {name} in {type.FullName}");
             }
             try
             {
-                field?.SetValue(obj, value);
-                property?.SetValue(obj, value, index: null);
+                return (T)result;
             }
             catch (Exception exception)
             {
-                throw new ArgumentException(
-                    $@"Could not set {
+                throw new InvalidCastException(
+                    $@"Could not convert the value of {
                         (field == null ? "property" : "field")} {
                         (field?.FieldType ?? property.PropertyType).FullName} {
-                        type.FullName}.{name} to {typeof(T).FullName} {
-                        value?.GetType().FullName ?? "null"} {value}",
+                        type.FullName}.{name}, {result}, to {typeof(T).FullName}",
                     exception);
             }
         }
-		
+
         public delegate T BoundMethod<T>(params object[] args);
 
         public static BoundMethod<T> Call<T>(object obj, string name)
