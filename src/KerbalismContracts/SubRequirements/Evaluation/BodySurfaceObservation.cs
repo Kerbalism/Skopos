@@ -18,6 +18,30 @@ namespace KerbalismContracts
 
 	public static class BodySurfaceObservation
 	{
+		public static double VisibleSurface(List<Vessel> vessels, EvaluationContext context, Vector3d bodyPosition, double minElevation, List<Surface> surfaces)
+		{
+			Reset(surfaces);
+			int visibleSurfaces = 0;
+			foreach (Vessel v in vessels)
+			{
+				Vector3d vesselPosition = context.VesselPosition(v);
+				Vector3d viewDirection = (vesselPosition - bodyPosition);
+
+				double R = context.targetBody.Radius;
+				double a = R;
+				double b = R + context.Altitude(v, context.targetBody);
+				double c = Math.Sqrt(a * a + b * b);
+				double α = Math.Asin(b / c) * 180.0 / Math.PI;
+
+				visibleSurfaces += MarkVisibleSurfaces(viewDirection.normalized, α - minElevation, surfaces);
+			}
+
+			return visibleSurfaces / (double)surfaces.Count;
+		}
+
+		/// <summary>
+		/// For details, see misc/polyhedron/README.txt
+		/// </summary>
 		public static List<Surface> CreateVisibleSurfaces()
 		{
 			var surfaces = new List<Surface>();
@@ -226,35 +250,12 @@ namespace KerbalismContracts
 			return surfaces;
 		}
 
-		public static void Reset(List<Surface> surfaces)
+		private static void Reset(List<Surface> surfaces)
 		{
 			foreach (Surface vs in surfaces)
 				vs.visible = false;
 		}
 
-		public static double VisibleSurface(List<Vessel> vessels, EvaluationContext context, Vector3d bodyPosition, double minElevation, List<Surface> surfaces)
-		{
-			int visibleSurfaces = 0;
-			foreach (Vessel v in vessels)
-			{
-				Vector3d vesselPosition = context.VesselPosition(v);
-				Vector3d viewDirection = (vesselPosition - bodyPosition);
-
-				double R = context.targetBody.Radius;
-				double a = R;
-				double b = R + context.Altitude(v, context.targetBody);
-				double c = Math.Sqrt(a * a + b * b);
-				double α = Math.Asin(b / c) * 180.0 / Math.PI;
-
-				visibleSurfaces += MarkVisibleSurfaces(viewDirection.normalized, α - minElevation, surfaces);
-			}
-
-			return visibleSurfaces / (double)surfaces.Count;
-		}
-
-		/// <summary>
-		/// For details, see misc/polyhedron/README.txt
-		/// </summary>
 		private static int MarkVisibleSurfaces(Vector3d viewDirection, double α, List<Surface> surfaces)
 		{
 			int visibleSurfaces = 0;

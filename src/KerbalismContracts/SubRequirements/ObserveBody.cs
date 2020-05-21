@@ -22,8 +22,6 @@ namespace KerbalismContracts
 		internal double minAngularVelocity;
 		internal double maxAngularVelocity;
 
-		private static List<Surface> surfaces;
-
 		public ObserveBody(string type, KerbalismContractRequirement requirement, ConfigNode node) : base(type, requirement)
 		{
 			maxDistance = Lib.ConfigValue(node, "maxDistance", 0.0);
@@ -215,21 +213,21 @@ namespace KerbalismContracts
 				return vessels.Count > 0;
 			}
 
-			ResetVisibleSurfaces();
 			Vector3d bodyPosition = context.BodyPosition(context.targetBody);
 
-			double visible = 100.0 * BodySurfaceObservation.VisibleSurface(vessels, context, bodyPosition, minElevation, surfaces);
+			double visible = 100.0 * BodySurfaceObservation.VisibleSurface(vessels, context, bodyPosition, minElevation, Surfaces());
 			string observedPercStr = Lib.HumanReadablePerc(visible / 100.0) + " / " + Lib.HumanReadablePerc(minSurface / 100.0);
 			observedPercStr = Lib.Color(observedPercStr, visible > minSurface ? Lib.Kolor.Green : Lib.Kolor.Red);
 			statusLabel = Localizer.Format("#KerCon_XofSurfaceObserved", observedPercStr);
 			return visible > minSurface;
 		}
 
-		private void ResetVisibleSurfaces()
+		private static List<Surface> surfaces;
+		private List<Surface> Surfaces()
 		{
 			if(surfaces == null)
 				surfaces = BodySurfaceObservation.CreateVisibleSurfaces();
-			BodySurfaceObservation.Reset(surfaces);
+			return surfaces;
 		}
 	}
 }

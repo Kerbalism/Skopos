@@ -112,7 +112,6 @@ namespace KerbalismContracts
 				var vessels = e.Value;
 				if (solarSurfaces == null)
 					solarSurfaces = BodySurfaceObservation.CreateVisibleSurfaces();
-				BodySurfaceObservation.Reset(solarSurfaces);
 				
 				var context = new EvaluationContext(GetUniverseEvaluator(), null, sun);
 				context.SetTime(Planetarium.GetUniversalTime());
